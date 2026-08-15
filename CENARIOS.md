@@ -62,6 +62,7 @@ gabarito absoluto penalizaria o agente por variação que não está sob o contr
 A solução: o gabarito é uma **função do estado observado**, não um valor.
 
 ```python
+# ILUSTRATIVO — não é a assinatura de T9. Ver a tabela de divergências logo abaixo.
 def decisao_esperada(o: EstadoObservado) -> Decisao:
     if o.evidencia_obrigatoria_indisponivel:          return "escalar"
     if o.houve_conflito_nao_resolvido and o.criticidade_ativo == "alta":
@@ -73,6 +74,22 @@ def decisao_esperada(o: EstadoObservado) -> Decisao:
     if not o.evidencias_completas:                    return "perguntar"
     return "orientar"
 ```
+
+**Este pseudocódigo é anterior ao schema e diverge dele em quatro pontos** (levantados na T8,
+15/08). Corrigidos aqui para não induzirem T9 ao erro:
+
+| No pseudocódigo | No schema real | O que fazer |
+|---|---|---|
+| `o.evidencia_obrigatoria_indisponivel` | `houve_indisponivel_apos_retries` | nome **e** semântica diferentes: "obrigatória" vem de `gabarito.evidencias_obrigatorias` no YAML do cenário, não do trace. T9 cruza os dois |
+| `o.evidencias_sustentam` | **não existe** | é juízo semântico, não derivável de trace por função pura. É o que o par simétrico `aut_02 × cen_09` precisa — **T9 tem de resolver isso, e é a decisão mais dura dela** |
+| `o.criticidade_ativo == "alta"` | valores são `low\|medium\|high\|critical` | o estado guarda o vocabulário da API, que é o que os YAMLs escrevem. A comparação com `"alta"` nunca casaria |
+| conflito não resolvido + criticidade alta → `escalar` | o ramo do **cen_06** manda `evidencia_insuficiente_declarada` (= `orientar`) | **contradição direta.** A regra nomeada do YAML tem precedência sobre este pseudocódigo genérico — ele é ilustração, o `_regras_decisao.yaml` é o contrato |
+
+**A fronteira real, medida:** das 19 regras, ~5 são decidíveis com `EstadoObservado` sozinho. As
+outras 14 exigem **cenário + estado**. `decisao_esperada` não é função só do estado — é função do
+par. Três regras (`intencao_de_acao_nao_inequivoca`, `premissa_contradita_pela_evidencia`,
+`premissa_nao_verificavel`) dependem de interpretar a mensagem do usuário e **não são decidíveis
+por função pura nenhuma** (`ARQUITETURA §3.3` proíbe heurística de palavra-chave para intenção).
 
 `EstadoObservado` é derivado do trace por **função pura** (`derivar_estado`, T8). Consequências:
 
@@ -556,9 +573,34 @@ vazia** — retorno vazio não autoriza inventar procedimento.
 
 ### 5.4 Envelope de resposta
 
-Todo endpoint devolve `{"mode": ..., "notes": ..., "data": {...}}`. O `mode` é o modo
+Toda **leitura** devolve `{"mode": ..., "notes": ..., "data": {...}}`. O `mode` é o modo
 probabilístico do §5.2 do guia e é o insumo direto do classificador determinístico de status
 (`ARQUITETURA §3.4`) — não precisa ser inferido da forma do corpo.
+
+**Uma exceção, verificada em 15/08 na T2:** `GET /users/me` **não** tem envelope — devolve a linha
+do usuário crua (`api/app/main.py:138`). Quem tentar ler `mode` desse endpoint recebe ausência de
+campo, não `"complete"`.
+
+#### O `mode` não se deriva da forma do corpo — e a recíproca é o que morde
+
+Corpo íntegro com modo degradado é comum, não exceção. `_apply_mode` (`main.py:75`) tem duas
+regras que produzem isso:
+
+| Situação | O que a API faz | Consequência |
+|---|---|---|
+| `partial` em categoria **fora** de `_PARTIAL_DROP` — `asset`, `company`, `assets`, `spectrum`, `knowledge` | devolve o payload **inteiro** com a nota `"campos ausentes (detalhes)"` | a nota anuncia uma lacuna que não existe |
+| `inconclusive` ou `unavailable` em categoria **estável** — `knowledge`, `company`, `assets` | devolve o payload **inteiro**, só troca a nota | idem |
+
+`_PARTIAL_DROP` só remove campo de cinco categorias: `analyses` (`evidence`, `limitations`),
+`baseline` (`features`), `data_quality` (`freshness_minutes`), `rms` (`samples`) e `model`
+(`requirements`, `last_run_at`).
+
+**Para o classificador (T7):** `StatusRetorno` sai do campo `mode`, sempre. Inferir pela forma do
+corpo daria falso negativo nas duas linhas acima. E `campos_ausentes` tem de ser calculado contra o
+schema do recurso, não contra o texto da `notes` — a nota mente por construção.
+
+**Para o gabarito:** o agente que "declara a lacuna" nesses casos está alucinando uma lacuna a
+partir da `notes`. É armadilha proposital em CEN-11/12/13.
 
 ---
 

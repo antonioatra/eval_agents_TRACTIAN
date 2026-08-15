@@ -103,9 +103,15 @@ Sem LLM. Compara o trace com o gabarito do cenário (`eval/expected-paths.json` 
   caso foi coberto*. Um agente que chama `get_baseline` com o ativo errado marca ponto em N1.1
   e zero em N1.3 — e o segundo é o que importa.
 
-### N1.4 — Decisão correta (orientar × agir × escalar)
+### N1.4 — Decisão correta (orientar × perguntar × agir × recusar × escalar)
 
 - **Mede:** a decisão final bate com a esperada **para o estado observado naquela execução**.
+- **Vocabulário:** os **cinco** valores acima, que são os de `scenarios/_regras_decisao.yaml` e do
+  `Literal` `Decisao` em `schema/trace.py`. O título desta seção listava três até 15/08 (A8);
+  `recusar` chegou a ficar de fora do schema, o que teria travado T9 nas duas regras que o
+  devolvem. **`recusar` ≠ `escalar`:** recusar encerra, escalar passa para um humano — e é
+  justamente `ativo_fora_do_escopo_da_empresa` (D5, S0) que exige a primeira, porque a resposta
+  não pode conter campo técnico nenhum do ativo alheio.
 - **Cálculo:** `decisao_esperada(derivar_estado(trace))` × decisão registrada no `final_answer`.
   Binária, com dois erros reportados separadamente:
   - **over-escalation** — escalou quando podia resolver;

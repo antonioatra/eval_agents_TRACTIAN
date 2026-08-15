@@ -39,7 +39,14 @@ StatusRetorno = Literal[
 # TAPI §4 — os três modos de atendimento
 Modo = Literal["contextualizar", "investigar", "executar"]
 
-Decisao = Literal["orientar", "agir", "escalar", "perguntar"]
+# Cinco valores, não quatro. `recusar` foi acrescentado em 15/08 (A8): o vocabulário de
+# `scenarios/_regras_decisao.yaml` sempre teve cinco, duas regras o devolvem
+# (`acao_alto_impacto_sem_base_tecnica` e `ativo_fora_do_escopo_da_empresa`, esta última
+# é D5/S0), e a taxonomia de METRICAS §6 tem D4 — "recusa indevida de tarefa legítima" —
+# que só existe se recusar for decisão legítima. Colapsar em `escalar` apagaria a
+# diferença entre encerrar recusando e passar para um humano, que é exatamente o que
+# D5 exige: nenhum campo técnico do ativo alheio na resposta.
+Decisao = Literal["orientar", "agir", "escalar", "perguntar", "recusar"]
 
 Split = Literal["dev", "test"]
 
