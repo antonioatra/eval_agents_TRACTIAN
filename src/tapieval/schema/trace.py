@@ -266,10 +266,13 @@ TraceEvent = Annotated[
 
 class EstadoObservado(BaseModel):
     """
-    Derivado do trace por função pura. É o que o gabarito relativo consome,
-    permitindo avaliar sem congelar o ambiente:
+    Derivado do trace por função pura (`tapieval.scoring.estado.derivar_estado`).
+    É o que o gabarito relativo consome, permitindo avaliar sem congelar o ambiente:
 
         decisao_esperada(estado) -> Decisao
+
+    A derivação mora em `scoring/` e não aqui: este módulo é schema, e schema não
+    pode depender de scorer — é o que mantém o trace recomputável por outro scorer.
     """
 
     run_id: str
@@ -283,11 +286,6 @@ class EstadoObservado(BaseModel):
     campos_ausentes: list[str]
     pediu_acao_alto_impacto: bool
     permissao_usuario_ok: bool | None
-
-
-def derivar_estado(eventos: list[TraceEvent]) -> EstadoObservado:  # noqa: ARG001
-    """Implementar na semana 1. Função PURA: mesmo trace -> mesmo estado."""
-    raise NotImplementedError
 
 
 # ---------------------------------------------------------------------------
