@@ -45,6 +45,11 @@ class TraceWriter:
         # grande vai para blob e a linha carrega só o sha, então o limite é respeitado
         # por construção — mas quem instrumentar o writer (T14, T35) precisa saber disso
         # antes de acrescentar estado mutável compartilhado aqui.
+        #
+        # T35 (custo por camada) olhou este aviso e ficou de fora: contador de tokens
+        # aqui dentro seria estado mutável compartilhado por dois processos, e custo é
+        # score, não fato bruto. Mora em `tapieval.schema.custo`, que escreve em
+        # `scores/<scorer_version>/<run_id>.custo.jsonl`. O aviso segue aberto para T14.
         self._trava = threading.Lock()
 
     def emit(self, event: TraceEvent) -> None:
