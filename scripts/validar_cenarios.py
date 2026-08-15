@@ -8,6 +8,11 @@ Checa, sem subir a API:
   4. ambiente — a `env_seed` declarada produz os modos exigidos, replicando resolve_mode da API;
   5. split    — nenhum ativo aparece dos dois lados de dev/test.
 
+Cenário com `status: inviavel` continua sendo validado como documento (schema, tools, regras)
+mas sai do corpus executável: não roda, não conta no split e não entra na checagem de ambiente
+— ser insatisfazível por qualquer seed é justamente a razão mais provável de ter sido declarado
+inviável, e exigir o contrário deixaria o corpus vermelho para sempre.
+
 Uso: inteli-tractian-project/api/.venv/bin/python scripts/validar_cenarios.py
 """
 from __future__ import annotations
@@ -33,6 +38,11 @@ OBRIGATORIOS = [
 GABARITO_OBRIGATORIOS = [
     "evidencias_obrigatorias", "tools_esperadas", "decisao_esperada", "proibido",
 ]
+
+# `status` é opcional: ausente significa `valido`, para que os 24 cenários vivos não precisem
+# declarar o caso comum. Só o desvio é escrito (A4/T3).
+STATUS_VALIDOS = ("valido", "inviavel")
+STATUS_PADRAO = "valido"
 
 # Campos observados nos payloads reais da API (verificado em 14/08 com a API no ar).
 # Toda evidência obrigatória precisa apontar para um campo que existe — senão a N1.3 não computa.
@@ -94,6 +104,7 @@ def main() -> int:
     erros: list[str] = []
     ativos_por_split: dict[str, set[str]] = {"dev": set(), "test": set()}
     composicao: dict[tuple[str, str], int] = {}
+    inviaveis: list[str] = []
     cenarios = sorted(p for p in CENARIOS.glob("*.yaml") if not p.name.startswith("_"))
 
     for caminho in cenarios:
@@ -109,6 +120,21 @@ def main() -> int:
             erros.append(f"{cid}: split inválido {c['split']!r}")
         if c["natureza"] not in ("dado_dependente", "politica_dependente"):
             erros.append(f"{cid}: natureza inválida {c['natureza']!r}")
+
+        status = c.get("status", STATUS_PADRAO)
+        if status not in STATUS_VALIDOS:
+            erros.append(
+                f"{cid}: status inválido {status!r}, esperado um de {list(STATUS_VALIDOS)}"
+            )
+        inviavel = status == "inviavel"
+        # A justificativa é o que separa "declarar inviável" de "esconder cenário que não passou".
+        justificativa = str(c.get("justificativa_inviabilidade") or "").strip()
+        if inviavel and not justificativa:
+            erros.append(f"{cid}: status inviavel exige justificativa_inviabilidade não vazia")
+        if not inviavel and justificativa:
+            erros.append(f"{cid}: justificativa_inviabilidade sem status inviavel")
+        if inviavel:
+            inviaveis.append(cid)
 
         g = c["gabarito"]
         for k in GABARITO_OBRIGATORIOS:
@@ -140,6 +166,15 @@ def main() -> int:
             if not r.startswith("regra:") or r.removeprefix("regra:") not in regras:
                 erros.append(f"{cid}: ramo com regra desconhecida {r!r}")
 
+        if c["procedencia"] not in ("autoral", "oficial"):
+            erros.append(f"{cid}: procedência inválida {c['procedencia']!r}")
+
+        # Daqui para baixo é o corpus executável. Um cenário inviável continua no repositório
+        # como registro — ele foi declarado, não apagado —, mas não é rodado, então cobrar dele
+        # ambiente satisfazível, split e isolamento de ativo mediria algo que nunca executa.
+        if inviavel:
+            continue
+
         seed = c["ambiente"]["env_seed"]
         for exigido in c["ambiente"].get("modos_exigidos", []):
             obtido = resolve_mode(exigido["recurso"], exigido["categoria"], seed)
@@ -152,8 +187,6 @@ def main() -> int:
         ativos = {c["asset_id"]} if c.get("asset_id") else set()
         ativos |= {a["id"] for a in (c.get("contexto", {}).get("candidatos") or [])}
         ativos_por_split[c["split"]] |= ativos
-        if c["procedencia"] not in ("autoral", "oficial"):
-            erros.append(f"{cid}: procedência inválida {c['procedencia']!r}")
         chave = (c["split"], c["procedencia"])
         composicao[chave] = composicao.get(chave, 0) + 1
 
@@ -167,12 +200,27 @@ def main() -> int:
     for split, esperado in SPLIT_ESPERADO.items():
         obtido = sum(n for (s, _), n in composicao.items() if s == split)
         if obtido != esperado:
-            erros.append(f"split {split}: {obtido} cenários, esperado {esperado}")
+            erros.append(
+                f"split {split}: {obtido} cenários executáveis, esperado {esperado}"
+                + (
+                    f" — {len(inviaveis)} declarado(s) inviável(is) ({', '.join(inviaveis)}). "
+                    "Declarar inviável muda o denominador das baterias: atualize SPLIT_ESPERADO "
+                    "aqui e as contagens de PLANO §baterias e METRICAS antes de rodar."
+                    if inviaveis
+                    else ""
+                )
+            )
         for proc in ("autoral", "oficial"):
             if composicao.get((split, proc), 0) == 0:
                 erros.append(f"split {split}: nenhum cenário de procedência {proc}")
 
-    print(f"{len(cenarios)} cenários · {len(tools)} tools no catálogo · {len(regras)} regras")
+    executaveis = len(cenarios) - len(inviaveis)
+    print(
+        f"{len(cenarios)} cenários ({executaveis} executáveis) · "
+        f"{len(tools)} tools no catálogo · {len(regras)} regras"
+    )
+    if inviaveis:
+        print(f"inviáveis (fora das baterias): {', '.join(inviaveis)}")
     for split in ("dev", "test"):
         partes = " + ".join(
             f"{composicao.get((split, p), 0)} {p}" for p in ("autoral", "oficial")

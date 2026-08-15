@@ -591,24 +591,41 @@ com o cálculo de custo que a matou. Declarar isso é mais forte que omitir.
 
 ## 13. Modelos e hardware
 
-**MacBook Pro M5, 32 GB de memória unificada.** Em Mac a memória é unificada, então o teto do
-modelo é a RAM total menos o que o sistema usa — o macOS libera ~70% para a GPU por padrão, o
-que dá **~22 GB efetivos para pesos + KV cache**. Cabe o par de SUTs e o judge, sem apertar.
+**MacBook Pro M5, 24 GB de memória unificada** (`hw.memsize` = 25.769.803.776 B, medido 15/08 —
+uma versão anterior desta seção dizia 32 GB e ~22 GB efetivos; era erro, e o orçamento real é
+~6 GB menor). Em Mac a memória é unificada, então o teto do modelo é a RAM total menos o que o
+sistema usa: **~16 GB efetivos para pesos + KV cache**. **Não cabem os três juntos** — e não
+precisam: o judge só roda depois, sobre traces já gravados (§14). **Carregamento sequencial,
+nunca simultâneo.**
 
-Orçamento zero: **100% local**. Endpoint OpenAI-compatible (LM Studio ou Ollama) para que
-trocar de modelo seja uma linha de config; MLX no Apple Silicon; **prefix cache** ligado — num
-loop ReAct o prefixo se repete, e sem cache reprocessa tudo a cada iteração. Paralelismo ajuda
-pouco (GPU única): o ganho vem de prefix cache e de MoE.
+Endpoint OpenAI-compatible (LM Studio ou Ollama) para que trocar de modelo seja uma linha de
+config; MLX no Apple Silicon; **prefix cache** ligado — num loop ReAct o prefixo se repete, e sem
+cache reprocessa tudo a cada iteração. Paralelismo ajuda pouco (GPU única): o ganho vem de prefix
+cache e de MoE.
 
-| Papel | Perfil | Critério |
-|---|---|---|
-| SUT A | denso ~7–8B, 4-bit | o "pequeno" — onde os erros interessantes aparecem |
-| SUT B | ~14B ou MoE tipo 30B-A3B, 4-bit | MoE roda quase na velocidade de um 3B |
-| Judge | o maior que couber, **≠ dos SUTs** | juiz igual ao réu prefere as próprias respostas |
+**Arranjo híbrido (A1, decidido 15/08): SUTs locais, judge na free tier.** O trabalho tem dois
+tetos complementares — local não tem limite de chamadas mas limita o tamanho do modelo; free tier
+dá modelo grande mas ~1.500 chamadas/dia. As ~4.200 chamadas de SUT ficam onde não há RPD; as
+~1.400 do judge ficam onde há modelo grande de graça. Ver `DECISOES A1` para a conta.
 
-Candidatos que cabem, para referência de dimensionamento (RAM em q4): Qwen3 8B ~5 GB · Qwen3
-14B ~9 GB · gpt-oss 20B ~12 GB · Mistral Small 24B ~14 GB · Qwen3 30B-A3B ~18 GB (exige subir
-`iogpu.wired_limit_mb`). Nada de 70B.
+| Papel | Onde | Perfil | Critério |
+|---|---|---|---|
+| SUT A | local | Qwen3-8B q4, ~5 GB | o "pequeno" — onde os erros interessantes aparecem |
+| SUT B | local | Qwen3-14B q4, ~9 GB | mesma família do A; carregado depois dele, nunca junto |
+| Judge | Gemini free tier | o maior disponível, **≠ dos SUTs** | juiz igual ao réu prefere as próprias respostas |
+| SUT de referência | Gemini free tier | modelo de fronteira | **fora da bateria fatorial** — ver abaixo |
+
+**O SUT de referência não é uma terceira célula do desenho.** Ele roda só nos 6 cenários de dev
+(~100–300 chamadas, folgadas na free tier) e serve de teto contra o qual ler os dois SUTs locais:
+"quanto do erro medido é do porte do modelo e quanto é do problema ser difícil?". Entrar na
+bateria 18 × 2 × 8 quebraria a H2, que exige mesma família para isolar o tamanho — e estouraria o
+RPD, porque SUT é o papel de alto volume. A comparação controlada (Qwen3-8B × Qwen3-14B) e o
+ponto de fronteira respondem perguntas diferentes; o desenho comporta as duas desde que não se
+misturem na mesma tabela.
+
+Dimensionamento local em q4, para referência: Qwen3 8B ~5 GB · Qwen3 14B ~9 GB · gpt-oss 20B
+~12 GB · Mistral Small 24B ~14 GB. **Qwen3 30B-A3B (~18 GB) não cabe** nos 16 GB efetivos — era
+candidato a SUT B sob o orçamento errado de 32 GB. Nada de 70B.
 
 **Mesma família nos dois SUTs.** Cruzar famílias introduz diferenças de treino, de formato de
 tool calling e de tokenizer — e aí não se sabe se a diferença veio do tamanho ou da marca.
@@ -727,8 +744,10 @@ Descobertas que **não** estavam na lista e mudaram o desenho:
 
 Em aberto:
 
-4. ⚪ **Par de modelos definitivo** — decidir após o teste de tool calling da S1 (T0b). Com 22 GB
-   efetivos, o par natural é ~8B (SUT A) + ~14B ou MoE 30B-A3B (SUT B), mesma família, e o judge
-   no maior peso que sobrar de família diferente.
+4. ✅ **Par de modelos** — **resolvido 15/08** (`DECISOES A1`): Qwen3-8B + Qwen3-14B locais como
+   SUTs, judge e SUT de referência na free tier do Gemini. A formulação anterior desta pendência
+   assumia 22 GB efetivos e cogitava MoE 30B-A3B como SUT B; com os ~16 GB reais isso não cabe.
+   Falta só confirmar o par contra o T0b — se o 14B errar seleção de função sistematicamente, a
+   troca é dentro da mesma família.
 5. ⚪ **Checklists de suficiência** só fecham depois do Swagger real; preencher contra o mock na
    S1 e revisar quando o contrato chegar.
