@@ -403,8 +403,16 @@ só aparece no meio da bateria disfarçado de "o agente não chamou a tool esper
 
 | Evento | Emitido por | Por quê |
 |---|---|---|
-| `tool_call`, `http_request`, `tool_result`, `gate` | **servidor MCP** | é o único ponto por onde passa toda chamada |
-| `llm_turn`, `parse_erro`, `budget`, `final_answer` | **harness do cliente** | o servidor não enxerga o modelo |
+| `tool_call`, `tool_result`, `gate` | **servidor MCP** | é o único ponto por onde passa toda chamada |
+| `llm_call`, `budget`, `final_answer`, `decision` | **harness do cliente** | o servidor não enxerga o modelo |
+
+**Não existe evento HTTP separado** (decidido em 15/08). O `ToolResult` já carrega `http_status`
+e `latencia_ms`, e "é chamada de escrita" se deriva do `tool_name`, que é um conjunto fechado e
+conhecido. Um `http_request` próprio duplicaria a informação e daria a T14 um quarto evento para
+reconciliar por `seq` em troca de nada. O que se perde é o registro da chamada que morre antes de
+virar `tool_result` — esse caso vira `RunError` com `onde` apontando a tool. `parse_erro` também
+não é evento: é campo do `llm_call` (`parse_ok`, `parse_erro`), porque a tentativa de parsing
+pertence à chamada que a produziu.
 
 O servidor emite seus eventos como **logging notification** MCP; o cliente registra um
 `message_handler` que escreve no `TraceWriter`. Notificação é assíncrona, então ordem de
