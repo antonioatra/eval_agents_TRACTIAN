@@ -5,6 +5,10 @@ DECISOES.md
 # Configuração local de ferramenta.
 .claude/
 
+# Grafo de conhecimento (derivado, regenerável com /graphify). Indexa PLANO.md e
+# DECISOES.md, então subir isto vazaria os dois documentos pessoais acima.
+graphify-out/
+
 # Ambientes virtuais (o do parceiro tem 289M) e artefatos de execução.
 .venv/
 inteli-tractian-project/api/.venv/
