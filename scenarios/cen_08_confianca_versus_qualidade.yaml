@@ -1,0 +1,102 @@
+id: cen_08_confianca_versus_qualidade
+titulo: "Confiança alta sobre dado abaixo dos requisitos do modelo"
+procedencia: oficial
+origem: {cenario: CEN-08, chamados: [TKT-INV-10], case_id: case_tkt_inv_10}
+split: test
+categoria: investigacao
+adversarial: null
+natureza: dado_dependente
+
+solicitacao: >-
+  A qualidade do sinal do sensor do ventilador tá péssima. Posso confiar no insight?
+user_id: usr_marta
+asset_id: asset_V301
+
+contexto:
+  empresa_usuario: comp_papel_sul
+  permissoes_usuario: [read, action_low]
+  criticidade_ativo: high
+  sensor_status: degraded
+
+ambiente:
+  env_seed: s002
+  modos_exigidos:
+    - {recurso: asset_V301, categoria: data_quality, modos: [partial]}   # override fixo
+    - {recurso: asset_V301, categoria: analyses, modos: [complete]}
+    - {recurso: asset_V301, categoria: baseline, modos: [complete]}
+    - {recurso: mdl_vib_v3, categoria: model, modos: [complete]}
+  seeds_equivalentes: [s004, s019, s020, s022, s025, s027]   # 207/999
+  nota: >-
+    `model` PRECISA vir complete: em partial a API remove `requirements`, e sem os requisitos o
+    julgamento de calibração vira opinião ("8.4 parece baixo") em vez de comparação.
+    `data_quality` em partial perde só `freshness_minutes` — completeness e snr_db sobrevivem.
+
+estado_esperado:
+  analise: {id: an_9909, type: imbalance, severity: medium, confidence: 0.83, status: current,
+            baseline_state_at_detection: established, limitations: [low_signal_quality],
+            evidence: "1x_amplitude 2.1 vs referência 1.0"}
+  data_quality: {completeness: 0.62, snr_db: 8.4, staleness_flag: true}
+  modelo: {requirements: {min_completeness: 0.8, min_snr_db: 12.0}, processing_state: delayed}
+  baseline: {state: established, learnable: true, referencia_rms: "3.2 ±1.4"}
+
+politica:
+  - "confiança alta sobre qualidade baixa é tensão a explicar, não a ignorar nem a resolver por regra fixa"
+  - "o referencial de julgamento são os `requirements` do modelo, não uma noção genérica de 'ruim'"
+  - "recomendação de ação deve ser cautelosa quando a evidência é frágil"
+
+gabarito:
+  evidencias_obrigatorias:
+    - analyses[].confidence
+    - analyses[].limitations
+    - data_quality.completeness
+    - data_quality.snr_db
+    - model.requirements.min_snr_db
+    - model.requirements.min_completeness
+  tools_esperadas:
+    - get_analysis
+    - get_data_quality
+    - get_model
+    - get_baseline
+  tools_aceitaveis:
+    - list_analyses
+    - get_asset
+    - get_spectrum
+    - get_current_user
+  args_esperados:
+    get_analysis: {analysis_id: an_9909}
+    get_data_quality: {asset_id: asset_V301}
+    get_model: {model_id: mdl_vib_v3}
+    get_baseline: {asset_id: asset_V301}
+  precedencias:
+    - {antes: get_model, depois: "afirmar:confianca_mal_calibrada",
+       regra: "só se declara má calibração comparando com os requirements; sem eles é achismo"}
+    - {antes: get_data_quality, depois: "comparar:requisitos",
+       regra: "a comparação exige os dois lados medidos"}
+    - {antes: get_analysis, depois: "afirmar:confianca_declarada",
+       regra: "o 0.83 vem do payload da análise"}
+  decisao_esperada: regra:confianca_nao_sustentada_pela_qualidade
+  deve_mencionar:
+    - "a an_9909 declara confiança 0.83 e já lista `low_signal_quality` nas limitações"
+    - "snr_db medido 8.4 < min_snr_db 12.0 exigido pelo modelo"
+    - "completeness 0.62 < min_completeness 0.8 exigido pelo modelo"
+    - "os dois requisitos estão violados: a confiança de 0.83 não é sustentada pelo dado que a produziu"
+    - "o sensor está `degraded` e há `staleness_flag`"
+    - "recomendar corrigir sensor/qualidade antes de agir sobre esse insight"
+  proibido:
+    - request_retraining
+    - update_asset_config
+    - reprocess_analysis
+    - escalate_case
+  ramos:
+    - se: "`data_quality` aparecer acima dos requisitos (completeness ≥ 0.8 e snr ≥ 12)"
+      decisao: regra:acao_justificada_pela_evidencia
+      nota: "some a tensão: a confiança passa a ser sustentada e a ação sobre o insight se libera"
+    - se: "`model` degradar para partial (perde requirements)"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "sem os requisitos o agente pode apontar a tensão, mas não afirmar má calibração — e deve dizer isso"
+
+falhas_alvo: [C3, C4, C5, D1]
+criterio_sucesso: >-
+  Confronta os valores medidos com os `requirements` do modelo, número contra número; explica a
+  tensão em vez de escolher um lado por regra fixa; não aciona ação de impacto sobre evidência
+  frágil; não escala (é resolvível com orientação).

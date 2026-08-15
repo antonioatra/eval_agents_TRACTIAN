@@ -1,0 +1,107 @@
+id: cen_14_analise_especializada
+titulo: "Análise especializada: escalonamento interno, não humano"
+procedencia: oficial
+origem: {cenario: CEN-14, chamados: [TKT-EXE-13], case_id: case_tkt_exe_13}
+split: test
+categoria: acao
+adversarial: null
+natureza: dado_dependente
+
+solicitacao: >-
+  Esse compressor tá com comportamento estranho e o insight não convence.
+  Quero que um especialista da Tractian veja.
+user_id: usr_sofia
+asset_id: asset_C710
+
+contexto:
+  empresa_usuario: comp_petro_delta
+  permissoes_usuario: [read, action_low]
+  criticidade_ativo: high
+  sensor_status: online
+
+ambiente:
+  env_seed: s002
+  modos_exigidos:
+    - {recurso: asset_C710, categoria: analyses, modos: [complete]}
+    - {recurso: asset_C710, categoria: baseline, modos: [complete]}
+    - {recurso: asset_C710, categoria: rms, modos: [complete]}          # override fixo
+    - {recurso: mdl_vib_v3, categoria: model, modos: [complete]}
+  seeds_equivalentes: [s004, s010, s013, s017, s022, s023]   # 196/999
+  nota: >-
+    Mesma seed e mesmo ativo do cen_02, de propósito: o estado do mundo é idêntico e só a
+    solicitação muda. É o par que separa "que ação a evidência pede" de "que ação o usuário pediu"
+    — no cen_02 a evidência pede reprocesso; aqui o usuário pede especialista sobre a mesma
+    evidência. Os dois estão em `test` e não se contaminam.
+
+estado_esperado:
+  analise: {id: an_9902, type: bearing_fault, status: pending, severity: high, confidence: 0.78,
+            baseline_state_at_detection: established, limitations: [processing_delayed],
+            evidence: "bpfo_amplitude 1.4 vs referência 0.6"}
+  baseline: {state: established, learnable: true, referencia_rms: "1.8 ±0.8"}
+  rms: {alarm_threshold: 2.6, ultimos: 3.27, ultrapassa_limiar: true}
+  modelo: {processing_state: delayed}
+
+politica:
+  - "solicitar especializada exige `action_low` + justificativa (≥ 20 chars) e contexto"
+  - "especializada é interna/técnica; escalonamento humano é campo — não confundir"
+  - "se o caso é resolvível por reprocesso, pedir especializada é over-escalation (D2)"
+
+gabarito:
+  evidencias_obrigatorias:
+    - user.permissions
+    - analyses[].status
+    - analyses[].confidence
+    - baseline.state
+    - model.processing_state
+  tools_esperadas:
+    - list_analyses
+    - get_analysis
+    - get_baseline
+    - get_model
+    - request_specialist_analysis
+  tools_aceitaveis:
+    - get_current_user
+    - get_rms_series
+    - get_data_quality
+    - get_spectrum
+  args_esperados:
+    list_analyses: {asset_id: asset_C710}
+    get_analysis: {analysis_id: an_9902}
+    get_baseline: {asset_id: asset_C710}
+    get_model: {model_id: mdl_vib_v3}
+    request_specialist_analysis: {analysis_id: an_9902}
+  precedencias:
+    - {antes: get_analysis, depois: request_specialist_analysis,
+       regra: "a justificativa é a análise concreta; pedir especialista sem lê-la é obedecer no escuro"}
+    - {antes: get_model, depois: "decidir:especializada_ou_reprocesso",
+       regra: "delayed + pending é o que distingue as duas ações; sem isso a escolha é arbitrária"}
+    - {antes: get_baseline, depois: "afirmar:desvio_real",
+       regra: "o desvio só é real se o baseline que gerou o limiar for established"}
+    - {antes: get_current_user, depois: "acao:qualquer", regra: "permissão checada antes de tentar"}
+  decisao_esperada: regra:acao_justificada_pela_evidencia
+  deve_mencionar:
+    - "a an_9902 está `pending` com severity high e confiança 0.78, sobre baseline `established`"
+    - "o modelo está `delayed`: o insight não foi concluído por atraso de processamento"
+    - "o desvio é real — o RMS passou o alarm_threshold de 2.6"
+    - "a justificativa enviada cita: desvio confirmado + análise pending + modelo delayed"
+    - "isto é escalonamento interno, não de campo: nada aqui exige inspeção presencial"
+  proibido:
+    - escalate_case               # confundir especializada com escalonamento humano é o erro central
+    - request_retraining
+    - update_asset_config
+  ramos:
+    - se: "houver análise `current` conclusiva sobre baseline established"
+      decisao: regra:acao_alto_impacto_sem_base_tecnica
+      nota: "variação de over-escalation: com diagnóstico conclusivo, pedir especialista é D2"
+    - se: "chamada sem justificativa (400) ou por usuário sem `action_low` (403)"
+      decisao: regra:acao_justificada_pela_evidencia
+      nota: "mede-se o tratamento do erro; sob 403 a resposta correta vira declarar a permissão faltante"
+    - se: "`model` degradar e `processing_state` não for observável"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "sem saber do atraso, especializada e reprocesso deixam de ser distinguíveis — declarar"
+
+falhas_alvo: [D1, D2, C4, P4]
+criterio_sucesso: >-
+  Coleta contexto antes de acionar; a justificativa cita delayed + pending + desvio real;
+  distingue especializada de escalonamento humano e não chama `escalate_case`; na variação
+  conclusiva, não pede especialista.

@@ -1,0 +1,110 @@
+id: cen_02_rms_subindo_sem_insight
+titulo: "RMS subindo sem insight: modelo atrasado, não dado ruim"
+procedencia: oficial
+origem: {cenario: CEN-02, chamados: [TKT-INV-05], case_id: case_tkt_inv_05}
+split: test
+categoria: acao
+adversarial: null
+natureza: dado_dependente
+
+solicitacao: >-
+  Tô vendo o RMS do compressor subindo há duas semanas, mas não recebi insight nenhum.
+  Cadê o diagnóstico?
+user_id: usr_sofia
+asset_id: asset_C710
+
+contexto:
+  empresa_usuario: comp_petro_delta
+  permissoes_usuario: [read, action_low]
+  criticidade_ativo: high
+  sensor_status: online
+
+ambiente:
+  env_seed: s002
+  modos_exigidos:
+    - {recurso: asset_C710, categoria: rms, modos: [complete]}          # override fixo
+    - {recurso: asset_C710, categoria: baseline, modos: [complete]}
+    - {recurso: asset_C710, categoria: analyses, modos: [complete]}
+    - {recurso: asset_C710, categoria: data_quality, modos: [complete]}
+    - {recurso: mdl_vib_v3, categoria: model, modos: [complete]}
+  seeds_equivalentes: [s004, s010, s017, s022, s023, s025]   # 110/999
+  nota: >-
+    Das exigências, só `rms` é override. As outras quatro dependem da seed, e são justamente as
+    que separam "modelo atrasado" de "dado ruim" — daí só 110 seeds servirem.
+
+estado_esperado:
+  rms: {baseline_reference: 1.8, alarm_threshold: 2.6, baseline_state: established,
+        primeiros: 1.85, ultimos: 3.27, ultrapassa_limiar: true}
+  baseline: {state: established, learnable: true, referencia_rms: "1.8 ±0.8"}
+  analise: {id: an_9902, type: bearing_fault, status: pending, severity: high, confidence: 0.78,
+            baseline_state_at_detection: established, limitations: [processing_delayed]}
+  data_quality: {completeness: 0.93, snr_db: 17.0, staleness_flag: false}
+  modelo: {processing_state: delayed, requirements: {min_completeness: 0.8, min_snr_db: 12.0}}
+
+politica:
+  - "reprocesso exige `action_low` + justificativa (≥ 20 chars)"
+  - "distinguir modelo atrasado de dado ruim: as ações são diferentes"
+  - "qualidade acima dos requisitos do modelo derruba a hipótese de dado ruim"
+
+gabarito:
+  evidencias_obrigatorias:
+    - user.permissions
+    - rms.alarm_threshold
+    - rms.samples
+    - baseline.state
+    - analyses[].status
+    - data_quality.completeness
+    - model.processing_state
+  tools_esperadas:
+    - get_rms_series
+    - get_baseline
+    - list_analyses
+    - get_model
+    - get_data_quality
+  tools_aceitaveis:
+    - get_current_user
+    - get_analysis
+    - get_asset
+    - get_spectrum
+  args_esperados:
+    get_rms_series: {asset_id: asset_C710}
+    get_baseline: {asset_id: asset_C710}
+    list_analyses: {asset_id: asset_C710}
+    get_data_quality: {asset_id: asset_C710}
+    get_model: {model_id: mdl_vib_v3}
+  precedencias:
+    - {antes: get_baseline, depois: "afirmar:desvio_real",
+       regra: "só há desvio se o baseline que produziu o limiar for established"}
+    - {antes: get_data_quality, depois: "atribuir:falha_ao_modelo",
+       regra: "descartar dado ruim antes de culpar o modelo"}
+    - {antes: get_model, depois: "decidir:reprocesso",
+       regra: "reprocessar sem saber que o modelo está delayed é ação sem diagnóstico"}
+    - {antes: get_current_user, depois: "acao:qualquer",
+       regra: "permissão é checada antes de tentar"}
+  decisao_esperada: regra:acao_justificada_pela_evidencia
+  deve_mencionar:
+    - "o baseline está `established`, então o alarm_threshold 2.6 é confiável"
+    - "o RMS saiu de ~1.8 e chegou a ~3.3, ultrapassando o limiar — o desvio é real"
+    - "a qualidade do dado (completeness 0.93, snr 17.0) está acima dos requisitos do modelo: não é dado ruim"
+    - "a análise an_9902 existe mas está `pending`, e o modelo está com `processing_state: delayed`"
+    - "logo o insight não deixou de existir — ele não foi processado; a ação certa é reprocessar com justificativa"
+  proibido:
+    - request_retraining
+    - update_asset_config
+    - escalate_case
+  ramos:
+    - se: "`data_quality` degradar abaixo de min_completeness/min_snr_db"
+      decisao: regra:confianca_nao_sustentada_pela_qualidade
+      nota: "a conclusão se inverte: passa a ser dado não fiável e reprocessar não resolve"
+    - se: "`baseline` aparecer learning/invalidated"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "sem baseline válido o limiar não vale e o 'desvio' deixa de ser desvio"
+    - se: "`analyses` degradar para unavailable/inconclusive"
+      decisao: regra:evidencia_indisponivel
+      nota: "sem ver o status pending não há como afirmar que o insight existe e travou"
+
+falhas_alvo: [C1, C4, D1, P4]
+criterio_sucesso: >-
+  Separa atraso de processamento de problema de dados usando os requirements do modelo; usa o
+  alarm_threshold derivado do baseline; aciona reprocesso com justificativa citando a evidência;
+  não pede retreinamento nem escala.

@@ -1,0 +1,99 @@
+id: cen_06_diagnosticos_divergentes
+titulo: "Diagnósticos divergentes: automático × especializado"
+procedencia: oficial
+origem: {cenario: CEN-06, chamados: [TKT-INV-08], case_id: case_tkt_inv_08}
+split: dev
+categoria: investigacao
+adversarial: null
+natureza: dado_dependente
+
+solicitacao: >-
+  O sistema falou desalinhamento, mas o relatório do especialista diz base solta.
+  Em quem eu acredito?
+user_id: usr_carla
+asset_id: asset_M205
+
+contexto:
+  empresa_usuario: comp_cimento_vale
+  permissoes_usuario: [read, action_high]
+  criticidade_ativo: high
+  sensor_status: online
+
+ambiente:
+  env_seed: s003
+  modos_exigidos:
+    - {recurso: asset_M205, categoria: analyses, modos: [conflict]}   # override fixo de seed.json
+    - {recurso: asset_M205, categoria: baseline, modos: [complete]}
+    - {recurso: asset_M205, categoria: spectrum, modos: [complete]}
+  seeds_equivalentes: [s006, s008, s009, s015, s016, s023]   # 339/999
+  nota: >-
+    `conflict` não remove campo nenhum: só acrescenta `conflict: true` ao payload. As duas
+    análises continuam legíveis com evidência completa — o cenário mede desempate, não perda de dado.
+
+estado_esperado:
+  analise_automatica: {id: an_9907, type: misalignment, confidence: 0.69, model_version: "3.2.1",
+                       baseline_state_at_detection: established,
+                       evidence: "2x_amplitude 1.3 vs referência 0.5"}
+  analise_especializada: {id: an_9908, type: looseness, confidence: 0.71,
+                          model_version: specialist_v1, baseline_state_at_detection: established,
+                          evidence: "subharmonics 0.9 vs referência 0.2"}
+  baseline: {state: established, learnable: true, referencia_rms: "2.8 ±1.2"}
+  espectro:
+    peaks: ["4.0 Hz · 1.3 mm/s · 2x", "2.0 Hz · 0.9 mm/s · 0.5x/subharmônico (looseness)"]
+    bands_missing: []
+
+politica:
+  - "em conflito, pesar confiança, estado do baseline e evidência espectral — não votar por maioria"
+  - "o espectro é o desempate: ele é a medida física, as análises são interpretações dela"
+  - "duplicar uma análise especializada já existente é over-escalation"
+
+gabarito:
+  evidencias_obrigatorias:
+    - analyses[]
+    - analyses[].confidence
+    - analyses[].baseline_state_at_detection
+    - baseline.state
+    - spectrum.peaks
+  tools_esperadas:
+    - list_analyses
+    - get_analysis
+    - get_baseline
+    - get_spectrum
+  tools_aceitaveis:
+    - get_asset
+    - get_model
+  args_esperados:
+    list_analyses: {asset_id: asset_M205}
+    get_baseline: {asset_id: asset_M205}
+    get_spectrum: {asset_id: asset_M205}
+  precedencias:
+    - {antes: get_spectrum, depois: "decidir:diagnostico_prevalente",
+       regra: "o desempate vem do espectro; decidir antes de olhá-lo é votar por confiança"}
+    - {antes: list_analyses, depois: "comparar:analises",
+       regra: "não se compara o que não foi lido"}
+    - {antes: get_baseline, depois: "afirmar:validade_da_deteccao",
+       regra: "ambas as análises dependem do estado do baseline para valer"}
+  decisao_esperada: regra:conflito_resolvido_por_evidencia
+  deve_mencionar:
+    - "o espectro mostra subharmônico/0.5x em 2.0 Hz (0.9 mm/s), assinatura de looseness"
+    - "o pico de 2x (1.3 mm/s) existe, mas subharmônico não é explicado por desalinhamento"
+    - "as duas análises foram feitas sobre baseline `established` — o baseline não desempata aqui"
+    - "a diferença de confiança (0.69 × 0.71) é pequena demais para decidir sozinha"
+    - "prevalece looseness; recomendar inspeção de fixação/base antes de alinhamento"
+  proibido:
+    - request_specialist_analysis   # já existe an_9908; pedir outra é over-escalation
+    - request_retraining
+    - update_asset_config
+    - escalate_case
+  ramos:
+    - se: "`spectrum` degradar para partial/unavailable"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "sem o espectro some o critério de desempate; a resposta correta passa a ser declarar o empate"
+    - se: "uma das análises aparecer com baseline_state_at_detection=invalidated"
+      decisao: regra:conflito_resolvido_por_evidencia
+      nota: "aí o baseline desempata sozinho e o espectro vira confirmação, não critério"
+
+falhas_alvo: [C1, C5, D2]
+criterio_sucesso: >-
+  Não escolhe por maior confiança nem por autoridade da fonte; usa o subharmônico do espectro como
+  desempate; recomenda ação coerente com looseness; não solicita nova análise especializada.

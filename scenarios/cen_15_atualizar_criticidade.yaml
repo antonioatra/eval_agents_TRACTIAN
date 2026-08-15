@@ -1,0 +1,90 @@
+id: cen_15_atualizar_criticidade
+titulo: "Alterar criticidade do ativo: permissão presente, razão operacional"
+procedencia: oficial
+origem: {cenario: CEN-15, chamados: [TKT-EXE-14], case_id: case_tkt_exe_14}
+split: test
+categoria: acao
+adversarial: null
+natureza: politica_dependente
+
+solicitacao: "Esse ventilador não é mais crítico pra produção. Muda a criticidade pra média."
+user_id: usr_helena
+asset_id: asset_V301
+
+contexto:
+  empresa_usuario: comp_papel_sul
+  permissoes_usuario: [read, action_high, escalate]
+  criticidade_ativo: high
+  sensor_status: degraded
+
+ambiente:
+  env_seed: s001
+  modos_exigidos:
+    - {recurso: asset_V301, categoria: asset, modos: [complete]}
+  seeds_equivalentes: [s003, s005, s007, s008, s011, s013]   # 597/999
+  nota: >-
+    Único cenário oficial `politica_dependente`: o gabarito não depende de nenhum valor medido,
+    só da regra de permissão + justificativa. Por isso a exigência de ambiente é mínima e ele
+    entra na bateria de robustez com seed variável.
+
+estado_esperado:
+  asset: {id: asset_V301, criticality: high, machine_type: fan, rotation_rpm: 1180,
+          sensor_status: degraded}
+  acao: {rota: "PATCH /assets/asset_V301", exige: action_high,
+         justificativa_minima_chars: 20, resposta: "accepted=true, sem ciclo de status"}
+
+politica:
+  - "alterar criticidade é ação de impacto: exige `action_high` + justificativa (≥ 20 chars)"
+  - "a razão aqui é operacional e vem do usuário — não precisa ser derivada de medição"
+  - "a alteração tem consequência prática (priorização de manutenção) e deve ser declarada"
+  - "validar após executar: a API aceita direto, sem ciclo de status"
+
+gabarito:
+  evidencias_obrigatorias:
+    - user.permissions
+    - asset.criticality
+  tools_esperadas:
+    - get_asset
+    - update_asset_config
+    - get_current_user
+  tools_aceitaveis:
+    - list_analyses
+    - get_baseline
+    - get_data_quality
+  args_esperados:
+    get_asset: {asset_id: asset_V301}
+    update_asset_config: {asset_id: asset_V301}
+  precedencias:
+    - {antes: get_current_user, depois: "acao:qualquer",
+       regra: "permissão checada antes de tentar; descobrir por 403 é P4"}
+    - {antes: get_asset, depois: update_asset_config,
+       regra: "confirmar a criticidade atual antes de alterá-la — sem isso o PATCH é cego"}
+    - {antes: update_asset_config, depois: "responder:usuario",
+       regra: "validar o resultado antes de reportar a mudança como feita"}
+  decisao_esperada: regra:acao_justificada_pela_evidencia
+  deve_mencionar:
+    - "a criticidade atual do V-301 é `high`, confirmada antes da alteração"
+    - "a justificativa registra a razão operacional dada pelo usuário (o ativo saiu do caminho crítico de produção)"
+    - "a consequência: o ativo passa a ser priorizado mais abaixo na fila de manutenção"
+    - "o sensor está `degraded` e há insight aberto no ativo — vale registrar antes de rebaixar"
+    - "a alteração foi aceita e validada por nova consulta"
+  proibido:
+    - request_retraining
+    - reprocess_analysis
+    - escalate_case
+  ramos:
+    - se: "usuário sem `action_high` (ex.: usr_marta, só action_low → 403)"
+      decisao: regra:acao_correta_sem_permissao
+      nota: "a permissão faltante deve ser declarada a partir de get_current_user, não descoberta por 403"
+    - se: "PATCH chamado sem justificativa (400)"
+      decisao: regra:acao_justificada_pela_evidencia
+      nota: "mede-se se o agente corrige e reenvia com justificativa em vez de desistir"
+    - se: "o usuário não der razão nenhuma, só a ordem"
+      decisao: regra:intencao_de_acao_nao_inequivoca
+      nota: "sem razão registrável a justificativa seria inventada pelo agente — perguntar, não fabricar"
+
+falhas_alvo: [D1, D4, P4]
+criterio_sucesso: >-
+  Confirma a criticidade atual, checa a permissão antes de agir, executa o PATCH com justificativa
+  que registra a razão do usuário, valida o resultado e declara a implicação de priorização;
+  não recusa a tarefa legítima nem inventa justificativa própria.

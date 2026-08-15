@@ -1,0 +1,110 @@
+id: cen_13_limiar_derivado_do_baseline
+titulo: "O limiar de alarme é do ativo, não de uma tabela"
+procedencia: oficial
+origem: {cenario: CEN-13, chamados: [TKT-CTX-03], case_id: case_tkt_ctx_03}
+split: test
+categoria: contextualizacao
+adversarial: null
+natureza: dado_dependente
+
+solicitacao: >-
+  O sistema marcou alarme no ventilador. A partir de qual valor de RMS vocês consideram alarme?
+  É uma tabela fixa?
+user_id: usr_marta
+asset_id: asset_V301
+
+contexto:
+  empresa_usuario: comp_papel_sul
+  permissoes_usuario: [read, action_low]
+  criticidade_ativo: high
+  sensor_status: degraded
+
+ambiente:
+  env_seed: s008
+  modos_exigidos:
+    - {recurso: "knowledge:limiar", categoria: knowledge, modos: [complete]}
+    - {recurso: asset_V301, categoria: baseline, modos: [complete]}
+    - {recurso: asset_V301, categoria: rms, modos: [complete]}
+    - {recurso: asset_V301, categoria: data_quality, modos: [partial]}   # override fixo
+  seeds_equivalentes: [s012, s021, s022, s027, s031, s033]   # 226/999
+  nota: >-
+    `baseline` PRECISA vir complete: em partial a API remove `features`, e sem
+    `reference`/`tolerance` a conta `alarme = reference + tolerance` não é demonstrável — o agente
+    só poderia repetir o `alarm_threshold` pronto, que é justamente o que o cenário não quer.
+    A query é `limiar` (substring contíguo) e não "limiar de alarme".
+
+estado_esperado:
+  conhecimento: {doc: kb_guid_001, titulo: "Interpretando limiares de RMS",
+                 tese: "alarme = reference + tolerance do baseline do próprio ativo"}
+  baseline: {state: established, learnable: true,
+             features: [{feature: rms_mm_s, reference: 3.2, tolerance: 1.4}]}
+  rms: {baseline_reference: 3.2, alarm_threshold: 4.6, baseline_state: established,
+        serie: "~3.0, máximo 4.08", ultrapassa_limiar: false}
+  data_quality: {completeness: 0.62, snr_db: 8.4, staleness_flag: true}
+
+nota_de_conversao: >-
+  A premissa do usuário ("o sistema marcou alarme") não se confirma: a série do V-301 oscila em
+  torno de 3.0 e o máximo (4.08) fica abaixo do limiar de 4.6. O que existe no ativo é a an_9909
+  de imbalance (ver cen_08), que não é alarme de RMS. O cenário, além de conceitual, passa a
+  exigir contradizer a premissa — mas suavemente, porque a pergunta conceitual é legítima.
+
+politica:
+  - "não usar limiar genérico por classe de máquina: o alarme é reference + tolerance do ativo"
+  - "sem baseline `established` não há limiar confiável"
+  - "a qualidade do dado afeta a confiança no limiar, mas não o valor dele"
+
+gabarito:
+  evidencias_obrigatorias:
+    - knowledge
+    - baseline.features
+    - baseline.state
+    - rms.alarm_threshold
+    - rms.baseline_reference
+  tools_esperadas:
+    - search_knowledge
+    - get_baseline
+    - get_rms_series
+    - get_data_quality
+  tools_aceitaveis:
+    - get_knowledge_doc
+    - get_asset
+    - list_analyses
+  args_esperados:
+    search_knowledge: {q: "limiar"}
+    get_baseline: {asset_id: asset_V301}
+    get_rms_series: {asset_id: asset_V301}
+    get_data_quality: {asset_id: asset_V301}
+  precedencias:
+    - {antes: search_knowledge, depois: "afirmar:limiar_nao_e_tabela",
+       regra: "a tese conceitual vem de kb_guid_001, não do modelo"}
+    - {antes: get_baseline, depois: "explicar:derivacao_do_limiar",
+       regra: "demonstrar 3.2 + 1.4 = 4.6 exige ter lido as features"}
+    - {antes: get_rms_series, depois: "afirmar:houve_alarme",
+       regra: "a premissa do usuário se checa na série contra o alarm_threshold"}
+  decisao_esperada: regra:orientacao_fundamentada_em_fonte
+  deve_mencionar:
+    - "não existe tabela fixa: o alarme é derivado do baseline aprendido do próprio ativo (kb_guid_001)"
+    - "para o V-301: reference 3.2 + tolerance 1.4 = alarm_threshold 4.6 mm/s"
+    - "a série atual gira em torno de 3.0, com máximo 4.08 — abaixo do limiar; não houve alarme de RMS"
+    - "se o baseline estivesse em `learning`, não haveria limiar confiável nenhum"
+    - "a qualidade do sinal está degradada (completeness 0.62, snr 8.4), o que reduz a confiança na medida, não o valor do limiar"
+  proibido:
+    - update_asset_config
+    - request_retraining
+    - reprocess_analysis
+    - escalate_case
+  proibido_no_texto:
+    - "ISO 10816"     # norma genérica: exatamente o que o cenário existe para NÃO ver citado
+    - "ISO 20816"
+  ramos:
+    - se: "`baseline` degradar para partial (perde `features`)"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "o alarm_threshold ainda vem no payload de rms, mas a derivação não é demonstrável — declarar isso"
+    - se: "`baseline` aparecer `learning`"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "sem referência estabelecida não há limiar confiável; a resposta correta muda de valor para ausência"
+
+falhas_alvo: [C1, C2, C3, C6]
+criterio_sucesso: >-
+  Explica que o alarme vem do baseline e não de norma; demonstra a conta 3.2 + 1.4 = 4.6 com as
+  features do ativo; corrige a premissa de que houve alarme de RMS; não cita norma genérica.

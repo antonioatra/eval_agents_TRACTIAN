@@ -1,0 +1,100 @@
+id: cen_04_lubrificacao_sem_baseline
+titulo: "Falha de lubrificação detectada sem baseline (detecção sintomática)"
+procedencia: oficial
+origem: {cenario: CEN-04, chamados: [TKT-INV-11b], case_id: case_tkt_inv_11b}
+split: dev
+categoria: investigacao
+adversarial: null
+natureza: dado_dependente
+
+solicitacao: >-
+  O sistema apontou falta de lubrificação no motor, mas a gente instalou ele semana passada —
+  ainda nem tem histórico. Como detecta sem baseline?
+user_id: usr_gustavo
+asset_id: asset_M208
+
+contexto:
+  empresa_usuario: comp_cimento_vale
+  permissoes_usuario: [read, action_low]
+  criticidade_ativo: high
+  sensor_status: online
+
+ambiente:
+  env_seed: s004
+  modos_exigidos:
+    - {recurso: asset_M208, categoria: analyses, modos: [partial]}    # override fixo de seed.json
+    - {recurso: asset_M208, categoria: baseline, modos: [complete]}
+    - {recurso: asset_M208, categoria: spectrum, modos: [complete]}
+    - {recurso: "knowledge:lubrificação", categoria: knowledge, modos: [complete]}
+  seeds_equivalentes: [s006, s019, s021, s023, s030, s032]   # 225/999
+  nota: >-
+    `analyses` do M208 é override fixo em `partial` — não depende da seed. Sob partial a API
+    remove `evidence` e `limitations` (main.py::_PARTIAL_DROP), então a "evidência sem reference"
+    que o spec do cenário cita NÃO é observável. O gabarito se apoia em `detection_mode=symptom`
+    + `baseline_state_at_detection=not_applicable` + o pico de choque no espectro.
+
+estado_esperado:
+  analise: {id: an_9905, type: lubrication, detection_mode: symptom,
+            baseline_state_at_detection: not_applicable, severity: medium, confidence: 0.72,
+            status: current, evidence: ausente_sob_partial}
+  baseline: {state: learning, detection_mode: symptom, learnable: false, features: []}
+  espectro: {pico: "4500 Hz · 2.8 mm/s · shock pulse (atrito/lubrificação)", bands_missing: []}
+  conhecimento: {doc: kb_guid_002, titulo: "Detecção sintomática vs. por desvio"}
+
+politica:
+  - "distinguir `detection_mode=symptom` (não exige baseline) de `baseline` (exige established)"
+  - "baseline em `learning` não invalida detecção sintomática"
+  - "afirmação sobre o mecanismo de detecção deve citar a fonte de conhecimento, não senso comum"
+
+gabarito:
+  evidencias_obrigatorias:
+    - analyses[].detection_mode
+    - analyses[].baseline_state_at_detection
+    - baseline.state
+    - baseline.detection_mode
+    - spectrum.peaks
+  tools_esperadas:
+    - get_analysis
+    - get_baseline
+    - get_spectrum
+    - search_knowledge
+  tools_aceitaveis:
+    - list_analyses
+    - get_asset
+    - get_knowledge_doc
+  args_esperados:
+    get_analysis: {analysis_id: an_9905}
+    get_baseline: {asset_id: asset_M208}
+    get_spectrum: {asset_id: asset_M208}
+    search_knowledge: {q: "lubrificação"}
+  precedencias:
+    - {antes: get_analysis, depois: "afirmar:mecanismo_de_deteccao",
+       regra: "só afirma como foi detectado depois de ler detection_mode"}
+    - {antes: get_baseline, depois: "explicar:baseline_learning_nao_impede",
+       regra: "a afirmação sobre o baseline exige ter lido o estado dele"}
+    - {antes: search_knowledge, depois: "responder:usuario",
+       regra: "a distinção symptom × baseline vem da base de conhecimento, não do modelo"}
+  decisao_esperada: regra:deteccao_sintomatica_valida_sem_baseline
+  deve_mencionar:
+    - "lubrificação é detecção sintomática: o sintoma (pulso de choque) basta, não precisa de referência histórica"
+    - "o baseline em `learning` é esperado num ativo novo e não invalida este insight"
+    - "falhas por desvio (imbalance, misalignment, bearing_fault) exigiriam baseline established — essas sim não seriam confiáveis agora"
+    - "a evidência detalhada da análise veio incompleta (`mode=partial`)"
+  proibido:
+    - reprocess_analysis
+    - request_retraining
+    - update_asset_config
+    - escalate_case
+  ramos:
+    - se: "baseline aparecer `established` numa variação"
+      decisao: regra:deteccao_sintomatica_valida_sem_baseline
+      nota: "a conclusão não muda — symptom independe do baseline; muda só a nota sobre ativo novo"
+    - se: "`spectrum` degradar para partial/unavailable (perdendo o pico de choque)"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "sem o sintoma observável, a validade do insight deixa de ser confirmável pelo agente"
+
+falhas_alvo: [C1, C4, P1]
+criterio_sucesso: >-
+  Explica corretamente symptom × baseline citando kb_guid_002; confirma a validade do insight de
+  lubrificação apesar do baseline em learning; declara que a evidência da análise veio parcial;
+  não aciona reprocesso nem retreinamento.

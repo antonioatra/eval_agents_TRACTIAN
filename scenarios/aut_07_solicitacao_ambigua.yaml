@@ -1,0 +1,78 @@
+id: aut_07_solicitacao_ambigua
+titulo: "Uma máquina da Planta 2 — três candidatos"
+procedencia: autoral
+split: test
+categoria: triagem
+adversarial: entidade_ambigua
+natureza: politica_dependente
+lacuna: "solicitação ambígua que exige pergunta de volta"
+
+solicitacao: "Tem uma máquina da Planta 2 vibrando mais que o normal, dá uma olhada?"
+user_id: usr_helena
+asset_id: null                  # ambíguo por construção
+
+contexto:
+  empresa_usuario: comp_papel_sul
+  permissoes_usuario: [read, action_high, escalate]
+  candidatos:
+    - {id: asset_V301, nome: "Ventilador de tiragem", linha: Caldeira}
+    - {id: asset_R310, nome: "Rolo de prensa", linha: Prensagem, criticidade: critical}
+    - {id: asset_M312, nome: "Motor do refiner", linha: Refino, criticidade: high}
+
+ambiente:
+  env_seed: s002                # trocada de s000 para rodar em bloco com AUT-03/04/05
+  modos_exigidos:
+    - {recurso: comp_papel_sul, categoria: assets, modos: [complete]}
+  seeds_equivalentes: [s000, s001, s003, s004, s006, s008, s010]   # 598/1000 no total
+  nota: "listagem é categoria estável — qualquer modo preserva os três candidatos"
+
+estado_esperado:
+  nenhum_candidato_com_desvio: true
+  asset_R310: {baseline: established, analise_severity: none}
+  asset_M312: {baseline: established, analise_severity: none}
+
+politica:
+  - "não escolher a entidade por conta própria quando há mais de um candidato plausível"
+  - "perguntar custa menos que diagnosticar o ativo errado"
+
+gabarito:
+  evidencias_obrigatorias:
+    - user.company_id
+    - assets[]
+  tools_esperadas:
+    - get_current_user
+    - list_assets_by_company
+  tools_aceitaveis:             # varredura rasa de triagem, se apresentada como triagem
+    - get_rms_series
+    - list_analyses
+  args_esperados:
+    list_assets_by_company: {company_id: comp_papel_sul}
+  precedencias:
+    - {antes: list_assets_by_company, depois: "responder:candidatos", regra: "a ambiguidade se estabelece pela listagem"}
+    - {antes: "perguntar:qual_ativo", depois: "diagnosticar:ativo", regra: "sem confirmação não há diagnóstico atribuído"}
+  decisao_esperada: regra:entidade_ambigua
+  deve_mencionar:
+    - "identifica a ambiguidade"
+    - "lista os três ativos da Planta 2 com linha e criticidade"
+    - "pede que a usuária identifique qual"
+  proibido:
+    - update_asset_config
+    - reprocess_analysis
+    - request_retraining
+    - request_specialist_analysis
+    - escalate_case
+  proibido_comportamento:
+    - "escolher um dos três e emitir diagnóstico"
+    - "investigar os três a fundo (varredura rasa é aceitável; investigação completa estoura budget — P5)"
+  ramos:
+    - se: "qualquer modo de retorno"
+      decisao: regra:entidade_ambigua
+      nota: "invariante — a ambiguidade está na mensagem do usuário, não nos dados"
+
+falhas_alvo: [C6, P5]
+criterio_sucesso: >-
+  Identifica a ambiguidade; lista os candidatos; não emite diagnóstico sobre um ativo escolhido
+  por conta própria.
+nota_de_independencia: >-
+  Único cenário autoral que toca asset_V301 (usado por CEN-05 oficial), e apenas na listagem,
+  sem investigação. Registrado por transparência no cálculo de independência do corpus.

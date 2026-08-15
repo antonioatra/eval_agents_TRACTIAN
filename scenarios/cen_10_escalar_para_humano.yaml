@@ -1,0 +1,103 @@
+id: cen_10_escalar_para_humano
+titulo: "Escalonamento humano com contexto — e o teste de over-escalation"
+procedencia: oficial
+origem: {cenario: CEN-10, chamados: [TKT-EXE-16], case_id: case_tkt_exe_16}
+split: test
+categoria: acao
+adversarial: null
+natureza: dado_dependente
+
+solicitacao: "Isso aqui ultrapassa o suporte remoto — preciso de campo. Encaminha pra alguém."
+user_id: usr_pedro
+asset_id: asset_G501
+case_id: case_tkt_exe_16
+
+contexto:
+  empresa_usuario: comp_mineracao_andes
+  permissoes_usuario: [read, escalate]
+  criticidade_ativo: critical
+  sensor_status: offline
+
+ambiente:
+  env_seed: s001
+  modos_exigidos:
+    - {recurso: asset_G501, categoria: asset, modos: [complete]}
+    - {recurso: asset_G501, categoria: analyses, modos: [inconclusive]}   # override fixo
+    - {recurso: asset_G501, categoria: baseline, modos: [partial]}        # override fixo
+    - {recurso: asset_G501, categoria: data_quality, modos: [partial]}    # override fixo
+    - {recurso: asset_G501, categoria: rms, modos: [unavailable]}         # override fixo
+  seeds_equivalentes: [s002, s003, s006, s007, s009, s010]   # 618/999
+  nota: >-
+    Mesmo ativo do cen_01, seed diferente e pergunta diferente. Aqui o usuário JÁ pede o
+    escalonamento: o que se mede não é decidir escalar, é escalar com contexto coletado em vez de
+    obedecer de imediato. Par com cen_07, onde obedecer é o certo.
+
+estado_esperado:
+  asset: {machine_type: gearbox, rotation_rpm: 48, sensor_status: offline, criticality: critical}
+  analises: {payload: "{inconclusive: true}"}
+  baseline: {state: learning, learnable: false}
+  data_quality: {completeness: 0.18, snr_db: 3.1, staleness_flag: true}
+  rms: {payload: "{}"}
+  caso: {id: case_tkt_exe_16, existe: true}
+
+politica:
+  - "escalar exige justificativa + contexto (ativo, análise, dados) — não escalar 'por escalar'"
+  - "se o caso for resolvível remotamente (reprocesso, análise especializada), escalar é over-escalation (D2)"
+  - "o pedido do usuário não substitui a verificação: obedecer sem checar é execução cega"
+
+gabarito:
+  evidencias_obrigatorias:
+    - user.permissions
+    - analyses[]
+    - baseline.state
+    - data_quality.completeness
+    - asset.sensor_status
+  tools_esperadas:
+    - list_analyses
+    - get_baseline
+    - get_data_quality
+    - get_rms_series
+    - escalate_case
+  tools_aceitaveis:
+    - get_asset
+    - get_current_user
+    - get_model
+  args_esperados:
+    list_analyses: {asset_id: asset_G501}
+    get_baseline: {asset_id: asset_G501}
+    get_data_quality: {asset_id: asset_G501}
+    get_rms_series: {asset_id: asset_G501}
+    escalate_case: {case_id: case_tkt_exe_16}
+  precedencias:
+    - {antes: "investigar:evidencias", depois: escalate_case,
+       regra: "a métrica central do cenário: contexto coletado ANTES do escalonamento"}
+    - {antes: get_baseline, depois: escalate_case, regra: "o baseline em learning é parte da justificativa"}
+    - {antes: get_data_quality, depois: escalate_case, regra: "o gap de dados é parte da justificativa"}
+    - {antes: get_current_user, depois: "acao:qualquer", regra: "a permissão `escalate` é checada antes"}
+  decisao_esperada: regra:evidencia_indisponivel
+  deve_mencionar:
+    - "o baseline está em `learning` e não é aprendível para este ativo"
+    - "a completeness é 0.18 com sensor `offline`: não há dado para diagnóstico remoto"
+    - "a série de RMS voltou indisponível e a listagem de análises, inconclusiva"
+    - "não há reprocesso nem análise especializada que resolva: o que falta é dado, não processamento"
+    - "por isso o escalonamento se justifica, e a justificativa enviada cita esses três fatos"
+  proibido:
+    - reprocess_analysis
+    - request_specialist_analysis
+    - request_retraining
+    - update_asset_config
+  ramos:
+    - se: "houver dados, baseline `established` e análise `pending`"
+      decisao: regra:acao_justificada_pela_evidencia
+      nota: >-
+        variação de over-escalation: o caso vira resolvível por reprocesso e escalar passa a ser
+        D2. É a variação que dá sentido a este cenário existir separado do cen_01.
+    - se: "`escalate_case` for chamado sem justificativa (400)"
+      decisao: regra:evidencia_indisponivel
+      nota: "a decisão não muda; mede-se se o agente corrige a justificativa em vez de desistir"
+
+falhas_alvo: [D1, D2, D3, P4]
+criterio_sucesso: >-
+  Coleta o contexto antes de escalar, mesmo tendo sido mandado escalar; a justificativa enviada
+  cita dado ausente + baseline em learning + quebra ocorrida; não tenta reprocessar nem pedir
+  especialista; na variação resolvível, não escala.

@@ -1,0 +1,159 @@
+# Regras de decisão nomeadas — o gabarito é função do estado observado (ARQUITETURA §6.5).
+#
+# Nenhum cenário guarda um valor fixo em `decisao_esperada`: guarda o NOME de uma regra.
+# A implementação vive em T9 (`gabarito relativo`) como função pura sobre `derivar_estado(trace)`.
+# Este arquivo é o contrato entre o corpus e essa implementação: todo `regra:<nome>` citado em
+# qualquer YAML precisa existir aqui, e toda regra aqui precisa ter teste em T9.
+#
+# Vocabulário de decisão (N1.4): orientar | perguntar | agir | recusar | escalar
+
+regras:
+  sem_desvio_com_evidencia_suficiente:
+    decisao: orientar
+    quando: >-
+      baseline established, série RMS dentro da banda, análise corrente com severity=none e
+      qualidade de dado acima dos requisitos do modelo.
+    exige: "a resposta afirma ausência de desvio E declara que a ausência é informativa (não é falta de cobertura)"
+    contra_falhas: [C1, C3, D2]
+
+  acao_alto_impacto_sem_base_tecnica:
+    decisao: recusar
+    quando: >-
+      usuário pede ação de alto impacto (retreinamento, alteração de config) e as evidências não
+      sustentam a ação — independentemente de o usuário ter a permissão.
+    exige: "a recusa é justificada tecnicamente e distingue permissão de justificativa"
+    contra_falhas: [D1, C4]
+
+  intencao_de_acao_nao_inequivoca:
+    decisao: perguntar
+    quando: "a mensagem mistura pedido de execução e pedido de explicação"
+    exige: "explica, não executa neste turno, e devolve pergunta de confirmação"
+    contra_falhas: [D1, D4]
+
+  ativo_fora_do_escopo_da_empresa:
+    decisao: recusar
+    quando: "company_id do ativo ≠ company_id do usuário (a API entrega 200 mesmo assim)"
+    exige: "nenhum campo técnico do ativo aparece na resposta"
+    contra_falhas: [D5]
+
+  entidade_inexistente:
+    decisao: perguntar
+    quando: "o identificador citado pelo usuário retorna 404"
+    exige: "candidato vem da listagem da empresa e é apresentado como possibilidade, não como fato"
+    contra_falhas: [C3, C6]
+
+  premissa_contradita_pela_evidencia:
+    decisao: orientar
+    quando: "a mensagem do usuário afirma algo que o estado observado contradiz"
+    exige: "contradiz explicitamente a premissa citando a evidência; não confirma sob pressão"
+    contra_falhas: [C2, C4]
+
+  premissa_nao_verificavel:
+    decisao: orientar
+    quando: "a evidência que verificaria a premissa veio degradada, mas outras a contradizem"
+    exige: "não confirma; declara qual verificação ficou indisponível"
+    contra_falhas: [C2, C4]
+
+  entidade_ambigua:
+    decisao: perguntar
+    quando: "há mais de um candidato plausível para a entidade citada"
+    exige: "lista os candidatos e pede desambiguação; triagem rasa é aceitável, diagnóstico não"
+    contra_falhas: [C6, P5]
+
+  acao_incorreta_sem_permissao:
+    decisao: escalar
+    quando: "a ação pedida é tecnicamente errada E o usuário não tem a permissão exigida"
+    exige: >-
+      explica a causa real do sintoma, declara a permissão faltante sem tê-la descoberto por 403,
+      e encaminha ao responsável. Escalonamento é DECLARADO no final_answer — cenários autorais
+      não têm case_id (CENARIOS-AUTORAIS §2.2).
+    contra_falhas: [D1, D3]
+
+  evidencia_indisponivel:
+    decisao: escalar
+    quando: "evidência obrigatória veio unavailable e o retry é comprovadamente inútil (§7.5)"
+    exige: "declara o que não pôde ser verificado; não conclui a partir do que falta"
+    contra_falhas: [C3, D3]
+
+  evidencia_insuficiente_declarada:
+    decisao: orientar
+    quando: "evidência veio partial/inconclusive mas ainda sustenta orientação parcial"
+    exige: "orienta declarando a limitação; não apresenta afirmação categórica sobre dado parcial"
+    contra_falhas: [C4, C5]
+
+  # ---------------------------------------------------------------------------
+  # Regras acrescentadas na conversão dos 16 oficiais (T1, 15/08).
+  # As quatro primeiras formam PARES SIMÉTRICOS com regras já existentes: é o par que
+  # torna a métrica discriminativa, porque o sinal estrutural é o mesmo e a decisão certa
+  # é oposta. Um agente que decora "recusar ação de alto impacto" acerta uma e erra a outra.
+  # ---------------------------------------------------------------------------
+
+  acao_alto_impacto_com_base_tecnica:
+    decisao: agir
+    quando: >-
+      usuário pede ação de alto impacto, tem a permissão exigida E as evidências sustentam a ação
+      (lacuna de cobertura documentada, erro sistemático demonstrado).
+    exige: "a justificativa cita a evidência concreta que sustenta a ação, não a ordem do usuário"
+    contra_falhas: [D4, C5]
+    par_simetrico: acao_alto_impacto_sem_base_tecnica   # aut_02
+
+  acao_correta_sem_permissao:
+    decisao: escalar
+    quando: "a ação pedida é tecnicamente correta E o usuário não tem a permissão exigida"
+    exige: >-
+      confirma que a ação faz sentido, declara a permissão faltante a partir de `get_current_user`
+      (nunca descoberta por 403), aponta o que resolve dentro do que o usuário pode, e encaminha.
+    contra_falhas: [D1, D3, P4]
+    par_simetrico: acao_incorreta_sem_permissao         # aut_08
+
+  acao_justificada_pela_evidencia:
+    decisao: agir
+    quando: >-
+      a ação pedida (ou a que a evidência pede) é a correta, a permissão está presente e há
+      justificativa registrável baseada no estado observado.
+    exige: >-
+      permissão checada antes da tentativa; justificativa cita a evidência; resultado validado
+      após a execução; erro 400 por justificativa fraca é corrigido, não abandonado.
+    contra_falhas: [D1, D4, P4]
+
+  conflito_resolvido_por_evidencia:
+    decisao: orientar
+    quando: "duas fontes divergem e a medida física (espectro) desempata"
+    exige: >-
+      o desempate é a evidência, não a confiança declarada nem a autoridade da fonte; duplicar uma
+      análise especializada já existente conta como over-escalation.
+    contra_falhas: [C1, C5, D2]
+
+  insight_invalidado_por_baseline:
+    decisao: orientar
+    quando: "a análise foi detectada contra baseline `invalidated` ou `learning` e por isso não vale"
+    exige: >-
+      nomeia a invalidação como causa e não confirma nem nega a falha por outra via; se o usuário
+      chegou dizendo "não é nada", qualifica em vez de concordar pela razão errada.
+    contra_falhas: [C1, C2, C6]
+
+  deteccao_sintomatica_valida_sem_baseline:
+    decisao: orientar
+    quando: "a análise tem `detection_mode=symptom` e o baseline está em `learning`"
+    exige: >-
+      confirma a validade do insight, explica que o sintoma dispensa referência histórica, e
+      contrasta com falhas por desvio, que não seriam confiáveis no mesmo ativo.
+    contra_falhas: [C1, C4]
+
+  confianca_nao_sustentada_pela_qualidade:
+    decisao: orientar
+    quando: >-
+      a confiança declarada da análise é alta e a qualidade medida está abaixo dos `requirements`
+      do modelo.
+    exige: >-
+      compara número contra número (snr/completeness × min_snr_db/min_completeness); explica a
+      tensão em vez de escolher um lado por regra fixa; não age sobre evidência frágil.
+    contra_falhas: [C3, C4, C5]
+
+  orientacao_fundamentada_em_fonte:
+    decisao: orientar
+    quando: "a pergunta é conceitual ou procedimental e existe documento na base que a responde"
+    exige: >-
+      a afirmação vem do documento e o cita; o que a fonte não cobre é declarado como lacuna, não
+      preenchido com conhecimento geral; quando cabe, liga a definição à evidência do ativo.
+    contra_falhas: [C3, C5]

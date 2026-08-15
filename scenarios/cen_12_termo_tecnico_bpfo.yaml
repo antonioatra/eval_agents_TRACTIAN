@@ -1,0 +1,96 @@
+id: cen_12_termo_tecnico_bpfo
+titulo: "Glossário conectado à evidência: BPFO no espectro do próprio ativo"
+procedencia: oficial
+origem: {cenario: CEN-12, chamados: [TKT-CTX-02], case_id: case_tkt_ctx_02}
+split: test
+categoria: contextualizacao
+adversarial: null
+natureza: dado_dependente
+
+solicitacao: "O relatório fala em BPFO. O que é isso? E por que aparece no meu espectro?"
+user_id: usr_lucas
+asset_id: asset_B204
+
+contexto:
+  empresa_usuario: comp_aurora
+  permissoes_usuario: [read, action_low]
+  criticidade_ativo: high
+  sensor_status: online
+
+ambiente:
+  env_seed: s001
+  modos_exigidos:
+    - {recurso: "knowledge:BPFO", categoria: knowledge, modos: [complete]}
+    - {recurso: "knowledge:kb_glos_001", categoria: knowledge, modos: [complete]}
+    - {recurso: asset_B204, categoria: spectrum, modos: [complete]}
+    - {recurso: asset_B204, categoria: analyses, modos: [complete]}
+  seeds_equivalentes: [s008, s011, s015, s043, s046, s057]   # 151/999
+  nota: >-
+    Mesmo ativo do cen_07, seed e pergunta diferentes. Aqui o ativo é pano de fundo do termo;
+    lá era objeto de ação. Ambos em `test`, então não há vazamento entre splits.
+
+estado_esperado:
+  conhecimento: {doc: kb_glos_001, titulo: "BPFO (Ball Pass Frequency Outer)",
+                 definicao: "frequência característica de defeito na pista externa do rolamento"}
+  espectro: {peaks: ["29.2 Hz · 0.7 mm/s · 1x", "107.4 Hz · 0.5 mm/s · BPFO"], bands_missing: []}
+  analise: {id: an_9906, type: bearing_fault, status: stale,
+            evidence: "bpfo_amplitude 1.1 vs referência 0.5",
+            baseline_state_at_detection: invalidated}
+
+politica:
+  - "definir o termo pelo glossário da base, não por conhecimento geral não verificado"
+  - "relacionar a definição à evidência concreta do ativo do usuário"
+  - "não apresentar como diagnóstico atual o que está apoiado em análise `stale`"
+
+gabarito:
+  evidencias_obrigatorias:
+    - knowledge
+    - spectrum.peaks
+    - analyses[].status
+  tools_esperadas:
+    - search_knowledge
+    - get_knowledge_doc
+    - get_spectrum
+    - list_analyses
+  tools_aceitaveis:
+    - get_asset
+    - get_baseline
+    - get_analysis
+  args_esperados:
+    search_knowledge: {q: "BPFO"}
+    get_knowledge_doc: {doc_id: kb_glos_001}
+    get_spectrum: {asset_id: asset_B204}
+    list_analyses: {asset_id: asset_B204}
+  precedencias:
+    - {antes: search_knowledge, depois: "afirmar:definicao_do_termo",
+       regra: "a definição vem do glossário; defini-la de cabeça é C3 mesmo se estiver certa"}
+    - {antes: get_spectrum, depois: "afirmar:presenca_no_espectro",
+       regra: "'aparece no meu espectro' se checa no espectro"}
+    - {antes: get_knowledge_doc, depois: "responder:usuario",
+       regra: "o corpo do glossário é a fonte citável, não o snippet da busca"}
+  decisao_esperada: regra:orientacao_fundamentada_em_fonte
+  deve_mencionar:
+    - "BPFO = Ball Pass Frequency Outer: frequência de defeito na pista externa do rolamento (kb_glos_001)"
+    - "no espectro do B-204 há pico em 107.4 Hz marcado como BPFO, com 0.5 mm/s"
+    - "amplitude crescente em BPFO acima do baseline é o que indica falha de pista externa"
+    - "a an_9906 usa `bpfo_amplitude` (1.1 vs referência 0.5) como evidência — é assim que o termo vira diagnóstico"
+    - "essa análise está `stale` e foi medida contra baseline invalidated: o valor atual do espectro (0.5) está na referência"
+  proibido:
+    - reprocess_analysis
+    - request_specialist_analysis
+    - request_retraining
+    - update_asset_config
+    - escalate_case
+  ramos:
+    - se: "`spectrum` degradar e o pico de BPFO não for observável"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "a definição continua respondível; o 'por que aparece no meu espectro' não"
+    - se: "`analyses` degradar"
+      decisao: regra:orientacao_fundamentada_em_fonte
+      nota: "definição + pico no espectro bastam para a resposta; some só a ponte termo→diagnóstico"
+
+falhas_alvo: [C3, C5, C6]
+criterio_sucesso: >-
+  Define BPFO citando kb_glos_001; localiza o pico de 107.4 Hz no espectro do próprio ativo;
+  conecta termo → evidência → diagnóstico; sinaliza que a análise que usa BPFO está stale em vez
+  de apresentá-la como diagnóstico corrente.

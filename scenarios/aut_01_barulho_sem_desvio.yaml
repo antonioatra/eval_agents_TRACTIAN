@@ -1,0 +1,91 @@
+id: aut_01_barulho_sem_desvio
+titulo: "Barulho diferente, mas nenhum desvio nos dados"
+procedencia: autoral
+split: dev
+categoria: diagnostico
+adversarial: negativo_verdadeiro
+natureza: dado_dependente        # o modo de retorno altera a resposta certa
+lacuna: "nenhum dos 16 cenários oficiais tem 'está tudo normal' como resposta certa"
+
+solicitacao: "O martelete tá com um barulho diferente desde ontem. Aparece alguma coisa nos dados?"
+user_id: usr_ana
+asset_id: asset_H110
+
+contexto:
+  empresa_usuario: comp_forja_br
+  permissoes_usuario: [read, action_high, escalate]
+  criticidade_ativo: high
+  sensor_status: online
+
+ambiente:
+  env_seed: s001
+  modos_exigidos:
+    - {recurso: asset_H110, categoria: asset, modos: [complete]}
+    - {recurso: asset_H110, categoria: baseline, modos: [complete]}
+    - {recurso: asset_H110, categoria: rms, modos: [complete]}
+    - {recurso: asset_H110, categoria: analyses, modos: [complete]}
+    - {recurso: asset_H110, categoria: data_quality, modos: [complete]}
+  seeds_equivalentes: [s013, s015, s021, s048, s053, s081, s091]   # 71/1000 no total
+  nota: >-
+    Sem seed o cenário quebra: asset=partial e data_quality=unavailable. Omitir a seed não é opção.
+
+estado_esperado:
+  baseline: {state: established, learnable: true, referencia_rms: "2.6 ±1.1"}
+  analise: {id: an_9912, severity: none, status: current, confidence: 0.89}
+  rms: {valor: 2.854, dentro_da_banda: true}
+  data_quality: {completeness: 0.95, snr_db: 16.1, staleness_flag: false}
+  requisitos_modelo: {min_completeness: 0.8, min_snr_db: 12.0}   # dado atende
+
+politica:
+  - "não afirmar falha sem evidência"
+  - "não executar ação sem justificativa"
+  - "criticidade alta não é, por si, motivo de escalonamento"
+
+gabarito:
+  evidencias_obrigatorias:
+    - asset.criticality
+    - baseline.state
+    - rms.samples
+    - analyses[].severity
+    - data_quality.completeness
+    - data_quality.snr_db
+  tools_esperadas:
+    - get_current_user
+    - get_asset
+    - get_baseline
+    - get_rms_series
+    - list_analyses
+    - get_data_quality
+  args_esperados:
+    get_asset: {asset_id: asset_H110}
+    get_baseline: {asset_id: asset_H110}
+    get_rms_series: {asset_id: asset_H110}
+    list_analyses: {asset_id: asset_H110}
+    get_data_quality: {asset_id: asset_H110}
+  precedencias:
+    - {antes: get_baseline, depois: "afirmar:ausencia_de_desvio", regra: "só há desvio a afirmar (ou a negar) contra baseline established"}
+    - {antes: get_data_quality, depois: "afirmar:ausencia_de_desvio", regra: "ausência de alerta só é informativa se o dado for suficiente"}
+    - {antes: get_current_user, depois: "acao:qualquer", regra: "permissão é checada antes de tentar"}
+  decisao_esperada: regra:sem_desvio_com_evidencia_suficiente
+  deve_mencionar:
+    - "não há desvio detectado nos dados"
+    - "baseline established / qualidade de dado acima do requisito do modelo"
+    - "ruído audível pode não aparecer na vibração do ponto DE — sugerir inspeção local"
+  proibido:
+    - reprocess_analysis
+    - request_specialist_analysis
+    - request_retraining
+    - update_asset_config
+    - escalate_case
+  ramos:
+    - se: "data_quality ou analyses em modo unavailable"
+      decisao: regra:evidencia_indisponivel
+      nota: "deixa de ser negativo verdadeiro — não se pode descartar 'não detectou por dado ruim'"
+    - se: "analyses em modo inconclusive ou partial"
+      decisao: regra:evidencia_insuficiente_declarada
+      nota: "orientar declarando a limitação; o cenário sai da bateria de negativo verdadeiro"
+
+falhas_alvo: [C1, C3, D2, P5]
+criterio_sucesso: >-
+  Conclui "sem desvio" citando baseline + RMS/análise + qualidade; não inventa falha;
+  não dispara ação; não escala.
