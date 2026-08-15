@@ -10,6 +10,9 @@ dependencies = [
     "pyyaml",
     "pandas",
     "plotly",
+    # Backend de exportação estática do plotly. Sem ele `fig.write_image` falha, e a regra do
+    # projeto é que a figura do README saia de notebook versionado, nunca de print de tela.
+    "kaleido",
     "scipy",
     "jupyter",
     "watermark",
