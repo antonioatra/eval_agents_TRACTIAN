@@ -22,6 +22,7 @@ muda mais vezes do que a métrica.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 
 NAO_ESTIMAVEL = float("nan")
@@ -106,6 +107,6 @@ def pass_hat_k_medio(sucessos_por_cenario: Mapping[str, Sequence[bool]], k: int)
     diferentes é comparável só na aparência. Sem cenário nenhum, `NaN` pela mesma razão.
     """
     valores = list(pass_hat_k_por_cenario(sucessos_por_cenario, k).values())
-    if not valores or any(valor != valor for valor in valores):  # valor != valor: é NaN
+    if not valores or any(math.isnan(valor) for valor in valores):
         return NAO_ESTIMAVEL
     return sum(valores) / len(valores)
