@@ -38,7 +38,13 @@ class TraceWriter:
         self.traces_dir.mkdir(parents=True, exist_ok=True)
         self.blobs_dir.mkdir(parents=True, exist_ok=True)
 
-        # Serializa os dois emissores; sem ele, duas linhas podem se intercalar.
+        # Serializa emissões concorrentes DESTA instância. Não protege contra duas
+        # instâncias escrevendo no mesmo arquivo — o que é o caso quando o servidor MCP
+        # e o harness do cliente criam cada um o seu writer. Aí a garantia vem do modo
+        # append do POSIX, que é atômico para linhas menores que PIPE_BUF (4KB). Payload
+        # grande vai para blob e a linha carrega só o sha, então o limite é respeitado
+        # por construção — mas quem instrumentar o writer (T14, T35) precisa saber disso
+        # antes de acrescentar estado mutável compartilhado aqui.
         self._trava = threading.Lock()
 
     def emit(self, event: TraceEvent) -> None:
