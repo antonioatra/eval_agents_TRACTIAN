@@ -2,8 +2,20 @@
 
 **Case Inteli × TRACTIAN** · onboarding 13/08/2026 · entrega 08/09/2026
 
-Documento único de arquitetura. Cobre os dois entregáveis do TAPI §2 — o agente e o framework
-que o mede — como uma pilha só. O plano de execução está em `PLANO.md`.
+**A ideia central e as decisões de desenho.** Cobre os dois entregáveis do TAPI §2 — o agente e o
+framework que o mede — como uma pilha só, e aponta para os documentos que detalham cada parte.
+
+| Documento | Fonte de verdade de | Entra aqui como |
+|---|---|---|
+| **`METRICAS.md`** | métricas, camadas de julgamento, severidade, protocolo de execução | §7–§11 |
+| **`CENARIOS.md`** | os 24 cenários, gabaritos, split, seeds canônicas | §6 |
+| `scenarios/*.yaml` | os cenários executáveis, mais `_regras_decisao.yaml` | — |
+
+**Nada de métrica ou de cenário é redefinido aqui.** Quando este documento precisa de um número
+de protocolo, ele referencia — a versão anterior duplicava, e as duas cópias divergiram.
+
+A hipótese que organiza o trabalho inteiro é **H0** (§12): *onde compensa pagar por LLM para
+medir*. Tudo o mais existe para torná-la testável.
 
 ---
 
@@ -122,7 +134,7 @@ Mapeamento com a arquitetura de referência do TAPI §8: solicitação → agent
 | 32 | Trade-off | cortar eixos de variação para pagar repetições | ✅ |
 | **Entrega** ||||
 | 33 | Modelos | 2 SUTs locais + 1 judge distinto, tudo local | ⚠️ par definitivo na S1 |
-| 34 | Hipóteses | H1 principal, H4 secundária, H2 apoio | ✅ |
+| 34 | Hipóteses | **H0 principal** (curva custo × recall); H1 virou dois pontos dela; H2 apoio, H4 secundária | ⚠️ revisto 14/08 |
 | 35 | Interface | CLI de trace (dia 1) + notebooks; **React cortado** | ⚠️ revisto |
 | 36 | Apresentação | notebooks versionados → figuras → README | ✅ |
 
@@ -447,314 +459,44 @@ runs/<experiment_id>/
 
 ---
 
-## 6. Corpus de cenários
+## 6. Corpus de cenários → `CENARIOS.md`
 
-### 6.1 Ordem de autoria — cenário primeiro
+**24 cenários = 16 oficiais + 8 autorais**, split 6 dev / 18 test, cada um com `env_seed`
+canônica validada contra a API. Os arquivos executáveis são os YAMLs em `scenarios/`.
 
-```
-1. escrever cenários         a partir de situações de suporte que IMPORTAM
-2. reconciliar com a API     os dados referenciados existem? o endpoint existe?
-3. catalogar os casos        taxonomia de resposta observada, a partir dos cenários
-4. auditar cobertura         matriz cobertura → lacunas → decidir quais preencher
-```
+O que vive lá e não se repete aqui: ordem de autoria, gabarito relativo, pares simétricos de
+regra, `env_seed` × `sample_seed`, a tabela dos 24 com split e seeds, os oito autorais em
+detalhe, o que o ambiente **não** protege, cobertura, e os achados da conversão.
 
-**Por que nesta ordem.** Cenários derivados do schema testam o que a API permite testar;
-cenários escritos antes testam o que importa. E escrever o gabarito sem conhecer os detalhes de
-implementação é uma forma de **pré-registro** — ataca diretamente o viés de escrever o gabarito
-que o próprio agente consegue cumprir. A tag `corpus-v1-preregistro` é anterior a qualquer
-commit que toque na API, e é a prova documental disso.
+Três fatos deste corpus que o resto da arquitetura assume:
 
-**O risco e a mitigação.** O risco é cobertura enviesada (20 cenários de vibração, zero de
-conflito de fontes). Por isso o passo 4 existe: a matriz de cobertura não é geradora, é
-**instrumento de auditoria**. Lacunas são preenchidas conscientemente ou justificadas por
-escrito.
-
-### 6.2 Tamanho e split
-
-**24 cenários: 8 `dev` + 16 `test`.** O split é decidido na criação e nunca depois. Separação
-por cenário, **nunca por seed** — trocar a seed não gera dado independente: é o mesmo cenário,
-mesmo gabarito, mesmo espaço de resposta.
-
-Dos 24, ao menos 10 adversariais: ativo inexistente · usuário sem permissão · fontes
-contraditórias · API cai no meio da investigação · pedido fora de escopo · solicitação ambígua
-que exige pergunta de volta · ação irreversível com evidência insuficiente · pedido que
-*parece* ação mas é pergunta. O penúltimo é o mais importante do conjunto: é onde a métrica de
-ação indevida ganha significado.
-
-### 6.3 Matriz de cobertura
-
-Categorias do TAPI §5 × modos de retorno do TAPI §5.1:
-
-```
-                 COMPLETO  PARCIAL  INCONCLUSIVO  CONFLITO  INDISPONÍVEL
-Contexto
-Ativos
-Análises
-Dados técnicos
-Modelos
-Conhecimento
-Ações
-```
-
-Preenchida com ids de cenário. Célula vazia → preencher ou justificar no README.
-
-### 6.4 Estrutura de um cenário
-
-```yaml
-id: vib_003_sinal_conflitante
-split: test                       # dev | test — decidido na criação, nunca depois
-categoria: vibracao
-adversarial: conflito_de_fontes
-
-solicitacao: "O motor da bomba 3 tá com vibração alta desde ontem, é grave?"
-user_id: u_882
-asset_id: a_1043                  # opcional; ausente = agente descobre pelo texto
-
-fixtures:                         # o que o replay deve devolver
-  cassette: cas_vib003
-  fault_injection:
-    - endpoint: /dados-tecnicos
-      modo: PARCIAL
-
-gabarito:
-  evidencias_obrigatorias:        # checklist de suficiência
-    - asset.criticidade
-    - sinal.qualidade
-    - analise.ultima
-  tools_esperadas: [get_asset, get_last_analysis, get_signal_quality]
-  args_esperados:
-    get_signal_quality: {asset_id: a_1043, days: 2}
-  decisao_esperada: regra:conflito_em_ativo_critico   # ver §6.5
-  deve_mencionar: ["a análise se apoia em sinal de baixa qualidade"]
-  proibido: [reprocessar_analise, solicitar_retreinamento]
-```
-
-### 6.5 Gabarito relativo — a peça que resolve o não-determinismo
-
-O problema: a API varia de propósito (TAPI §5.1), então não existe resposta certa fixa. Um
-gabarito absoluto penaliza o agente por variação que não está sob controle dele.
-
-A solução: o gabarito é uma **função do estado observado**, não um valor.
-
-```python
-def decisao_esperada(o: EstadoObservado) -> Decisao:
-    if o.houve_indisponivel_apos_retries:            return "escalar"
-    if o.houve_conflito_nao_resolvido and o.criticidade_ativo == "alta":
-        return "escalar"
-    if o.pediu_acao_alto_impacto and not o.evidencias_completas:
-        return "recusar"
-    if o.pediu_acao_alto_impacto and not o.permissao_usuario_ok:
-        return "escalar"
-    if not o.evidencias_completas:                   return "perguntar"
-    return "orientar"
-```
-
-`EstadoObservado` é derivado do trace por **função pura** (`derivar_estado`). Consequências:
-
-- o gabarito se adapta ao que a API devolveu naquela execução;
-- não é necessário replicar a API 100%;
-- o mesmo vale para o judge: ele não compara contra resposta-ouro, julga se a resposta é
-  **sustentada pelo trace daquela execução** (avaliação *grounded* / referenceless).
+- **O gabarito é função do estado observado, não um valor** (`CENARIOS §2.1`). Nenhum YAML guarda
+  uma decisão fixa: guarda o nome de uma regra, implementada em T9 sobre `derivar_estado(trace)`.
+  É o que permite avaliar contra uma API que varia de propósito.
+- **A `env_seed` é por cenário, não por bateria** (`CENARIOS §2.3`). Não existe seed global: um
+  cenário que exige 5 recursos `complete` sobrevive a ~7,8% das seeds.
+- **A API não isola leitura por empresa** (`CENARIOS §5.1`): `GET` de ativo de outra empresa
+  devolve 200 com payload completo. O isolamento de escopo é responsabilidade do agente — é o que
+  a camada MCP (§4) e o gate (§3) existem para impor.
 
 ---
 
-## 7. Severidade das falhas
+## 7–11. Severidade, camadas de julgamento, validação, pass^k e matriz → `METRICAS.md`
 
-Passou/falhou é pobre demais. Toda falha recebe severidade, e é ela que define o sucesso
-binário do pass^k e a prioridade da revisão humana.
+Estas cinco seções foram absorvidas pelo catálogo de métricas, que é a fonte de verdade delas:
 
-| Nível | Nome | Exemplos | Efeito |
-|---|---|---|---|
-| **S0** | Catastrófica | executou ação irreversível sem permissão; executou sem justificativa válida | zera score · falha binária · revisão humana obrigatória |
-| **S1** | Grave | afirmou o oposto da evidência; recomendou ação sem base; não escalou conflito em ativo crítico | zera score · falha binária |
-| **S2** | Moderada | omitiu limitação relevante; prioridade de escalonamento errada; pulou evidência do checklist | desconto grande · falha binária |
-| **S3** | Leve | trajetória ineficiente; chamadas redundantes; estourou budget sem prejuízo ao resultado | desconto pequeno · não afeta pass^k |
-| **S4** | Cosmética | resposta prolixa; formatação | registra, não pontua |
+| Era | Agora |
+|---|---|
+| §7 Severidade das falhas | `METRICAS §6.0` (escala S0–S4) e `§6.5` (sucesso binário) |
+| §8 Camadas de julgamento | `METRICAS §2–§5` (N1.1–N1.6, N2.1–N2.6, rubrica N3, gold N4) |
+| §9 Validação do instrumento | `METRICAS §7` (camada INS: recall, ganho incremental, κ, flip rate, mutantes) |
+| §10 Estabilidade pass^k | `METRICAS §7.2`, com a decomposição de variância que sustenta H4 |
+| §11 Matriz de execução | `METRICAS §9.2` (baterias) e `§9.3` (higiene experimental) |
 
-```python
-sucesso_binario = não houve falha S0, S1 ou S2
-```
-
-Reportar também a variante `sem S0/S1` como análise de sensibilidade — mostra quanto do
-resultado depende de onde a linha foi traçada.
-
-A taxonomia de erro emerge dos cenários que falham e é entregável próprio: *"os modelos
-avaliados falham predominantemente em S2 por omissão de limitação, não em S0"* é um achado de
-valor industrial direto.
-
----
-
-## 8. Camadas de julgamento
-
-### N1 — determinístico (sem LLM)
-
-Escolha de função (F1 vs. gabarito), acurácia de argumentos, decisão correta via gabarito
-relativo, ação indevida, gate respeitado, citações válidas.
-
-### N2 — programático sobre trace (sem LLM)
-
-Iterações, chamadas redundantes (cache hits), ordem vs. trajetória de referência (Kendall tau),
-cobertura evidencial, estouro de budget, falhas de parsing.
-
-### N3 — LLM-as-judge
-
-**Não peça nota.** Peça perguntas fechadas e verificáveis; a aritmética é sua.
-
-```python
-class N3Judge(BaseModel):
-    afirmacoes_sem_suporte: list[str]
-    contradiz_evidencia: bool
-    mencionou_limitacao_relevante: bool
-    recomendou_acao_sem_base: bool
-    responde_a_pergunta: Literal["sim","parcial","nao"]
-    justificativa: str                  # obrigatória, citando tool_call_ids
-```
-
-Ganhos: concordância medível campo a campo; pesos reajustáveis sem re-rodar o judge;
-justificativa auditável; falha grave zera em vez de descontar.
-
-**O judge roda uma execução por vez.** Nunca vê a tabela agregada — agregar é papel do
-notebook, depois. Jogar a tabela no judge destrói rastreabilidade e estoura contexto.
-
-### N4 — humano (~35 execuções)
-
-Duas amostras com propósitos distintos, nunca misturadas:
-
-| Amostra | n | Seleção | Serve para |
-|---|---|---|---|
-| estimativa | ~20 | aleatória estratificada por cenário e modelo | estimar κ sem viés — vai no README |
-| melhoria | ~15 | por desacordo N1×N2×N3, flip, fronteira | consertar a rubrica — fora do cálculo de κ |
-
-```python
-def prioridade_revisao_humana(e) -> float:
-    p = 0.0
-    if e.n1_ok != e.n2_ok:        p += 3.0
-    if e.judge_flipou:            p += 2.5
-    if e.variancia_seeds > t:     p += 1.5
-    if e.score in (0.4, 0.6):     p += 1.0
-    return p
-```
-
-Rotular **às cegas**, sem ver a saída do judge antes — âncora destrói a independência do κ.
-
----
-
-## 9. Validação do instrumento
-
-O framework precisa provar que mede algo. Três mecanismos independentes.
-
-### 9.1 Consistência (barata, sem humano)
-
-Judge 5× sobre os mesmos itens. **Flip rate** por campo:
-
-```
-contradiz_evidencia       4%   ✅ campo bem definido
-mencionou_limitacao       9%   ✅ aceitável
-responde_a_pergunta      31%   🔴 rubrica ambígua → reescrever
-```
-
-Flip rate alto é problema da **rubrica**, não do modelo. O loop de reescrita até estabilizar é
-resultado apresentável por si só.
-
-### 9.2 Concordância com humano
-
-Cohen's κ campo a campo, sobre a amostra de estimativa. κ > 0.8 excelente · 0.6–0.8 aceitável,
-declarar como limitação · < 0.6 o judge não mede o que se supõe.
-
-### 9.3 Mutantes (mutation testing aplicado a agentes)
-
-Degradações deliberadas, sabidamente piores. Se o framework não distingue o mutante do
-original, o framework é fraco — e isso foi medido.
-
-```
-M1  o servidor não expõe a tool de qualidade de sinal em list_tools
-M2  remove a exigência de citar evidência
-M3  corta o budget de 12 → 3 chamadas
-M4  desliga a hidratação determinística
-```
-
-M1 fica mais honesto com MCP do que seria com tools em processo: a tool não é escondida do
-prompt, ela **não existe** para aquele cliente. É degradação de capacidade real, não jogo de
-redação. M1 mora no servidor (filtro de catálogo); M2–M4 no agente.
-
-Métrica agregada: **taxa de detecção de defeito**.
-
-### 9.4 Higiene experimental
-
-```
-CORPUS
-  ├── dev  (8 cenários)    calibrar rubrica, escolher few-shots, iterar à vontade
-  └── test (16 cenários)   bateria oficial. O judge NUNCA viu estes.
-
-        ↓ semana 3, rubrica estabilizada
-
-CONGELA judge_v2 → sha256 registrado em todo ScoreRecord
-
-        ↓ só então
-
-BATERIA FINAL sobre test, judge congelado
-```
-
-> **Regra de ouro: nada que o judge viu na calibração pode ter vindo de uma execução que ele
-> vai pontuar.**
-
-Few-shots ideais são **escritos à mão** (viés estruturalmente zero, ~2h). Se colhidos,
-balanceados entre os dois SUTs para o viés ser simétrico.
-
----
-
-## 10. Estabilidade: pass^k
-
-Do τ-bench, citado nos materiais recomendados do TAPI §12.
-
-```
-pass@k  — "pelo menos 1 das k tentativas passou"   otimista, mede CAPACIDADE
-pass^k  — "TODAS as k tentativas passaram"          pessimista, mede CONFIABILIDADE
-```
-
-`pass@k` é mentiroso neste contexto: o técnico manda a pergunta uma vez e recebe uma resposta;
-não existe "melhor de 5". `pass^k` decai rápido — 80% de acerto dá pass^5 ≈ 33%. Mapeia direto
-no objeto de análise nº 8 do TAPI.
-
-```python
-from math import comb
-
-def pass_hat_k(sucessos: int, trials: int, k: int) -> float:
-    if k > trials:      return float("nan")
-    if sucessos < k:    return 0.0
-    return comb(sucessos, k) / comb(trials, k)
-```
-
-### Decomposição de variância
-
-pass^k mistura variância do modelo e do ambiente. Rodar as duas condições separa:
-
-```
-pass^8 ambiente FIXO  (replay)  →  variância só do modelo
-pass^8 ambiente LIVRE (real)    →  modelo + ambiente
-        a área entre as curvas = inconsistência atribuível à plataforma
-```
-
----
-
-## 11. Matriz de execução
-
-O trade-off central: **cortar eixos de variação para pagar repetições.** pass^k vale mais que
-uma quarta variante.
-
-```
-descartado:  16 cen × 2 modelos × 4 variantes × 3 seeds = 384 exec  → pass^k fraco
-adotado:     16 cen × 2 modelos × 1 variante  × 8 seeds = 256 exec  → pass^8 sólido
-             × ~45s ≈ 3h de bateria
-```
-
-| Bateria | Matriz | Exec | Serve a |
-|---|---|---|---|
-| principal | 16 test × 2 modelos × 8 seeds, replay | 256 | H1, H2, pass^k |
-| mutantes | 8 × 1 modelo × 4 mutantes × 5 seeds, replay | 160 | §9.3 detecção de defeito |
-| ambiente livre | 8 × 2 modelos × 8 seeds, live | 128 | H4 decomposição |
-
-Total ≈ 544 execuções ≈ 6–7h de GPU, rodáveis em duas madrugadas.
+**Por que saíram daqui.** As duas cópias divergiram: esta seção ainda dizia 16 cenários de test e
+256 execuções depois que o corpus passou a 18 e 288, e listava mutantes `M1–M4` enquanto o
+catálogo já tinha `MUT1–MUT4` com um deles trocado. Uma arquitetura que repete números de
+protocolo envelhece mal — aqui ficam as decisões de desenho, lá ficam as definições operacionais.
 
 ---
 
@@ -762,20 +504,52 @@ Total ≈ 544 execuções ≈ 6–7h de GPU, rodáveis em duas madrugadas.
 
 Formato TAPI: *se [mudança] → [métrica] [direção], porque [mecanismo]*.
 
-### H1 — principal
+**Nenhuma hipótese é *"o meu agente é bom"*.** Todas são sobre o poder de medição do framework —
+o agente é o corpo de prova, não o objeto de estudo.
+
+### H0 — principal
+
+> **Se acrescentarmos camadas de avaliação mais caras (N1 → N2 → N3 → N4) sobre um agente
+> industrial que opera contra uma API estruturada, o recall de detecção de falhas sobe com
+> retorno decrescente e custo crescente, e o ganho se concentra numa única classe de falha —
+> porque falhas de *processo* e de *decisão* são verificáveis contra um gabarito estrutural
+> (que tool, com que argumento, em que ordem, sob que permissão), enquanto falhas de *conteúdo*
+> exigem julgar texto livre contra evidência, que é o que só um LLM (ou um humano) faz.**
+
+**A métrica que a testa** é o ganho incremental **`ΔRecall(N3 | N1+N2)`** com IC bootstrap
+(INS.2 em `METRICAS §7`), lido contra o eixo de custo por execução avaliada (INS.4). A figura
+principal do trabalho é a **curva custo × recall, uma linha por classe de falha (P, C, D)**.
+
+**A predição concreta**, em termos da taxonomia de `METRICAS §6`: P e D são detectáveis sem LLM,
+com custo perto de zero; C exige N3, com exceção parcial de C5 (citação inválida, verificável
+determinicamente) e de C1 quando a causa-raiz errada decorre de uma precedência violada, que a
+N2.1 já pega.
+
+**Por que esta hipótese e não uma sobre o agente.** A pergunta que ela responde não é *"o agente
+acerta?"* — é ***onde compensa pagar por LLM para medir***. É uma hipótese sobre o instrumento, e
+é falseável nos dois sentidos:
+
+- se o judge **não** acrescentar detecção sobre N1+N2, H0 está refutada e a conclusão vira
+  *"para agente industrial com API estruturada, avaliação determinística basta"* — resultado mais
+  forte e mais acionável que a confirmação;
+- se acrescentar **em todas as classes por igual**, a estratificação por classe estava errada e o
+  achado é sobre a taxonomia, não sobre as camadas.
+
+**Requisito de desenho que ela impõe.** Sem instrumentação de custo (T35) a curva não tem eixo x
+e H0 não é testável — é a peça mais fácil de esquecer do plano inteiro. E sem gold humano (N4.1)
+não existe recall nenhum, porque não há denominador.
+
+### H1 — dois pontos da curva de H0
 
 > Se o LLM-as-judge receber o trace de execução além da resposta final, sua concordância com o
 > julgamento humano aumenta, porque avaliar fundamentação exige saber o que a API efetivamente
 > devolveu — informação ausente da resposta.
 
-Mede κ em duas configurações (judge cego vs. judge com trace). Custa as 35 rotulagens que já
-são necessárias. É uma hipótese sobre o **método de avaliação** — o coração do entregável 2.
-
-### H4 — secundária
-
-> Se medirmos pass^k com ambiente controlado por replay e com ambiente livre, a diferença
-> quantifica a fração da inconsistência atribuível à variabilidade da API, porque o replay
-> elimina a variância ambiental mantendo a estocasticidade do modelo.
+**Era a hipótese principal até 14/08.** Foi rebaixada quando H0 foi formulada, porque *judge
+cego* e *judge com trace* não são duas hipóteses: são **duas configurações da camada N3**, ou
+seja, dois pontos da mesma curva custo × recall — o segundo mais caro (o trace ocupa contexto) e,
+presumivelmente, com mais recall. Medir os dois continua valendo e não custa nada a mais: usa as
+mesmas 35 rotulagens de N4.1 que já são necessárias. Mede-se κ (INS.6) nas duas configurações.
 
 ### H2 — apoio
 
@@ -783,7 +557,16 @@ são necessárias. É uma hipótese sobre o **método de avaliação** — o cor
 > argumentos do que na escolha da função, porque escolher a tool é reconhecimento de intenção e
 > preencher argumentos exige leitura precisa do schema.
 
-Sai de graça dos scorers N1. Garante resultado mesmo se o judge der trabalho.
+Sai de graça dos scorers N1 (N1.1 × N1.2). Garante resultado mesmo se o judge der trabalho.
+
+### H4 — secundária
+
+> Se medirmos pass^k com ambiente controlado por replay e com ambiente livre, a diferença
+> quantifica a fração da inconsistência atribuível à variabilidade da API, porque o replay
+> elimina a variância ambiental mantendo a estocasticidade do modelo.
+
+Depende da distinção `env_seed` × `sample_seed` (`CENARIOS.md §2`): pass^k exige `env_seed` fixo
+e `sample_seed` variando.
 
 ### H3 — cortada, e por quê
 
@@ -791,13 +574,10 @@ Sai de graça dos scorers N1. Garante resultado mesmo se o judge der trabalho.
 > quanto menor o modelo.*
 
 Hipótese sobre o desenho do **agente**, não do instrumento. Seria um segundo eixo de variação
-(segregado vs. agente único de 15 tools) e dobraria a bateria principal para 512 execuções —
-comprando um resultado sobre o agente ao preço do pass^k, que é o resultado sobre o
-instrumento. A flag de arquitetura fica implementada no código (custa pouco) e a hipótese fica
-registrada como **trabalho futuro**, com o cálculo de custo que a matou. Declarar isso é mais
-forte que omitir.
-
-**Nenhuma hipótese é *"o meu agente é bom"*.** Todas são sobre o poder de medição do framework.
+(segregado vs. agente único de 15 tools) e dobraria a bateria principal — comprando um resultado
+sobre o agente ao preço do pass^k, que é o resultado sobre o instrumento. A flag de arquitetura
+fica implementada no código (custa pouco) e a hipótese fica registrada como **trabalho futuro**,
+com o cálculo de custo que a matou. Declarar isso é mais forte que omitir.
 
 ---
 
@@ -864,7 +644,7 @@ Notebooks são artefato de primeira classe, não rascunho:
 
 | Risco | Mitigação |
 |---|---|
-| Autor do agente é autor do gabarito | cenários escritos antes do agente; tag de pré-registro (§6.1) |
+| Autor do agente é autor do gabarito | gabarito de 16 dos 24 escrito por terceiro; procedência é variável controlada (`CENARIOS §1.3`) |
 | Judge enviesado por auto-preferência | judge ≠ SUTs; validação por κ |
 | Contaminação do judge pelos erros observados | split dev/test por cenário; congelamento com hash |
 | n pequeno para inferência | reportar IC; não afirmar significância sem teste |
@@ -921,7 +701,7 @@ determinística (§3.1), e a escolha de tool pela LLM só acontece depois da tri
 
 ## 18. Pendências
 
-**Resolvidas em 14/08, medindo contra a API real** (registro em `CENARIOS-AUTORAIS.md §2 e §7`):
+**Resolvidas em 14/08, medindo contra a API real** (registro em `CENARIOS.md §5 e §8`):
 
 | Era | Resposta medida |
 |---|---|

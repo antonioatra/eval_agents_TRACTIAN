@@ -27,8 +27,12 @@ SEED_CFG = json.loads((API / "data" / "seed.json").read_text())
 OVERRIDES = SEED_CFG["overrides"]
 DISTRIBUICAO = SEED_CFG["distribution"]
 
-OBRIGATORIOS = ["id", "procedencia", "split", "natureza", "solicitacao", "user_id", "ambiente", "gabarito"]
-GABARITO_OBRIGATORIOS = ["evidencias_obrigatorias", "tools_esperadas", "decisao_esperada", "proibido"]
+OBRIGATORIOS = [
+    "id", "procedencia", "split", "natureza", "solicitacao", "user_id", "ambiente", "gabarito",
+]
+GABARITO_OBRIGATORIOS = [
+    "evidencias_obrigatorias", "tools_esperadas", "decisao_esperada", "proibido",
+]
 
 # Campos observados nos payloads reais da API (verificado em 14/08 com a API no ar).
 # Toda evidência obrigatória precisa apontar para um campo que existe — senão a N1.3 não computa.

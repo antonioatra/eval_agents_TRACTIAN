@@ -10,7 +10,6 @@ Uso: com a API no ar em localhost:8000,
 """
 from __future__ import annotations
 
-import glob
 import json
 import sys
 import urllib.error

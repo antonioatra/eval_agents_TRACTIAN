@@ -1,12 +1,17 @@
 # Documento de trabalho pessoal — não sobe.
 PLANO.md
 
-# Ambiente virtual do material do parceiro (289M) e artefatos de execução.
+# Configuração local de ferramenta.
+.claude/
+
+# Ambientes virtuais (o do parceiro tem 289M) e artefatos de execução.
+.venv/
 inteli-tractian-project/api/.venv/
 inteli-tractian-project/.run/
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
 
 # macOS
 .DS_Store

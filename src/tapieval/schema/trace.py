@@ -20,7 +20,7 @@ LAYOUT EM DISCO
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Any, Literal, Union
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -244,10 +244,17 @@ class RunEnd(BaseEvent):
 
 
 TraceEvent = Annotated[
-    Union[
-        RunStart, Hydration, LLMCall, ToolCall, ToolResult,
-        DecisionEvent, GateEvent, BudgetEvent, FinalAnswer, RunError, RunEnd,
-    ],
+    RunStart
+    | Hydration
+    | LLMCall
+    | ToolCall
+    | ToolResult
+    | DecisionEvent
+    | GateEvent
+    | BudgetEvent
+    | FinalAnswer
+    | RunError
+    | RunEnd,
     Field(discriminator="type"),
 ]
 
