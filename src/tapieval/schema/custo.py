@@ -180,6 +180,14 @@ class CustoWriter:
 
         Repetir uma camada é remedição legítima (o judge rodou de novo); quem agrega
         INS.4 decide qual vale, porque o arquivo guarda fato, não conclusão.
+
+        Sem trava, ao contrário do `TraceWriter` — e aqui é seguro por construção, não
+        por sorte: o `CustoRecord` tem oito campos escalares e nenhum campo de texto
+        livre, então a linha fica na casa das centenas de bytes, muito abaixo do
+        PIPE_BUF de 4KB que torna o append POSIX atômico. É o mesmo invariante do
+        trace (ver X8), com a diferença de que ali ele depende de payload grande ir
+        para blob e aqui não depende de nada: **quem acrescentar campo de texto livre
+        a `CustoRecord` quebra essa garantia** e precisa reabrir a análise.
         """
         if registro.run_id != self.run_id:
             raise ValueError(
