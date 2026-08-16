@@ -160,7 +160,14 @@ class Cenario:
     fontes_obrigatorias: Mapping[str, str]
     """Categoria de evidência obrigatória → modo canônico (o pior aceito pela `env_seed`)."""
     tools_esperadas: frozenset[str] = frozenset()
+    tools_aceitaveis: frozenset[str] = frozenset()
+    """`gabarito.tools_aceitaveis`: toleradas, nunca exigidas — "não penalizam em N1.1"
+    (aut_03, literal). Sem elas aqui, T10 contaria tool tolerada como `tools_extras`, e
+    `severidade.py` transformaria cada `get_current_user` num P2."""
     tools_proibidas: frozenset[str] = frozenset()
+    args_esperados: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
+    """Tool → os argumentos que importam naquele cenário. É o gabarito da N1.2, e entra
+    aqui em vez de num segundo carregador: uma porta de entrada só para o YAML."""
     ramos: tuple[Ramo, ...] = ()
     caminho: Path | None = field(default=None, compare=False)
 
@@ -374,7 +381,12 @@ def carregar_cenario(caminho: Path, regras: Mapping[str, Regra]) -> Cenario:
         evidencias_obrigatorias=obrigatorias,
         fontes_obrigatorias=_fontes_obrigatorias(obrigatorias, documento.get("ambiente") or {}),
         tools_esperadas=frozenset(gabarito.get("tools_esperadas") or ()),
+        tools_aceitaveis=frozenset(gabarito.get("tools_aceitaveis") or ()),
         tools_proibidas=frozenset(gabarito.get("proibido") or ()),
+        args_esperados={
+            tool: dict(args or {})
+            for tool, args in (gabarito.get("args_esperados") or {}).items()
+        },
         ramos=tuple(
             Ramo(
                 condicao=ramo.get("se", ""),
