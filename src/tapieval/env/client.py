@@ -83,11 +83,36 @@ class TractianClient:
         em `status_code=None` —, e mesmo assim a latência é preservada, porque o tempo
         até o timeout é o dado relevante quando a API não responde.
         """
-        query = self._com_seed(params)
+        return self._requisitar("GET", endpoint, params=params)
+
+    def post(self, endpoint: str, corpo: dict[str, Any] | None = None) -> RawResponse:
+        """Faz um POST de ação e devolve o que voltou. Mesmas garantias do `get`.
+
+        As ações de impacto (`reprocess`, `request-specialist`, `request-retraining`,
+        `escalate`) não recebem `seed`: o modo probabilístico só vale para consulta
+        (`api/app/prob.py`), e mandar a semente numa escrita sugeriria um determinismo que
+        a API não oferece nesses endpoints.
+        """
+        return self._requisitar("POST", endpoint, corpo=corpo)
+
+    def patch(self, endpoint: str, corpo: dict[str, Any] | None = None) -> RawResponse:
+        """Faz um PATCH de ação. Só `updateAssetConfig` usa este verbo."""
+        return self._requisitar("PATCH", endpoint, corpo=corpo)
+
+    def _requisitar(
+        self,
+        metodo: str,
+        endpoint: str,
+        *,
+        params: dict[str, Any] | None = None,
+        corpo: dict[str, Any] | None = None,
+    ) -> RawResponse:
+        """O caminho único de saída HTTP. Ver as garantias documentadas em `get`."""
+        query = self._com_seed(params) if metodo == "GET" else params
 
         inicio = time.perf_counter()
         try:
-            resposta = self._http.get(endpoint, params=query)
+            resposta = self._http.request(metodo, endpoint, params=query, json=corpo)
         except httpx.TransportError as erro:
             # Só falha de rede. `httpx.InvalidURL` e afins continuam subindo: são bug de
             # quem chamou, e disfarçá-los de indisponibilidade da API esconderia o bug.
