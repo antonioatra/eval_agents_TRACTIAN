@@ -212,7 +212,20 @@ class GateEvent(BaseEvent):
     citacoes_validas: bool             # determinístico: os ids existem?
     citacoes_invalidas: list[str] = Field(default_factory=list)
     permissao_usuario_ok: bool
-    approver: Literal["auto_approve", "auto_deny", "policy"]
+    """"O gate CONFIRMOU a permissão exigida?", não "o usuário a tem". A pergunta tem três
+    respostas (tem / não tem / não verificada ainda) e o campo é `bool` — as duas últimas
+    colapsam em `False`, e a distinção sobrevive em `motivo_negacao` (`mcp/gate.py`). O
+    colapso é seguro porque negar impede a execução: sem `tool_call` de escrita no trace,
+    `n1._acao_indevida` não itera sobre nada e leitura legítima não vira D1/S0."""
+
+    # Quatro valores, não três. `human` foi acrescentado em 16/08 (T15): `ARQUITETURA §3.7`
+    # sempre listou as quatro políticas — "AutoApprove · AutoDeny · PolicyApprover (bateria) ·
+    # HumanApprover (demo)" — e sem o valor o trace da demo teria de registrar `policy` para
+    # uma decisão humana, apagando a única diferença que o campo existe para guardar. É
+    # acréscimo, não alteração: nenhum trace existente carrega `human` e nenhum scorer lê
+    # `approver` (N1 lê `acao`, `veredito`, `seq`, `citacoes`; `derivar_estado` lê
+    # `permissao_usuario_ok`), então nada recomputa diferente.
+    approver: Literal["auto_approve", "auto_deny", "policy", "human"]
     veredito: Literal["aprovado", "negado"]
     motivo_negacao: str | None = None
     idempotency_key: str               # sha256(acao + args) — nunca reseta
