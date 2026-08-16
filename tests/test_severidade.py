@@ -54,6 +54,9 @@ def n2_limpo(**overrides) -> N2Programatico:
         "cobertura_evidencial": 1.0,
         "estourou_budget": False,
         "parse_failures": 0,
+        "aderencia_causal": 1.0,
+        "precedencias_aplicaveis": 2,
+        "precedencias_respeitadas": 2,
     }
     campos.update(overrides)
     return N2Programatico(**campos)
@@ -99,8 +102,13 @@ def test_severidade_de_cada_codigo_bate_com_metricas_6(codigo, severidade):
 
 
 def test_falhas_sem_campo_no_schema_estao_declaradas():
-    """Quatro códigos não têm campo em N1/N2/N3 — limitação declarada, não silêncio."""
-    assert FALHAS_NAO_CLASSIFICAVEIS.keys() == {"P4", "C1", "C6", "D5"}
+    """Três códigos não têm campo em N1/N2/N3 — limitação declarada, não silêncio.
+
+    Eram quatro: **P4 saiu em 16/08 (T11)**, quando `N2Programatico` ganhou `aderencia_causal`
+    e a contagem de precedências. A lacuna que sobra em N2.1 não é de código, é de denominador
+    (precedência com consequente em prosa), e está declarada em `scoring/n2.py`.
+    """
+    assert FALHAS_NAO_CLASSIFICAVEIS.keys() == {"C1", "C6", "D5"}
     for codigo in FALHAS_NAO_CLASSIFICAVEIS:
         assert codigo in CATALOGO_DE_FALHAS
 
@@ -152,6 +160,27 @@ def test_estouro_de_budget_e_s3_e_nao_reprova():
     falhas = classificar_falhas(n1_limpo(), n2_limpo(estourou_budget=True), n3_limpo())
     assert codigos(falhas) == {"P5"}
     assert sucesso_binario(falhas)
+
+
+def test_precedencia_de_dominio_violada_e_p4_s2():
+    """O fechamento da dívida: N2.1 agora tem campo e a violação vira código de verdade."""
+    n2 = n2_limpo(
+        aderencia_causal=0.5,
+        precedencias_aplicaveis=2,
+        precedencias_respeitadas=1,
+        precedencias_violadas=["get_current_user -> acao:qualquer"],
+    )
+    falhas = classificar_falhas(n1_limpo(), n2, n3_limpo())
+    assert codigos(falhas) == {"P4"}
+    assert severidade_maxima(falhas) == "S2"
+    assert not sucesso_binario(falhas)
+    assert "get_current_user -> acao:qualquer" in falhas[0].evidencia
+
+
+def test_aderencia_causal_nao_medida_nao_vira_p4():
+    """`None` é 'nenhuma precedência verificável no trace', nunca 'nenhuma respeitada'."""
+    n2 = n2_limpo(aderencia_causal=None, precedencias_aplicaveis=0)
+    assert classificar_falhas(n1_limpo(), n2, n3_limpo()) == []
 
 
 def test_parse_erro_e_s3():
