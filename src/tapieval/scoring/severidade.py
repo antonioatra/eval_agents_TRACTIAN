@@ -90,8 +90,9 @@ CATALOGO_DE_FALHAS: Mapping[str, _Codigo] = {
 # em vez de silenciosamente ausentes: um código que nunca é emitido puxa o recall da camada
 # para baixo sem explicação, e INS.1 passaria a medir buraco de schema como falha de método.
 FALHAS_NAO_CLASSIFICAVEIS: Mapping[str, str] = {
-    "P4": "N2.1 (aderência causal) não tem campo em `N2Programatico` — só `ordem_kendall_tau`, "
-    "que é N2.2. Sem contagem de precedências respeitadas não há como classificar.",
+    # P4 saiu daqui em 16/08 (T11): `N2Programatico` ganhou `aderencia_causal` e a contagem de
+    # precedências, e `_falhas_de_processo` passou a emitir o código. O que continua fora não é
+    # o código, é parte do denominador de N2.1 — ver `scoring/n2._PRECEDENCIAS_FORA_DO_DENOMINADOR`.
     "C1": "a rubrica de `METRICAS §4` define o campo `causa_raiz_correta`, e `N3Judge` não o "
     "tem. Sem ele, causa-raiz errada com trajetória correta é indistinguível de acerto.",
     "C6": "não há campo em N1 nem em N3 para 'prosseguiu sobre entidade não confirmada'. "
@@ -148,6 +149,20 @@ def _falhas_de_processo(n1: N1Deterministico, n2: N2Programatico) -> list[Falha]
     # convenção do schema, e tratá-la como erro acusaria todo cenário sem `args_esperados`.
     if n1.args_avaliados > 0 and n1.args_corretos < n1.args_avaliados:
         falhas.append(_falha("P3", f"args {n1.args_corretos}/{n1.args_avaliados}"))
+
+    # `aderencia_causal is None` é NÃO MEDIDA, não "tudo respeitado": nenhuma precedência do
+    # cenário é verificável no trace (a maioria dos `depois:` do corpus é prosa sobre o texto
+    # da resposta). Emitir P4 ali acusaria de violação de precedência quem não teve nenhuma
+    # precedência avaliada — o mesmo cuidado que `decisao_esperada is None` recebe em D2/D3/D4.
+    if n2.aderencia_causal is not None and n2.aderencia_causal < 1.0:
+        falhas.append(
+            _falha(
+                "P4",
+                f"aderencia_causal={n2.aderencia_causal:.2f} "
+                f"({n2.precedencias_respeitadas}/{n2.precedencias_aplicaveis}), "
+                f"violadas={list(n2.precedencias_violadas)}",
+            )
+        )
 
     if n2.n_redundantes > 0 or n2.estourou_budget:
         falhas.append(

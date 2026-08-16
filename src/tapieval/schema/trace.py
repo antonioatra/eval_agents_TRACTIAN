@@ -341,6 +341,17 @@ class N2Programatico(BaseModel):
     estourou_budget: bool
     parse_failures: int
 
+    # N2.1 — aderência causal. Acrescentada em 16/08 (T11): `METRICAS §N2.1` a marca com ★
+    # ("a mais importante do conjunto") e os YAMLs já traziam `gabarito.precedencias`, mas não
+    # havia campo aqui — o que deixava P4 em `severidade.FALHAS_NAO_CLASSIFICAVEIS`.
+    # `None` = nenhuma precedência do cenário é verificável no trace, nunca "nada respeitado".
+    aderencia_causal: float | None = None
+    precedencias_aplicaveis: int = 0
+    precedencias_respeitadas: int = 0
+    precedencias_violadas: list[str] = Field(default_factory=list)
+    """`"antes -> depois"` de cada par violado. É o que torna P4 auditável: sem o par, a falha
+    vira um número e ninguém consegue conferir contra o YAML do cenário."""
+
 
 class N3Judge(BaseModel):
     """Camada 3: LLM. Perguntas FECHADAS — o score é aritmética sua."""
