@@ -633,7 +633,9 @@ def test_servidor_funciona_sem_observador() -> None:
 def test_politica_de_acao_roda_antes_do_http_e_pode_barrar() -> None:
     vistas: list[str] = []
 
-    def negar_tudo(tool_name: str, args: dict[str, Any]) -> str | None:
+    def negar_tudo(
+        tool_name: str, args: dict[str, Any], *, seq: int, tool_call_id: str
+    ) -> str | None:
         vistas.append(tool_name)
         return "negado pelo teste"
 
@@ -656,7 +658,9 @@ def test_politica_de_acao_nao_e_consultada_em_leitura() -> None:
     """Gate é sobre ação irreversível. Consultá-lo em leitura tornaria o gate ruído."""
     vistas: list[str] = []
 
-    def registrar(tool_name: str, args: dict[str, Any]) -> str | None:
+    def registrar(
+        tool_name: str, args: dict[str, Any], *, seq: int, tool_call_id: str
+    ) -> str | None:
         vistas.append(tool_name)
         return None
 

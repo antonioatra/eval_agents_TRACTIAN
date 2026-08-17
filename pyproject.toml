@@ -34,6 +34,12 @@ packages = ["src/tapieval"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    # Testes que sobem um processo separado (o servidor MCP por stdio). Marcados para que
+    # `-m "not lento"` exista quando a suíte crescer — não para serem pulados por padrão: é o
+    # teste de stdio que sustenta a frase "o framework avalia qualquer agente MCP".
+    "lento: sobe subprocesso; segundos, não milissegundos",
+]
 
 [tool.ruff]
 line-length = 100

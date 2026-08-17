@@ -15,13 +15,14 @@ UM SERVIDOR POR RUN
     que a bateria rodou.
 
 O QUE ESTE MÓDULO NÃO FAZ — e onde as outras tasks entram
-    * **Emissão de trace (T14).** O servidor emite `ToolCall`/`ToolResult` para um `Observador`
-      injetável, cujo padrão é nulo. A T14 pluga o adaptador que os manda como *logging
-      notification* MCP e escreve no `TraceWriter` do outro lado. O servidor não conhece
-      `TraceWriter` — se conhecesse, testá-lo exigiria disco.
+    * **Persistência de trace (T14).** O servidor emite `ToolCall`/`ToolResult` para um
+      `Observador` injetável, cujo padrão é nulo. Quem escreve no `TraceWriter` é o
+      `ObservadorDeTrace` de `mcp/instrumentacao.py`. O servidor não conhece `TraceWriter` —
+      se conhecesse, testá-lo exigiria disco.
     * **Gate de ação (T15).** O gancho é `RunContext.antes_da_acao`, consultado em
-      `_executar` imediatamente antes da requisição HTTP e só para tool de escrita. Nenhuma
-      política mora aqui: o padrão é `None` = sem gate.
+      `chamar_tool` imediatamente antes da requisição HTTP e só para tool de escrita. Nenhuma
+      política mora aqui: o padrão é `None` = sem gate. Quem traduz um `Approver` para este
+      contrato é a T14 (`mcp/instrumentacao.py::PoliticaComGate`).
     * **Variantes de catálogo (T17).** `RunContext.tools_ocultas` já filtra `list_tools` e
       `call_tool`; quem decide o que ocultar é o `VariantConfig`, que não é desta task.
 
@@ -55,7 +56,7 @@ from tapieval.mcp.tools import (
     tools_visiveis,
     validar_argumentos,
 )
-from tapieval.schema.trace import ToolCall, ToolResult, TraceEvent
+from tapieval.schema.trace import RunError, ToolCall, ToolResult, TraceEvent
 
 NOME_DO_SERVIDOR = "tapieval-tractian"
 
@@ -103,12 +104,21 @@ class PoliticaDeAcao(Protocol):
     """O gancho do gate (T15). `None` libera; uma string é o motivo da negação.
 
     O tipo é uma função e não o `Approver` de `mcp/gate.py` de propósito: o servidor não
-    importa o gate. A T14 escreve o adaptador de três linhas que traduz o veredito do
-    `Approver` para este contrato, e é lá que o `GateEvent` é emitido — o servidor só garante
-    que nada de escrita atravessa sem passar por aqui primeiro.
+    importa o gate. A T14 escreve o adaptador que traduz o veredito do `Approver` para este
+    contrato, e é lá que o `GateEvent` é emitido — o servidor só garante que nada de escrita
+    atravessa sem passar por aqui primeiro.
+
+    OS DOIS ARGUMENTOS NOMEADOS EXISTEM PARA O EVENTO DO GATE, NÃO PARA A DECISÃO
+        `seq` é o número **reservado** para o `GateEvent` antes de o `ToolCall` ser emitido
+        (ver `chamar_tool`); sem ele o evento nasceria depois da chamada que ele autoriza e
+        `n1._coberta_por_gate` leria toda ação aprovada como não coberta. `tool_call_id` é
+        o id da chamada em curso, e serve para a política **excluí-lo** das citações
+        disponíveis: citar a própria chamada que ainda não voltou não é fundamentar nada.
     """
 
-    def __call__(self, tool_name: str, args: Mapping[str, Any]) -> str | None: ...
+    def __call__(
+        self, tool_name: str, args: Mapping[str, Any], *, seq: int, tool_call_id: str
+    ) -> str | None: ...
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +249,20 @@ async def chamar_tool(
         return _erro(f"tool desconhecida: {nome!r}. Use `list_tools` para ver o catálogo.")
 
     erro_de_args = validar_argumentos(operacao, args)
+
+    # ---- RESERVA DO `seq` DO GATE (X20) ---------------------------------------------
+    # `n1._coberta_por_gate` exige `gate.seq < tool_call.seq`, e o gate só pode DECIDIR
+    # depois de o `ToolCall` existir (ele é emitido mesmo quando a ação é negada — sem isso o
+    # agente que tenta o retreinamento proibido pontuaria igual ao que corretamente recusou).
+    # As duas exigências só coexistem separando a NUMERAÇÃO da EMISSÃO: o número do gate é
+    # tirado aqui, o evento é emitido lá embaixo. Reservar sem emitir abriria lacuna em `seq`
+    # — que `ARQUITETURA §5` decisão 9 diz invalidar a run —, então a reserva acontece
+    # exatamente quando o gate vai ser consultado, e não quando ele *poderia* ser.
+    passa_pelo_gate = (
+        erro_de_args is None and operacao.alto_impacto and ctx.antes_da_acao is not None
+    )
+    seq_do_gate = ctx.sequencia.proximo() if passa_pelo_gate else None
+
     tool_call_id = ctx.proximo_tool_call_id()
     ctx.observador.emitir(
         ToolCall(
@@ -257,16 +281,39 @@ async def chamar_tool(
         # A N1.2 já trata `args_validos=False` como reprovação (`scoring/n1.py`).
         return _erro(f"argumentos inválidos para {nome}: {erro_de_args}")
 
-    if operacao.alto_impacto and ctx.antes_da_acao is not None:
-        # ---- PONTO DE EXTENSÃO DO GATE (T15) ----------------------------------------
+    if passa_pelo_gate:
+        # ---- PONTO DE EXTENSÃO DO GATE (T15, fiado pela T14) ------------------------
         # Última linha antes da requisição, e só para escrita. Permissão e justificativa são
         # checadas ANTES de tentar a ação, nunca depois do 403 (`ARQUITETURA §3.7`): não há
         # desfazer, e descobrir a falta de permissão por erro da API já é a falha P4.
-        motivo = ctx.antes_da_acao(nome, args)
+        assert ctx.antes_da_acao is not None and seq_do_gate is not None  # noqa: S101
+        motivo = ctx.antes_da_acao(nome, args, seq=seq_do_gate, tool_call_id=tool_call_id)
         if motivo is not None:
+            # Sem `ToolResult`, pelo mesmo motivo dos args inválidos: a API não foi consultada.
+            # O par que o scorer lê é `gate(negado)` + `tool_call` sem resultado.
             return _erro(f"ação bloqueada: {motivo}")
 
-    resposta, classificacao, veio_do_cache = _obter(ctx, operacao, args)
+    try:
+        resposta, classificacao, veio_do_cache = _obter(ctx, operacao, args)
+    except Exception as erro:
+        # A chamada que morre antes de virar `tool_result` (A6, 15/08). Sem este evento o
+        # trace ficaria com um `ToolCall` órfão e o scorer leria "o agente pediu e nada
+        # voltou" como evidência ausente do agente, quando é falha do instrumento.
+        #
+        # Emite e RELEVANTA. Falha de transporte já vira `RawResponse` no cliente (T2,
+        # decisão 2), então o que chega aqui é bug de programação — engoli-lo devolveria
+        # `INDISPONIVEL` ao agente e contaminaria a métrica de robustez com defeito nosso.
+        # Quem isola a run é o runner (T18): "erro numa run não derruba a bateria".
+        ctx.observador.emitir(
+            RunError(
+                **ctx._cabecalho(),
+                onde=nome,
+                classe=type(erro).__name__,
+                mensagem=str(erro),
+                fatal=True,
+            )
+        )
+        raise
 
     ctx.observador.emitir(
         ToolResult(
