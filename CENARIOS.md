@@ -562,11 +562,16 @@ Isso é consistente com a métrica N1.4, que já lê a decisão do `final_answer
 Limitação a declarar no README; a alternativa (gerar casos autorais no dataset) exigiria tocar
 nos dados do parceiro e foi descartada.
 
-### 5.3 A base de conhecimento tem 4 documentos, e nenhum sobre reprocessamento
+### 5.3 A base de conhecimento tem 5 documentos, e nenhum sobre reprocessamento
 
 `GET /knowledge/search?q=reprocesso` → `[]`. Os documentos existentes são `kb_proc_001` (troca
 de rolamento), `kb_glos_001` (BPFO), `kb_guid_001` (limiares de RMS), `kb_guid_002` (detecção
-sintomática vs. por desvio).
+sintomática vs. por desvio) e `kb_guid_003` (falhas elétricas em motores).
+
+> **Corrigido em 17/08 (A12): eram 5, não 4** (`api/seed_data.py:214-218`). O que faltava era o
+> `kb_guid_003` — o único documento que **nenhum cenário do corpus cita**, e por isso o único
+> que passou despercebido na contagem. A contagem importa porque `aut_03` afirma quais documentos
+> existem: um gabarito que enumera 4 de 5 documentos reprova o agente que achar o quinto.
 
 Em vez de enfraquecer AUT-03, isso o fortalece: passa a testar também **honestidade sob busca
 vazia** — retorno vazio não autoriza inventar procedimento.

@@ -4,9 +4,11 @@ Escrita de trace — append-only, um evento JSON por linha.
 O writer é o único ponto de escrita do trace e não sabe pontuar nada: ele registra
 fatos. Score nenhum entra aqui (ARQUITETURA §5, decisão 1).
 
-Dois emissores escrevem no mesmo arquivo — o servidor MCP, por notificação, e o
-harness do cliente (ARQUITETURA §4.3). Por isso `emit` não atribui `seq`: a ordem
-absoluta vem no evento, atribuída por quem o produziu, e a ordenação é
+Dois emissores escrevem no mesmo arquivo — o servidor MCP e o harness do cliente
+(ARQUITETURA §4.3). O servidor escreve DIRETO neste writer; não existe notificação
+MCP carregando trace, porque isso exigiria o agente cooperar e um agente de terceiro
+produziria trace vazio (A13, corrigido na T14). Por isso `emit` não atribui `seq`: a
+ordem absoluta vem no evento, atribuída por quem o produziu, e a ordenação é
 responsabilidade do reader.
 """
 

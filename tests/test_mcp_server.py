@@ -862,3 +862,40 @@ def test_cliente_mcp_real_lista_e_chama_por_streams_em_memoria() -> None:
     assert coletado["ok"].structured_content["tool_call_id"] == "tc_01"
     assert coletado["ruim"].is_error is True
     assert len(api.requisicoes) == 1, "a chamada inválida não pode ter alcançado a API"
+
+
+# ---------------------------------------------------------------------------
+# A12 (17/08) — uma fonte só para o contrato OpenAPI
+#
+# O contrato existe em duas cópias no repositório do parceiro: `agent-input/`, que é a
+# ENTREGA e fica intocada, e `docs/`, que é a fonte canônica — a que `mcp/tools.py` lê para
+# derivar as 18 tools. Duas cópias do mesmo arquivo divergem em silêncio, e a divergência
+# apareceria como tool com argumento errado no meio da bateria. Este teste transforma a
+# divergência em vermelho na suíte, sem editar a entrega do parceiro.
+# ---------------------------------------------------------------------------
+
+CAMINHO_DO_CONTRATO_DO_PARCEIRO = (
+    catalogo.CAMINHO_DO_CONTRATO.parents[1] / "agent-input" / "api-contract.openapi.yaml"
+)
+
+
+def test_contrato_canonico_e_entrega_do_parceiro_nao_divergem() -> None:
+    """`docs/` (canônico) e `agent-input/` (entrega) descrevem a mesma API.
+
+    Compara o YAML já parseado, não os bytes: reordenar chave ou trocar aspas não é
+    divergência de contrato, e um teste que quebrasse com isso seria desligado na primeira
+    vez que quebrasse por nada.
+    """
+    assert CAMINHO_DO_CONTRATO_DO_PARCEIRO.exists(), (
+        f"a entrega do parceiro sumiu de {CAMINHO_DO_CONTRATO_DO_PARCEIRO}"
+    )
+
+    canonico = yaml.safe_load(catalogo.CAMINHO_DO_CONTRATO.read_text(encoding="utf-8"))
+    entregue = yaml.safe_load(CAMINHO_DO_CONTRATO_DO_PARCEIRO.read_text(encoding="utf-8"))
+
+    assert canonico == entregue, (
+        "o contrato de `docs/` divergiu da entrega em `agent-input/`. `docs/` é a fonte "
+        "canônica (é o que `mcp/tools.py` lê); `agent-input/` fica intocado. Se a divergência "
+        "for intencional, ela precisa estar registrada em DECISOES antes deste teste voltar "
+        "ao verde."
+    )

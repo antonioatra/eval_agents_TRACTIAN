@@ -129,7 +129,7 @@ Mapeamento com a arquitetura de referência do TAPI §8: solicitação → agent
 | 27 | Saída do judge | perguntas fechadas; agregação aritmética própria | ✅ |
 | 28 | Validação do judge | flip rate + κ contra humano, split dev/test | ✅ |
 | 29 | Congelamento | judge versionado com hash antes da bateria final | ✅ |
-| 30 | Severidade | escala S0–S4, define sucesso binário | ✅ |
+| 30 | Severidade | escala S0–S3, define sucesso binário | ✅ |
 | 31 | Estabilidade | pass^k (τ-bench), n=8 seeds | ✅ |
 | 32 | Trade-off | cortar eixos de variação para pagar repetições | ✅ |
 | **Entrega** ||||
@@ -200,16 +200,26 @@ Executar — e não o domínio técnico (vibração, temperatura, cadastro).
 
 | Subgrafo | Tools que enxerga | Pode causar dano? |
 |---|---|---|
-| Contextualizar | `get_procedimento`, `get_glossario`, `get_orientacao_suporte`, `get_user_context` | não — só leitura |
-| Investigar | `get_asset`, `get_hierarquia`, `get_analises`, `get_qualidade_sinal`, `get_espectro`, `get_cobertura_modelo` | não — só leitura |
-| Executar | `solicitar_analise`, `reprocessar_analise`, `solicitar_retreinamento`, `alterar_config`, `escalar_humano` | **sim — irreversível** |
+| Contextualizar | `search_knowledge`, `get_knowledge_doc`, `get_current_user`, `get_company` | não — só leitura |
+| Investigar | `get_asset`, `list_assets_by_company`, `list_analyses`, `get_analysis`, `get_baseline`, `get_rms_series`, `get_spectrum`, `get_data_quality`, `get_model` | não — só leitura |
+| Executar | `update_asset_config`, `reprocess_analysis`, `request_specialist_analysis`, `request_retraining`, `escalate_case` | **sim — irreversível** |
+
+> **Corrigido em 17/08 (A12).** Esta tabela era escrita em nomes de rascunho
+> (`get_procedimento`, `get_glossario`, `get_orientacao_suporte`, `get_user_context`) que não
+> existem no contrato do parceiro: a base de conhecimento é `search_knowledge` +
+> `get_knowledge_doc` (com o tipo do documento em `type`), e o contexto do usuário é
+> `get_current_user`. Duas tools que a tabela não mencionava foram alocadas: `get_company` em
+> Contextualizar (é cadastro, leitura de contexto) e `list_assets_by_company` em Investigar (é a
+> tool que desambigua *"a bomba 3"* em `aut_07`). A fonte de verdade dos nomes é `mcp/tools.py`,
+> que os deriva do OpenAPI; a partição vive em `sut/agent.py::TOOLS_POR_MODO` e um teste de
+> contrato quebra se o mapa inventar nome ou deixar tool sem modo.
 
 Três razões, em ordem de peso:
 
 1. **O risco fica confinado.** Só um subgrafo alcança tool destrutiva. O gate mora num lugar
    só, e é *estruturalmente impossível* o agente de investigação disparar um retreinamento.
    Argumento de segurança, não de organização.
-2. **A partição é real.** Cada agente vê 4–6 tools em vez de 15+. Por domínio, `get_asset` e
+2. **A partição é real.** Cada agente vê 4–9 tools em vez das 18. Por domínio, `get_asset` e
    `get_qualidade_sinal` se repetiriam nos três — os schemas duplicariam sem reduzir a
    competição na janela de contexto, e o ganho evaporaria.
 3. **Casa com a rubrica.** O TAPI avalia "decisão entre orientar, agir ou escalar". Componentes
@@ -243,19 +253,35 @@ dado** (TAPI §5.1); orientar/agir/escalar é **decisão**.
 | Completo | caso simples, o agente responde | ação com justificativa forte | achado grave em ativo crítico |
 | Parcial | responde com ressalva explícita | **nunca** | escala dizendo o que falta |
 | Inconclusivo | explica por que não conclui | **nunca** | escala, prioridade baixa |
-| Conflito | **nunca** | **nunca** | escala expondo as duas versões |
-| Indisponível | **nunca** | **nunca** | após retries, alerta de falha |
+| Conflito **entre fontes**, irresolvido | **nunca** | **nunca** | escala expondo as duas versões |
+| `StatusRetorno.CONFLITO` num retorno, desempatado | responde apontando qual fonte prevaleceu | ação com justificativa forte | se o ativo for crítico |
+| Indisponível | **nunca** | **nunca** | escala na primeira, com alerta de falha |
 
 O que puxa para o humano é **criticidade do ativo + risco da ação**, não completude do dado.
 Se dado completo sempre virasse humano, o agente seria um roteador — e a rubrica avalia
 justamente se ele decide.
 
+> **Duas coisas com o mesmo nome, separadas em 17/08 (A12).** `StatusRetorno.CONFLITO` é uma
+> **flag num retorno** (`mode == "conflict"` ou `conflict: true`) — é sinal, e sozinha não
+> bloqueia nada. O que bloqueia é **conflito entre fontes não resolvido**, que é propriedade do
+> *estado* e não de um retorno: `estado.houve_conflito_nao_resolvido`
+> (`scoring/estado.py:178`) só fica verdadeiro quando nenhuma evidência **nova, íntegra e de
+> outra fonte** chegou depois do conflito. Um conflito desempatado por uma terceira leitura
+> volta a permitir orientar e agir. Nenhum gabarito muda com esta distinção: CEN-03/06 continuam
+> pedindo orientar e CEN-16 continua pedindo agir — a T8 já implementava assim, era o documento
+> que colapsava os dois.
+
 **Conflito entre fontes**, concretamente: `/analises` afirma "falha em rolamento, confiança
 0.87" mas `/dados-tecnicos` diz que a qualidade do sinal no período é ruim; `/ativos` marca
 criticidade alta mas `/modelos` diz que o ativo está fora de cobertura; duas análises
 consecutivas divergem sem evento entre elas. **Política: o agente não arbitra silenciosamente.**
-Registra em `conflicts`, gasta *uma* chamada extra tentando desempatar, e se persistir escala
-expondo as duas versões.
+Registra em `conflicts`, gasta *uma* chamada extra tentando desempatar **numa terceira fonte
+— nunca repetindo o endpoint que já respondeu** —, e se persistir escala expondo as duas versões.
+
+> **Corrigido em 17/08 (A12).** Repetir a mesma chamada não desempata nada: o modo de retorno é
+> função pura de `(seed, recurso, categoria)` e a resposta volta idêntica. Chamada repetida com
+> os mesmos argumentos é cache-hit e conta como **P5** (`METRICAS §6.1`), não como tentativa de
+> desempate.
 
 **Indisponibilidade — revisto em 14/08 contra a API real.** Não é sorteio por chamada: o modo é
 função pura de `(seed, recurso, categoria)` (`api/app/prob.py`). Três chamadas idênticas com a
@@ -414,10 +440,17 @@ virar `tool_result` — esse caso vira `RunError` com `onde` apontando a tool. `
 não é evento: é campo do `llm_call` (`parse_ok`, `parse_erro`), porque a tentativa de parsing
 pertence à chamada que a produziu.
 
-O servidor emite seus eventos como **logging notification** MCP; o cliente registra um
-`message_handler` que escreve no `TraceWriter`. Notificação é assíncrona, então ordem de
-chegada não é ordem de evento: cada evento carrega `seq` monotônico atribuído no servidor, e o
-`TraceReader` ordena por ele (§5, decisão 8).
+**O trace é escrito pelo servidor, não viaja por notificação** (A13, corrigido em 17/08 na
+T14). O servidor MCP numera **e grava** seus eventos direto no `TraceWriter`; o cliente não
+registra `message_handler` nenhum e não precisa saber que existe trace. O desenho anterior —
+eventos como *logging notification* MCP, escritos pelo cliente — exigia o agente **cooperar**, e
+contradizia a promessa da §4.1 (*"o trace nasce aqui, sem o agente cooperar"*): um agente de
+terceiro que ignorasse as notificações produziria trace **vazio**, indistinguível de uma run que
+não fez nada. Provado ponta a ponta no teste de stdio, com o servidor em outro processo.
+
+Continuam valendo os dois emissores (a tabela acima) e a ordem por `seq`: cada evento carrega
+`seq` monotônico e o `TraceReader` ordena por ele, nunca pela linha nem pelo relógio (§5,
+decisão 8) — são **dois relógios** quando cliente e servidor são processos separados.
 
 **A única telemetria visível ao modelo é o `tool_call_id`**, porque ele precisa dela para citar
 evidência. Latência, status classificado e cache-hit vão para o trace, nunca para o contexto —
@@ -495,7 +528,7 @@ Estas cinco seções foram absorvidas pelo catálogo de métricas, que é a font
 
 | Era | Agora |
 |---|---|
-| §7 Severidade das falhas | `METRICAS §6.0` (escala S0–S4) e `§6.5` (sucesso binário) |
+| §7 Severidade das falhas | `METRICAS §6.0` (escala S0–S3) e `§6.5` (sucesso binário) |
 | §8 Camadas de julgamento | `METRICAS §2–§5` (N1.1–N1.6, N2.1–N2.6, rubrica N3, gold N4) |
 | §9 Validação do instrumento | `METRICAS §7` (camada INS: recall, ganho incremental, κ, flip rate, mutantes) |
 | §10 Estabilidade pass^k | `METRICAS §7.2`, com a decomposição de variância que sustenta H4 |
