@@ -44,7 +44,7 @@ politica:
 
 gabarito:
   evidencias_obrigatorias:
-    - knowledge
+    - knowledge.results[]
     - spectrum.peaks
     - analyses[].status
   tools_esperadas:

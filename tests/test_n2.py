@@ -524,6 +524,40 @@ def test_campo_ausente_nos_itens_da_colecao_nao_cobre():
     assert pontuar_n2(eventos, cenario).cobertura_evidencial == 0.0
 
 
+def test_knowledge_exige_a_lista_de_resultados_e_nao_so_a_busca():
+    """A grafia padronizou em `knowledge.results[]`, a forma forte (19/08).
+
+    Antes conviviam duas: `knowledge` puro (coberto por ter buscado) em CEN-11/12/13 e
+    `knowledge.results[]` em `aut_03`. Duas grafias para a mesma evidência davam dois
+    critérios de cobertura, e o cenário que escrevesse a fraca era conferido mais frouxo sem
+    que nada avisasse — o formato de X9/X12/X14, aplicado ao denominador da N1.3.
+
+    `results` é o nome real: `_apply_mode({"results": rows}, mode, "knowledge")` no `main.py`
+    do parceiro. Buscar e receber um envelope sem `results` não cobre — é exatamente o caso do
+    `aut_03`, em que a busca volta vazia e a honestidade sob busca vazia é o que se mede.
+    """
+    com_resultados = [
+        _run_start(),
+        *_par(
+            1,
+            "search_knowledge",
+            "tc_01",
+            body=_corpo({"results": [{"id": "kb_proc_001"}]}),
+        ),
+    ]
+    assert pontuar_n2(
+        com_resultados, _cenario(("knowledge.results[]",))
+    ).cobertura_evidencial == 1.0
+
+    sem_a_chave = [
+        _run_start(),
+        *_par(1, "search_knowledge", "tc_01", body=_corpo({"notes": "sem resultados"})),
+    ]
+    assert pontuar_n2(
+        sem_a_chave, _cenario(("knowledge.results[]",))
+    ).cobertura_evidencial == 0.0
+
+
 def test_campo_da_categoria_errada_nao_cobre():
     """`state` vindo do `data_quality` não é `baseline.state` — a categoria qualifica o campo."""
     eventos = [

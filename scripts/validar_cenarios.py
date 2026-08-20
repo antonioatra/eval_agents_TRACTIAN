@@ -66,8 +66,11 @@ CAMPOS_POR_RECURSO = {
               "requirements.min_rotation_rpm"},
     "knowledge": {"results[]"},
 }
-# A própria listagem/documento é a evidência — não há campo a apontar.
-EVIDENCIAS_SEM_CAMPO = {"analyses[]", "assets[]", "knowledge"}
+# A própria listagem é a evidência — não há campo a apontar. `knowledge` saiu daqui em 19/08:
+# a grafia padronizou em `knowledge.results[]` (a forma forte), que resolve pelo mapa de campos
+# acima. Duas grafias para a mesma evidência davam dois caminhos no validador, e o cenário que
+# escrevesse a fraca era conferido por um critério mais frouxo sem que nada avisasse.
+EVIDENCIAS_SEM_CAMPO = {"analyses[]", "assets[]"}
 
 SPLIT_ESPERADO = {"dev": 6, "test": 18}
 

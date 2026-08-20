@@ -62,7 +62,7 @@ gabarito:
   evidencias_obrigatorias:
     - asset.bearing_pn
     - asset.rotation_rpm
-    - knowledge
+    - knowledge.results[]
     - baseline.state
   tools_esperadas:
     - get_asset

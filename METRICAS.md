@@ -113,6 +113,22 @@ Sem LLM. Compara o trace com o gabarito do cenário (`eval/expected-paths.json` 
   caso foi coberto*. Um agente que chama `get_baseline` com o ativo errado marca ponto em N1.1
   e zero em N1.3 — e o segundo é o que importa.
 
+> **Evidência sem campo é satisfeita por OLHAR, não por ACHAR (A4′, ratificado em 19/08).**
+> Quando a evidência obrigatória do cenário nomeia um campo (`baseline.state`,
+> `analyses[].confidence`), a cobertura exige o campo no retorno. Quando ela nomeia só a
+> categoria (`analyses[]`, `assets[]`), **basta a categoria ter sido consultada**.
+>
+> A razão é empírica e foi medida: em **`aut_06`, `aut_08`, `cen_01` e `cen_10` a lista chega
+> vazia por construção do dataset** — o ativo não tem análise nenhuma, e a `env_seed` está
+> certa porque não existe outra que mude isso. Exigir "achar" transformaria um fato do dataset
+> em falha do agente, e a N1.3 desses quatro cenários seria zero por algo que o agente não
+> podia fazer diferente.
+>
+> **Não é inconsistente com a forma forte exigida em `knowledge`** (busca vazia não autoriza
+> inventar procedimento): lá a exigência é sobre o que o agente *afirma* depois do retorno
+> vazio, aqui é sobre o que ele *consultou*. E `analyses[]` tem a razão empírica acima;
+> `knowledge` não tem nenhuma equivalente.
+
 ### N1.4 — Decisão correta (orientar × perguntar × agir × recusar × escalar)
 
 - **Mede:** a decisão final bate com a esperada **para o estado observado naquela execução**.

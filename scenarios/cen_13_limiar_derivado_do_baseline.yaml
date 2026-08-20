@@ -55,7 +55,7 @@ politica:
 
 gabarito:
   evidencias_obrigatorias:
-    - knowledge
+    - knowledge.results[]
     - baseline.features
     - baseline.state
     - rms.alarm_threshold

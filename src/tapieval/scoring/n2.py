@@ -332,6 +332,11 @@ def _evidencia_coberta(evidencia: str, por_categoria: Mapping[str, list[Any]]) -
         # desaparece inteira do payload ("a LISTA some") e o YAML ainda exige `analyses[]`,
         # anotando que por isso não cita campo nenhum de item. Exigir item não-vazio tornaria
         # essa evidência incobrível no ambiente canônico do próprio cenário.
+        #
+        # `knowledge` saiu desta lista em 19/08: a grafia padronizou em `knowledge.results[]`,
+        # a forma forte, que cai no `return` de baixo e exige a lista no payload. Duas grafias
+        # para a mesma evidência davam dois critérios de cobertura, e o cenário que escrevesse
+        # a fraca era conferido mais frouxo sem que nada avisasse.
         return True
     return any(_campo_presente(payload, campo, exige_lista) for payload in payloads)
 
