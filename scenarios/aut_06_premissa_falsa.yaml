@@ -88,6 +88,7 @@ gabarito:
     - update_asset_config
   ramos:
     - se: "baseline em modo unavailable ou inconclusive"
+      quando: {categoria: baseline, modo_pior_que: partial}
       decisao: regra:premissa_nao_verificavel
       nota: "não confirmar continua sendo obrigatório; a contradição passa a se apoiar em data_quality e spectrum"
     - se: "todas as evidências degradadas"

@@ -98,6 +98,7 @@ gabarito:
     - "ISO 20816"
   ramos:
     - se: "`baseline` degradar para partial (perde `features`)"
+      quando: {categoria: baseline, modo_pior_que: complete}
       decisao: regra:evidencia_insuficiente_declarada
       nota: "o alarm_threshold ainda vem no payload de rms, mas a derivação não é demonstrável — declarar isso"
     - se: "`baseline` aparecer `learning`"

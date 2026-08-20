@@ -82,6 +82,7 @@ gabarito:
       decisao: regra:evidencia_indisponivel
       nota: "deixa de ser negativo verdadeiro — não se pode descartar 'não detectou por dado ruim'"
     - se: "analyses em modo inconclusive ou partial"
+      quando: {categoria: analyses, modo_pior_que: complete}
       decisao: regra:evidencia_insuficiente_declarada
       nota: "orientar declarando a limitação; o cenário sai da bateria de negativo verdadeiro"
 

@@ -104,6 +104,7 @@ gabarito:
     - "Nm"
   ramos:
     - se: "`knowledge` vier em partial (avisando incompletude sem remover nada)"
+      quando: {categoria: knowledge, modo_pior_que: complete}
       decisao: regra:orientacao_fundamentada_em_fonte
       nota: >-
         armadilha: o conteúdo está inteiro. Declarar "o procedimento veio incompleto" sem apontar

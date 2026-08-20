@@ -74,6 +74,9 @@ EVIDENCIAS_SEM_CAMPO = {"analyses[]", "assets[]"}
 
 SPLIT_ESPERADO = {"dev": 6, "test": 18}
 
+# Os cinco modos que `api/app/prob.py::resolve_mode` pode devolver.
+MODOS = ("complete", "partial", "inconclusive", "conflict", "unavailable")
+
 
 def catalogo_de_tools() -> set[str]:
     """Nomes de tool MCP derivados dos operationId do contrato — fonte única de verdade."""
@@ -192,6 +195,28 @@ def main() -> int:
         # conferido — e no relatório se lê como cobertura que o corpus não tem. Duas checagens,
         # porque cada uma pega um erro diferente: a seed produz mesmo o ambiente do ramo, e o
         # texto do ramo ainda existe no gabarito (renomear o `se:` deixaria a seed órfã).
+        # `quando` (A9, 19/08): a fatia avaliável do ramo. O que quebra em silêncio é o
+        # predicado apontar para categoria que o cenário não exige — o ramo nunca dispara, e
+        # gabarito que nunca dispara nunca é conferido, mas conta como cobertura na leitura.
+        obrigatorias = {
+            e.split(".")[0].removesuffix("[]")
+            for e in (c.get("gabarito", {}).get("evidencias_obrigatorias") or [])
+        }
+        for ramo in (c.get("gabarito", {}).get("ramos") or []):
+            quando = ramo.get("quando")
+            if quando is None:
+                continue
+            if set(quando) != {"categoria", "modo_pior_que"}:
+                erros.append(f"{cid}: `quando` com chaves {sorted(quando)}")
+                continue
+            if quando["modo_pior_que"] not in MODOS:
+                erros.append(f"{cid}: `modo_pior_que: {quando['modo_pior_que']}` não é modo")
+            if quando["categoria"] not in obrigatorias:
+                erros.append(
+                    f"{cid}: ramo com predicado sobre `{quando['categoria']}`, que não é "
+                    f"evidência obrigatória do cenário — o ramo nunca dispararia"
+                )
+
         ramos_declarados = {r["se"] for r in (c.get("gabarito", {}).get("ramos") or [])}
         for ramo in c["ambiente"].get("seeds_de_ramo", []):
             if ramo["ramo"] not in ramos_declarados:

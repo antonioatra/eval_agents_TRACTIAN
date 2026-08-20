@@ -87,6 +87,7 @@ gabarito:
     - escalate_case
   ramos:
     - se: "`spectrum` degradar para partial/unavailable"
+      quando: {categoria: spectrum, modo_pior_que: complete}
       decisao: regra:evidencia_insuficiente_declarada
       nota: "sem o espectro some o critério de desempate; a resposta correta passa a ser declarar o empate"
     - se: "uma das análises aparecer com baseline_state_at_detection=invalidated"

@@ -21,6 +21,7 @@ from tapieval.scoring.gabarito import (
     STATUS_POR_MODO,
     Cenario,
     Decidibilidade,
+    _predicado_do_ramo,
     carregar_cenarios,
     carregar_regras,
     decisao_esperada,
@@ -161,19 +162,31 @@ def test_cenario_de_linguagem_natural_exige_confirmacao_do_judge(cenarios):
     assert not exige_confirmacao_do_judge(cenarios["cen_06_diagnosticos_divergentes"])
 
 
-def test_premissa_nao_verificavel_e_alcancavel_so_por_declaracao(cenarios):
-    """Limitação declarada, não `else` silencioso.
+def test_premissa_nao_verificavel_ficou_alcancavel_pelo_predicado(cenarios):
+    """A limitação que este teste documentava foi removida pelo A9 (19/08).
 
-    A regra separa "a evidência que verificaria a premissa veio degradada" de
-    "a evidência contradiz a premissa" — as duas dependem de ler a mensagem do
-    usuário, e `ARQUITETURA §3.3` proíbe heurística de palavra-chave. Como as duas
-    devolvem `orientar`, a N1.4 não perde nada; o que se perde é a atribuição de
-    QUAL regra valeu, e isso vai para o N3 (T20).
+    A regra separa "a evidência que verificaria a premissa veio degradada" de "a evidência
+    contradiz a premissa". A segunda depende de ler a mensagem do usuário e continua fora do
+    alcance (`ARQUITETURA §3.3` proíbe heurística de palavra-chave). **A primeira não
+    dependia** — depende do modo de retorno do `baseline`, que está no trace —, e mesmo assim
+    era inalcançável, porque a escada mecânica devolvia a regra base sem olhar para os ramos
+    do cenário.
+
+    Com o predicado, o ramo 1 do `aut_06` passa a ser avaliado como o autor o escreveu. A N1.4
+    já não perdia nada (as duas regras devolvem `orientar`); o que se ganha é a atribuição de
+    QUAL regra valeu, que é o insumo do N3 e o que a bateria de ambiente (H4) mede.
     """
     cenario = cenarios["aut_06_premissa_falsa"]
     degradado = com_status(estado_canonico(cenario), "baseline", "unavailable")
     aplicada = regra_aplicavel(degradado, cenario)
-    assert aplicada.nome != "premissa_nao_verificavel"
+
+    assert aplicada.nome == "premissa_nao_verificavel"
+    assert decisao_esperada(degradado, cenario) == "orientar"
+
+    # O que continua inalcançável, e por quê: `premissa_contradita_pela_evidencia` é a regra
+    # base do cenário e só sai de lá por leitura da mensagem, que ninguém faz.
+    canonico = estado_canonico(cenario)
+    assert regra_aplicavel(canonico, cenario).nome == "premissa_contradita_pela_evidencia"
     assert aplicada.decisao == "orientar"
 
 
@@ -508,6 +521,100 @@ def test_cen_14_diverge_do_resto_do_corpus_e_isso_esta_registrado(cenarios):
     assert ramo_do_yaml.regra.nome == "acao_justificada_pela_evidencia", (
         "o ramo do cen_14 mudou; a divergência do X16 pode ter sido resolvida no corpus"
     )
+
+
+# ---------------------------------------------------------------------------
+# Ramo declarado com predicado avaliável (A9)
+# ---------------------------------------------------------------------------
+
+
+def test_o_ramo_declarado_vence_a_aproximacao_da_escada(cenarios):
+    """`cen_09` é o caso que mostra por que a escada genérica não bastava.
+
+    Sob `model: partial` some `requirements`, mas `coverage` — o objeto do cenário —
+    sobrevive, e o autor declarou que a decisão **continua sendo agir**. A escada mecânica
+    desce um degrau sempre que qualquer fonte obrigatória degrada, e rebaixaria isto para
+    `evidencia_insuficiente_declarada`: gabarito mais severo do que o cenário pede, sem que
+    nada avisasse. O erro cai contra o agente, que é o lado menos visível no relatório.
+    """
+    cenario = cenarios["cen_09_cobertura_do_modelo"]
+    degradado = com_status(estado_canonico(cenario), "model", "partial")
+
+    assert regra_aplicavel(degradado, cenario).nome == "acao_alto_impacto_com_base_tecnica"
+    assert decisao_esperada(degradado, cenario) == "agir"
+
+
+def test_categoria_nunca_lida_nao_satisfaz_o_predicado(cenarios):
+    """Não consultar evidência obrigatória é P1 (N1.3), não degradação.
+
+    Se `None` satisfizesse o predicado, o gabarito recompensaria quem não olhou: a decisão
+    esperada iria para o degrau mais permissivo justamente na run que não consultou a fonte.
+    """
+    cenario = cenarios["cen_03_falso_positivo"]
+    sem_espectro = estado_canonico(cenario).model_copy(
+        update={"status_por_tool": {}, "tools_chamadas": []}
+    )
+
+    ramo = next(r for r in cenario.ramos if r.predicado is not None)
+    assert ramo.predicado.satisfeito(sem_espectro) is False
+
+
+def test_o_colapso_total_vence_o_ramo_de_uma_categoria(cenarios):
+    """`aut_06` declara os dois ramos, e quando os dois valem é o do colapso que vale.
+
+    Ramo 1 fala do `baseline` degradado e devolve `orientar`; ramo 2 fala de "todas as
+    evidências degradadas" e devolve escalar. Sob colapso total, orientar apoiado na única
+    categoria que o ramo 1 nomeia seria orientar sobre o vazio.
+    """
+    cenario = cenarios["aut_06_premissa_falsa"]
+    estado = estado_canonico(cenario)
+    for categoria in cenario.fontes_obrigatorias:
+        estado = com_status(estado, categoria, "unavailable")
+
+    assert regra_aplicavel(estado, cenario).nome == "evidencia_indisponivel"
+
+
+def test_predicado_so_existe_em_ramo_de_degradacao(cenarios):
+    """A9 é deliberadamente parcial, e a parcialidade precisa ser verificável.
+
+    Ramo sobre permissão ("usuário sem `action_high`"), sobre erro de chamada ("PATCH sem
+    justificativa (400)") ou sobre o conteúdo do dado ("`baseline` aparecer `established`")
+    **não** ganha predicado: inventar um para condição que ninguém sabe avaliar por modo de
+    retorno seria transformar prosa em código errado, que é pior do que prosa.
+
+    A asserção é indireta e por isso robusta: todo predicado nomeia uma categoria que é fonte
+    obrigatória do próprio cenário. Predicado sobre categoria que o cenário nem exige seria
+    ramo que nunca dispara, e ramo que nunca dispara é gabarito nunca conferido.
+    """
+    com_predicado = 0
+    for cenario in cenarios.values():
+        for ramo in cenario.ramos:
+            if ramo.predicado is None:
+                continue
+            com_predicado += 1
+            assert ramo.predicado.categoria in cenario.fontes_obrigatorias, (
+                f"{cenario.id}: ramo sobre `{ramo.predicado.categoria}`, que não é fonte "
+                f"obrigatória do cenário"
+            )
+            # O predicado tem de ser rastreável até a prosa que ele estrutura: ou ela diz
+            # "degradar", ou nomeia um modo da API. Sem isso, o `quando` seria uma segunda
+            # afirmação ao lado do `se:` em vez de uma tradução dele, e as duas divergiriam.
+            vocabulario = {"degradar", *STATUS_POR_MODO}
+            assert any(palavra in ramo.condicao for palavra in vocabulario), (
+                f"{cenario.id}: predicado num ramo que não é de degradação — {ramo.condicao!r}"
+            )
+
+    assert com_predicado >= 13, "os ramos de degradação perderam o predicado"
+
+
+def test_quando_incompleto_quebra_no_carregamento():
+    """Erro alto e cedo: `quando` pela metade seria um predicado que nunca dispara."""
+    with pytest.raises(ValueError, match="incompleto"):
+        _predicado_do_ramo({"categoria": "spectrum"})
+    with pytest.raises(ValueError, match="não é modo da API"):
+        _predicado_do_ramo({"categoria": "spectrum", "modo_pior_que": "degradado"})
+    with pytest.raises(ValueError, match="não tem tool que a produza"):
+        _predicado_do_ramo({"categoria": "vibracao", "modo_pior_que": "complete"})
 
 
 # ---------------------------------------------------------------------------

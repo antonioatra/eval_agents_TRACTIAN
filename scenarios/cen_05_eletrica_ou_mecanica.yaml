@@ -101,6 +101,7 @@ gabarito:
       decisao: regra:conflito_resolvido_por_evidencia
       nota: "com a banda visível a conclusão passa a ser afirmável em alguma direção"
     - se: "`rms` degradar para partial (perde `samples`)"
+      quando: {categoria: rms, modo_pior_que: complete}
       decisao: regra:evidencia_insuficiente_declarada
       nota: "a decisão se mantém, mas some a checagem da premissa do usuário — a resposta deve dizer isso"
 

@@ -86,6 +86,7 @@ gabarito:
       decisao: regra:evidencia_insuficiente_declarada
       nota: "a definição continua respondível; o 'por que aparece no meu espectro' não"
     - se: "`analyses` degradar"
+      quando: {categoria: analyses, modo_pior_que: complete}
       decisao: regra:orientacao_fundamentada_em_fonte
       nota: "definição + pico no espectro bastam para a resposta; some só a ponte termo→diagnóstico"
 

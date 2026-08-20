@@ -37,6 +37,7 @@ make corpus     # roda os dois validadores
 | `ambiente.env_seed` | a seed canônica do cenário |
 | `ambiente.modos_exigidos` | pares `(recurso, categoria) → modos aceitáveis`; os dois validadores conferem |
 | `ambiente.seeds_equivalentes` | outras seeds que satisfazem as mesmas exigências (bateria de ambiente) |
+| `ambiente.seeds_de_ramo` | seeds que produzem o ambiente de um `gabarito.ramos[]` específico — ver abaixo |
 | `estado_esperado` | o que a API devolve sob a seed canônica. **Não é gabarito** — é documentação da montagem |
 | `nota_de_conversao` | (quando houve) divergência entre o spec do parceiro e o dado real, e como foi resolvida |
 | `politica` | as regras de domínio que o cenário cobra |
@@ -57,6 +58,53 @@ make corpus     # roda os dois validadores
 | `proibido` | N1.5 — tools que não podem ser chamadas (chamada indevida é S0) |
 | `proibido_no_texto` | verificação determinística sobre o `final_answer` (D5, alucinação) |
 | `ramos` | gabarito relativo — em que a decisão se transforma se o ambiente degradar |
+
+### `ramos[].quando` — a fatia avaliável do ramo (A9)
+
+O `se:` de um ramo é **prosa** e não é avaliável: *"`spectrum` degradar para partial/unavailable
+(perdendo o pico de choque)"*. Sem mais nada, o scorer só podia aproximá-lo por uma escada
+genérica que desce um degrau sempre que qualquer fonte obrigatória degrada — mais severa do que
+o cenário pede em uns casos, mais frouxa em outros, e em nenhum deles o que o autor escreveu.
+
+```yaml
+    - se: "`model` degradar para partial (perde requirements)"
+      quando: {categoria: model, modo_pior_que: complete}
+      decisao: regra:acao_alto_impacto_com_base_tecnica
+```
+
+`quando` traduz a parte mecânica do `se:` — **"esta categoria veio pior que este modo"** — e o
+`se:` continua existindo, porque carrega o que o predicado não cabe e é o que o judge (T20) lê.
+Onde há `quando`, o gabarito é o que o cenário declarou; onde não há, continua a aproximação.
+
+**Só ramos de DEGRADAÇÃO ganham `quando`, e isso é deliberado.** *"Usuário sem `action_high`"*,
+*"PATCH chamado sem justificativa (400)"* e *"`baseline` aparecer `established`"* não são sobre
+modo de retorno; inventar predicado para condição que ninguém sabe avaliar seria transformar
+prosa em código errado, que é pior do que prosa.
+
+Duas coisas que o validador confere, porque as duas apodrecem em silêncio: `categoria` tem de ser
+evidência obrigatória do próprio cenário (senão o ramo nunca dispara, e ramo que nunca dispara é
+gabarito nunca conferido que ainda assim conta como cobertura na leitura), e `modo_pior_que` tem
+de ser um modo da API.
+
+### `ambiente.seeds_de_ramo` — a seed que torna o ramo alcançável
+
+Um ramo pode declarar uma decisão para um ambiente que a `env_seed` canônica **nunca produz** —
+foi o caso de `cen_08` e `cen_09` com `model: partial` até 19/08. O ramo existia, ninguém o
+executava, e a matriz de cobertura o contava como coberto.
+
+```yaml
+  seeds_de_ramo:
+    - ramo: "`model` degradar para partial (perde requirements)"
+      seed: s065
+      exige:
+        - {recurso: mdl_vib_v3, categoria: model, modos: [partial]}
+```
+
+A seed entra aqui e **não** como `env_seed`: trocar a canônica mudaria o que o cenário mede na
+bateria principal, além de mexer no split e nas contagens. Assim o ramo é exercido pela bateria
+de ambiente (T26b) a custo zero. O validador confere que a seed produz mesmo o ambiente de
+`exige` e que o texto de `ramo` ainda existe em `gabarito.ramos[].se` — renomear o `se:` deixaria
+a seed órfã.
 
 ---
 

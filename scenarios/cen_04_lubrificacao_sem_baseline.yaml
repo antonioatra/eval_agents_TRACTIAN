@@ -90,6 +90,7 @@ gabarito:
       decisao: regra:deteccao_sintomatica_valida_sem_baseline
       nota: "a conclusão não muda — symptom independe do baseline; muda só a nota sobre ativo novo"
     - se: "`spectrum` degradar para partial/unavailable (perdendo o pico de choque)"
+      quando: {categoria: spectrum, modo_pior_que: complete}
       decisao: regra:evidencia_insuficiente_declarada
       nota: "sem o sintoma observável, a validade do insight deixa de ser confirmável pelo agente"
 

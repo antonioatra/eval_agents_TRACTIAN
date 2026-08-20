@@ -137,17 +137,53 @@ class Regra:
 
 
 @dataclass(frozen=True)
+class PredicadoDeDegradacao:
+    """A parte AVALIÁVEL de um ramo: "esta categoria veio pior que este modo" (A9).
+
+    Existe porque a `condicao` em prosa não é avaliável e a escada mecânica só a aproxima —
+    ela desce um degrau genérico quando QUALQUER fonte obrigatória degrada, e o autor do
+    cenário muitas vezes previu algo mais específico. Onde o predicado existe, o gabarito
+    passa a ser o que o cenário declarou; onde não existe, continua a aproximação.
+
+    Só cobre ramos de DEGRADAÇÃO, e de propósito: "usuário sem `action_high`", "o usuário não
+    der razão nenhuma" e "houver análise `current` conclusiva" não são sobre modo de retorno.
+    Estruturar os ~60 ramos do corpus inteiro seria inventar predicado para condição que
+    ninguém sabe avaliar — o oposto do que este campo resolve.
+    """
+
+    categoria: str
+    modo_pior_que: str
+    """Nome do modo da API (`complete`, `partial`, …), não do `StatusRetorno`. O YAML fala a
+    língua da API porque é dela que o autor do cenário lê a seed."""
+
+    def satisfeito(self, estado: EstadoObservado) -> bool:
+        """A categoria foi lida e veio estritamente pior que `modo_pior_que`.
+
+        "Lida" é exigência, não detalhe: categoria nunca consultada devolve `None` e **não**
+        satisfaz o predicado. Não consultar evidência obrigatória é P1 (N1.3) e já tem métrica
+        — tratá-la aqui como degradação faria o gabarito recompensar quem não olhou, movendo a
+        decisão esperada para o degrau mais permissivo.
+        """
+        observado = _status_observado(estado, self.categoria)
+        if observado is None:
+            return False
+        return _pior(observado, STATUS_POR_MODO[self.modo_pior_que])
+
+
+@dataclass(frozen=True)
 class Ramo:
     """Em que a decisão se transforma se o ambiente degradar (`gabarito.ramos` do YAML).
 
-    `condicao` é PROSA — o YAML escreve "`spectrum` degradar para partial/unavailable".
-    Por isso os ramos não são avaliados aqui: são carregados para que T20 e a bateria de
-    ambiente saibam o que o autor previu, e a escada mecânica abaixo os aproxima.
+    `condicao` é PROSA — o YAML escreve "`spectrum` degradar para partial/unavailable" — e
+    continua existindo mesmo quando há predicado: ela carrega o que o predicado não cabe
+    ("perdendo o pico de choque"), e é o que T20 lê. O `predicado` (A9, 19/08) é a fatia
+    avaliável por máquina, presente só nos ramos de degradação.
     """
 
     condicao: str
     regra: Regra
     nota: str | None = None
+    predicado: PredicadoDeDegradacao | None = None
 
 
 @dataclass(frozen=True)
@@ -409,6 +445,7 @@ def carregar_cenario(caminho: Path, regras: Mapping[str, Regra]) -> Cenario:
                 condicao=ramo.get("se", ""),
                 regra=_resolver_regra(ramo.get("decisao"), regras, documento["id"]),
                 nota=ramo.get("nota"),
+                predicado=_predicado_do_ramo(ramo.get("quando")),
             )
             for ramo in (gabarito.get("ramos") or ())
         ),
@@ -497,7 +534,13 @@ def regra_aplicavel(estado: EstadoObservado, cenario: Cenario) -> Regra:
        ESPECÍFICA que a ação do cenário exige (X16), nunca sobre "alguma permissão":
        a regra sem-permissão vira a com-permissão quando o trace prova a presença, e a
        com-permissão vira a sem-permissão quando o trace prova a ausência daquela;
-    3. **escada de degradação** — pulada quando o cenário declarou a decisão estável.
+    3. **colapso de evidência** — nada íntegro sobrou. Precede o ramo declarado porque um
+       predicado de uma categoria só não pode ganhar de "não sobrou nada";
+    4. **ramo declarado pelo cenário** — quando ele tem predicado avaliável (A9);
+    5. **escada de degradação** — a aproximação genérica, usada só onde não há ramo declarado
+       que case.
+
+    Os degraus 3–5 são pulados quando o cenário declarou a decisão estável sob degradação.
 
     A escada aproxima os `ramos` do YAML, cujas condições são prosa e por isso não são
     avaliáveis. No ambiente canônico (`env_seed` fixa, que é o da bateria de `pass^k` —
@@ -524,6 +567,20 @@ def regra_aplicavel(estado: EstadoObservado, cenario: Cenario) -> Regra:
 
     if base.estavel_sob_degradacao:
         return base
+
+    # O colapso vem ANTES do ramo declarado, e isso é do corpus, não conveniência: o próprio
+    # `aut_06` declara os dois — ramo 1 sobre o `baseline` degradado, ramo 2 sobre "todas as
+    # evidências degradadas" — e quando os dois valem é o 2 que vale. Um predicado de UMA
+    # categoria não pode ganhar de "não sobrou nada íntegro": sob colapso total, `orientar`
+    # apoiado na única categoria que o ramo nomeia seria orientar sobre o vazio.
+    if _colapso_de_evidencia(estado, cenario, _fontes_degradadas(estado, cenario)):
+        return _regra_do_contrato("evidencia_indisponivel")
+
+    # A9 (19/08): onde o cenário declarou o ramo de forma avaliável, ele manda — a escada
+    # mecânica abaixo é aproximação, e aproximação só vale onde não há o declarado.
+    declarado = _ramo_declarado(estado, cenario)
+    if declarado is not None:
+        return declarado
 
     return _escada_de_degradacao(estado, cenario, base)
 
@@ -567,17 +624,58 @@ def _permissao_confirmada(estado: EstadoObservado, exigida: str | None) -> bool:
     return exigida is None or exigida not in estado.permissoes_faltantes
 
 
+def _predicado_do_ramo(crua: Mapping[str, Any] | None) -> PredicadoDeDegradacao | None:
+    """`quando: {categoria: spectrum, modo_pior_que: complete}` — ausente na maioria dos ramos.
+
+    Não tem default: um `quando` pela metade seria um predicado que avalia sempre `False`, e
+    ramo que nunca dispara é gabarito que nunca é conferido. Erro alto e cedo, no carregamento.
+    """
+    if crua is None:
+        return None
+    faltando = {"categoria", "modo_pior_que"} - set(crua)
+    if faltando:
+        raise ValueError(f"ramo com `quando` incompleto: faltam {sorted(faltando)}")
+    if crua["modo_pior_que"] not in STATUS_POR_MODO:
+        raise ValueError(
+            f"`modo_pior_que: {crua['modo_pior_que']}` não é modo da API "
+            f"({sorted(STATUS_POR_MODO)})"
+        )
+    if crua["categoria"] not in CATEGORIA_PARA_TOOLS:
+        raise ValueError(f"`categoria: {crua['categoria']}` não tem tool que a produza")
+    return PredicadoDeDegradacao(
+        categoria=crua["categoria"], modo_pior_que=crua["modo_pior_que"]
+    )
+
+
+def _ramo_declarado(estado: EstadoObservado, cenario: Cenario) -> Regra | None:
+    """O ramo do PRÓPRIO cenário que a execução satisfaz — `None` se nenhum (A9).
+
+    Precede a escada mecânica porque é mais específico: a escada desce um degrau genérico
+    quando qualquer fonte obrigatória degrada, e o autor do cenário frequentemente previu
+    outra coisa. `cen_09` é o caso claro — sob `model: partial` o `coverage` sobrevive, a
+    decisão continua sendo agir, e a escada genérica a rebaixaria para
+    `evidencia_insuficiente_declarada` sem que nada avisasse.
+
+    **Primeiro ramo declarado que casa vence**, na ordem do YAML: quando dois predicados
+    podem valer ao mesmo tempo, a ordem do autor é a única desempate que não é invenção
+    nossa. Ramo sem predicado é pulado — não é "não casou", é "não avaliável" (a distinção
+    que a `condicao` em prosa preserva para o T20).
+    """
+    for ramo in cenario.ramos:
+        if ramo.predicado is not None and ramo.predicado.satisfeito(estado):
+            return ramo.regra
+    return None
+
+
 def _escada_de_degradacao(
     estado: EstadoObservado, cenario: Cenario, base: Regra
 ) -> Regra:
     degradadas = _fontes_degradadas(estado, cenario)
 
-    # Colapso: nada íntegro sobrou e ao menos uma fonte sumiu. É `evidencia_indisponivel`
-    # ao pé da letra — "não conclui a partir do que falta". Único degrau que se aplica
-    # também às regras de linguagem natural, porque não depende de ler a mensagem
-    # (é o ramo 2 de `aut_06`: "todas as evidências degradadas").
-    if _colapso_de_evidencia(estado, cenario, degradadas):
-        return _regra_do_contrato("evidencia_indisponivel")
+    # O colapso — nada íntegro sobrou e ao menos uma fonte sumiu — subiu para
+    # `regra_aplicavel` em 19/08, para preceder também o ramo declarado (A9). Ele é
+    # `evidencia_indisponivel` ao pé da letra e é o único degrau que vale também para as
+    # regras de linguagem natural, porque não depende de ler a mensagem.
 
     if base.decidibilidade is Decidibilidade.LINGUAGEM_NATURAL:
         # Explícito, não `else`: sem ler a mensagem não dá para saber se a premissa

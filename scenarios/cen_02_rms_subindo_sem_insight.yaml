@@ -100,6 +100,7 @@ gabarito:
       decisao: regra:evidencia_insuficiente_declarada
       nota: "sem baseline válido o limiar não vale e o 'desvio' deixa de ser desvio"
     - se: "`analyses` degradar para unavailable/inconclusive"
+      quando: {categoria: analyses, modo_pior_que: partial}
       decisao: regra:evidencia_indisponivel
       nota: "sem ver o status pending não há como afirmar que o insight existe e travou"
 

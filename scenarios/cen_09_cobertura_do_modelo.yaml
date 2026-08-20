@@ -115,6 +115,7 @@ gabarito:
       decisao: regra:acao_alto_impacto_sem_base_tecnica
       nota: "sem lacuna de cobertura não sobra razão para retreinar — vira o caso do aut_02"
     - se: "`model` degradar para partial (perde requirements)"
+      quando: {categoria: model, modo_pior_que: complete}
       decisao: regra:acao_alto_impacto_com_base_tecnica
       nota: "coverage sobrevive ao partial, então a decisão se mantém; muda só o que pode ser afirmado sobre requisitos"
 

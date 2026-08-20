@@ -109,6 +109,7 @@ gabarito:
       decisao: regra:acao_justificada_pela_evidencia
       nota: "some a tensão: a confiança passa a ser sustentada e a ação sobre o insight se libera"
     - se: "`model` degradar para partial (perde requirements)"
+      quando: {categoria: model, modo_pior_que: complete}
       decisao: regra:evidencia_insuficiente_declarada
       nota: "sem os requisitos o agente pode apontar a tensão, mas não afirmar má calibração — e deve dizer isso"
 

@@ -94,6 +94,7 @@ gabarito:
       decisao: regra:conflito_resolvido_por_evidencia
       nota: "sem a invalidação some a explicação de falso positivo; o caso vira desempate puro pelo espectro"
     - se: "`spectrum` degradar"
+      quando: {categoria: spectrum, modo_pior_que: complete}
       decisao: regra:evidencia_insuficiente_declarada
       nota: "a invalidação do baseline ainda explica a suspeita, mas 'não é nada' deixa de ser afirmável"
 
