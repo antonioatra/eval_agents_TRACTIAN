@@ -33,7 +33,11 @@ estado_esperado:
   knowledge_search:
     q: reprocesso
     resultados: []                # a base tem 4 docs e nenhum sobre reprocessamento
-    docs_existentes: [kb_proc_001, kb_glos_001, kb_guid_001, kb_guid_002]
+    # Cinco, não quatro (A3, 19/08): faltava o `kb_guid_003` (falhas elétricas em
+    # motores), o único documento que nenhum cenário do corpus cita — e por isso o
+    # único que passou despercebido. A contagem importa porque este gabarito AFIRMA
+    # quais documentos existem: enumerar 4 de 5 reprovaria o agente que achasse o quinto.
+    docs_existentes: [kb_proc_001, kb_glos_001, kb_guid_001, kb_guid_002, kb_guid_003]
 
 politica:
   - "só executa ação quando a intenção é inequívoca"

@@ -271,7 +271,22 @@ outros casos deste projeto é texto fixo e mentiroso. Aqui, e só aqui, ela info
   ambos ficam em dev e dev não entra na métrica final, o custo é menor — mas é custo.
 
 ### L4 — sem `requirements`, a comparação de qualidade não é demonstrável
-*Atende: Modelos × PARCIAL.*
+*Atende: Modelos × PARCIAL.* — ✅ **COBERTA em 19/08, e não pelo cenário novo desta proposta.**
+
+> **O que foi feito, e por que não foi isto aqui.** A célula fechou pelo caminho que a própria
+> seção "alternativa mais barata" apontava, corrigido: `cen_08` e `cen_09` **já declaravam** o
+> ramo *"`model` degradar para partial (perde requirements)"* e faltava só a seed que o produz.
+> Ela entrou como **seed de ramo** (`ambiente.seeds_de_ramo`, `s065` nos dois), não como
+> `env_seed` canônica — trocar a canônica mudaria o que os dois cenários medem hoje, que é o
+> motivo pelo qual esta seção desaconselhava a alternativa. Como seed de ramo, a célula é
+> exercida pela bateria de ambiente (T26b) e **o split, as contagens e a bateria principal não
+> se mexem**. `scripts/validar_cenarios.py` confere as duas coisas: que a seed produz mesmo o
+> ambiente do ramo, e que o texto do ramo ainda existe no gabarito — renomear o `se:` deixaria
+> a seed órfã e a cobertura voltaria a ser declarada sem ser executada.
+>
+> O cenário novo abaixo (`asset_F520`/`s071`) **não** entrou: gastaria um ativo da reserva
+> livre para cobrir uma célula que já ficou coberta de graça. A descrição fica como registro
+> do que a lacuna era.
 
 `_PARTIAL_DROP["model"] = ("requirements", "last_run_at")`. `requirements` carrega
 `min_completeness` e `min_snr_db` — o par contra o qual AUT-06, AUT-08, CEN-02 e CEN-08 mandam

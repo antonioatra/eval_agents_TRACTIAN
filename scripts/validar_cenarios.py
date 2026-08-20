@@ -187,6 +187,26 @@ def main() -> int:
                     f"{obtido}, esperado {exigido['modos']}"
                 )
 
+        # `seeds_de_ramo` (L4, 19/08): o ramo do gabarito declara uma decisão para um ambiente
+        # que a `env_seed` canônica não produz. Sem a seed, o ramo é gabarito que nunca é
+        # conferido — e no relatório se lê como cobertura que o corpus não tem. Duas checagens,
+        # porque cada uma pega um erro diferente: a seed produz mesmo o ambiente do ramo, e o
+        # texto do ramo ainda existe no gabarito (renomear o `se:` deixaria a seed órfã).
+        ramos_declarados = {r["se"] for r in (c.get("gabarito", {}).get("ramos") or [])}
+        for ramo in c["ambiente"].get("seeds_de_ramo", []):
+            if ramo["ramo"] not in ramos_declarados:
+                erros.append(
+                    f"{cid}: seed de ramo aponta para {ramo['ramo']!r}, que não é um "
+                    f"`gabarito.ramos[].se` deste cenário"
+                )
+            for exigido in ramo["exige"]:
+                obtido = resolve_mode(exigido["recurso"], exigido["categoria"], ramo["seed"])
+                if obtido not in exigido["modos"]:
+                    erros.append(
+                        f"{cid}: seed de ramo {ramo['seed']} dá {exigido['recurso']}/"
+                        f"{exigido['categoria']}={obtido}, esperado {exigido['modos']}"
+                    )
+
         ativos = {c["asset_id"]} if c.get("asset_id") else set()
         ativos |= {a["id"] for a in (c.get("contexto", {}).get("candidatos") or [])}
         ativos_por_split[c["split"]] |= ativos

@@ -30,6 +30,23 @@ ambiente:
     `model` PRECISA vir complete: em partial a API remove `requirements`, e sem os requisitos o
     julgamento de calibração vira opinião ("8.4 parece baixo") em vez de comparação.
     `data_quality` em partial perde só `freshness_minutes` — completeness e snr_db sobrevivem.
+  # L4 (A3, 19/08) — a célula `Modelos × PARCIAL` da matriz de cobertura estava vazia, e o
+  # ramo abaixo já existia no gabarito: faltava a seed que o produz. Sem ela, o gabarito
+  # declarava uma cobertura que nenhuma execução alcançava — nunca conferido, e lido no
+  # relatório como cobertura que o corpus não tem.
+  #
+  # Entra como seed de RAMO, não como canônica: trocar a `env_seed` mudaria o que este
+  # cenário mede hoje (é o que `docs/lacunas_justificadas.md §L4` desaconselha), e mexeria
+  # no split e nas contagens da bateria. Assim a célula é coberta pela bateria de ambiente
+  # (T26b) sem custo nenhum na principal.
+  seeds_de_ramo:
+    - ramo: "`model` degradar para partial (perde requirements)"
+      seed: s065
+      exige:
+        - {recurso: mdl_vib_v3, categoria: model, modos: [partial]}
+        - {recurso: asset_V301, categoria: data_quality, modos: [partial]}
+        - {recurso: asset_V301, categoria: analyses, modos: [complete]}
+        - {recurso: asset_V301, categoria: baseline, modos: [complete]}
 
 estado_esperado:
   analise: {id: an_9909, type: imbalance, severity: medium, confidence: 0.83, status: current,

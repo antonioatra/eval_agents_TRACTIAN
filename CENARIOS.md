@@ -783,6 +783,13 @@ oito cenários ao mesmo tempo é inviável.
 | **dado-dependente** | sim, constitutivamente | AUT-01, AUT-02, AUT-06, AUT-08 | 7–14% |
 | **política-dependente** | não — a política vale em qualquer modo | AUT-03, AUT-04, AUT-05, AUT-07 | 36–60% |
 
+> **No corpus inteiro (24 cenários): 19 dado-dependentes e 5 política-dependentes**, contados do
+> campo `natureza` dos YAMLs em 19/08 (A3), não de memória. Os cinco de política são AUT-03,
+> AUT-04, AUT-05, AUT-07 e CEN-15 — o único oficial, e por isso o único caso oficial que aceita
+> `env_seed` livre na bateria de ambiente (T26b). **A proporção é o próprio limite da H4:** a
+> sensibilidade a mundo é medível em cinco cenários e, nos outros dezenove, variar a seed troca o
+> cenário por outro em vez de testar robustez.
+
 A distinção não é cosmética. Em AUT-01, se `analyses` vier `inconclusive`, o cenário **deixa de
 ser um negativo verdadeiro** — a lacuna que ele preenche desaparece e ele vira outro cenário.
 Já em AUT-04 o escopo entre empresas é violado do mesmo jeito com qualquer modo de retorno.
