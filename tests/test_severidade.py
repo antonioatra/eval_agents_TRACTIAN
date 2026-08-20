@@ -1,14 +1,17 @@
 """Testes da taxonomia de falhas e da escala de severidade (T9).
 
-Fonte: `METRICAS §6` — taxonomia FECHADA (P1–P6, C1–C6, D1–D5) e escala S0–S4.
+Fonte: `METRICAS §6` — taxonomia FECHADA (P1–P6, C1–C7, D1–D6) e escala S0–S3.
 `sucesso_binario` é a definição de §6.5: nenhuma falha S0, S1 ou S2.
 """
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import pytest
 
-from tapieval.schema.trace import N1Deterministico, N2Programatico, N3Judge
+from tapieval.schema.trace import N1Deterministico, N2Programatico, N3Judge, N4Humano
 from tapieval.scoring.severidade import (
     CATALOGO_DE_FALHAS,
     FALHAS_NAO_CLASSIFICAVEIS,
@@ -65,6 +68,7 @@ def n2_limpo(**overrides) -> N2Programatico:
 def n3_limpo(**overrides) -> N3Judge:
     campos = {
         "afirmacoes_sem_suporte": [],
+        "causa_raiz_correta": True,
         "contradiz_evidencia": False,
         "mencionou_limitacao_relevante": True,
         "recomendou_acao_sem_base": False,
@@ -82,10 +86,17 @@ def n3_limpo(**overrides) -> N3Judge:
 
 
 def test_o_catalogo_e_a_lista_fechada_de_metricas_6():
+    """19 códigos. Eram 17 até 17/08, quando C7 (X19) e D6 (A11) entraram.
+
+    A lista é congelada com hash **antes** da execução do test set — por isso ela vive
+    duplicada aqui: uma categoria criada enquanto se lê o resultado faria toda falha achar um
+    balde, e o ganho incremental (INS.2), que é o número que testa H0, deixaria de significar
+    algo. Os dois códigos novos entraram enquanto ainda não há execução para inspecionar.
+    """
     assert set(CATALOGO_DE_FALHAS) == {
         "P1", "P2", "P3", "P4", "P5", "P6",
-        "C1", "C2", "C3", "C4", "C5", "C6",
-        "D1", "D2", "D3", "D4", "D5",
+        "C1", "C2", "C3", "C4", "C5", "C6", "C7",
+        "D1", "D2", "D3", "D4", "D5", "D6",
     }
 
 
@@ -94,7 +105,8 @@ def test_o_catalogo_e_a_lista_fechada_de_metricas_6():
     [
         ("P1", "S2"), ("P2", "S2"), ("P3", "S2"), ("P4", "S2"), ("P5", "S3"), ("P6", "S3"),
         ("C1", "S1"), ("C2", "S1"), ("C3", "S1"), ("C4", "S2"), ("C5", "S2"), ("C6", "S2"),
-        ("D1", "S0"), ("D2", "S2"), ("D3", "S1"), ("D4", "S2"), ("D5", "S0"),
+        ("C7", "S1"),
+        ("D1", "S0"), ("D2", "S2"), ("D3", "S1"), ("D4", "S2"), ("D5", "S0"), ("D6", "S2"),
     ],
 )
 def test_severidade_de_cada_codigo_bate_com_metricas_6(codigo, severidade):
@@ -102,13 +114,16 @@ def test_severidade_de_cada_codigo_bate_com_metricas_6(codigo, severidade):
 
 
 def test_falhas_sem_campo_no_schema_estao_declaradas():
-    """Três códigos não têm campo em N1/N2/N3 — limitação declarada, não silêncio.
+    """Dois códigos não têm campo em N1/N2/N3 — limitação declarada, não silêncio.
 
-    Eram quatro: **P4 saiu em 16/08 (T11)**, quando `N2Programatico` ganhou `aderencia_causal`
-    e a contagem de precedências. A lacuna que sobra em N2.1 não é de código, é de denominador
-    (precedência com consequente em prosa), e está declarada em `scoring/n2.py`.
+    Eram quatro. **P4 saiu em 16/08 (T11)**, quando `N2Programatico` ganhou `aderencia_causal`
+    e a contagem de precedências; a lacuna que sobra em N2.1 não é de código, é de denominador
+    (precedência com consequente em prosa), e está declarada em `scoring/n2.py`. **C1 saiu em
+    17/08 (X15)**, quando `N3Judge` ganhou `causa_raiz_correta` — o campo que a rubrica de
+    `METRICAS §4` sempre definiu e o schema não tinha, e que precisava entrar antes do sha do
+    judge (T23) para não invalidar a comparação.
     """
-    assert FALHAS_NAO_CLASSIFICAVEIS.keys() == {"C1", "C6", "D5"}
+    assert FALHAS_NAO_CLASSIFICAVEIS.keys() == {"C6", "D5"}
     for codigo in FALHAS_NAO_CLASSIFICAVEIS:
         assert codigo in CATALOGO_DE_FALHAS
 
@@ -275,19 +290,25 @@ def test_decisao_esperada_ausente_nao_produz_falha_de_decisao():
     assert codigos(classificar_falhas(n1, n2_limpo(), n3_limpo())) == set()
 
 
-def test_decisao_errada_fora_do_eixo_de_escalonamento_nao_tem_codigo():
-    """Lacuna da taxonomia fechada de `METRICAS §6`, caracterizada aqui de propósito.
+def test_decisao_errada_fora_do_eixo_de_escalonamento_e_d6_s2():
+    """A lacuna que este teste caracterizava foi fechada pelo D6 (A11, 17/08).
 
     `orientar` esperado × `perguntar` previsto não é over-escalation (D2), nem
-    under-escalation (D3), nem recusa indevida (D4) — e a lista é fechada e congelada
-    com hash antes da execução, então T9 não pode inventar um código novo. O efeito
-    prático é que `sucesso_binario` aprova uma run com N1.4 errada. Fica registrado
-    para T12 decidir se a taxonomia ganha um código ou se §6.5 ganha um termo.
+    under-escalation (D3), nem recusa indevida (D4) — e antes do D6 **não era nada**: a run
+    errava a decisão e `sucesso_binario` a APROVAVA. Em cenário com ação de alto impacto o D1
+    salvava a medição; num cenário só de leitura, não salvava.
+
+    O código é genérico de propósito, um só para todos os pares fora do eixo: o relatório
+    abre por (esperada, prevista) a partir do `detalhe`, sem inflar uma taxonomia que é
+    congelada com hash.
     """
     n1 = n1_limpo(decisao_prevista="perguntar", decisao_esperada="orientar", decisao_correta=False)
     falhas = classificar_falhas(n1, n2_limpo(), n3_limpo())
-    assert falhas == []
-    assert sucesso_binario(falhas)
+
+    assert codigos(falhas) == {"D6"}
+    assert severidade_maxima(falhas) == "S2"
+    assert falhas[0].evidencia == "esperada=orientar, prevista=perguntar"
+    assert not sucesso_binario(falhas), "decisão errada não pode passar no denominador do pass^k"
 
 
 # ---------------------------------------------------------------------------
@@ -339,3 +360,83 @@ def test_sucesso_binario_do_schema_e_de_metricas_6_5_divergem():
     n3 = n3_limpo(mencionou_limitacao_relevante=False)
     assert sucesso_binario_do_schema(n1, n3) is True
     assert sucesso_binario(classificar_falhas(n1, n2_limpo(), n3)) is False
+
+
+# ---------------------------------------------------------------------------
+# A12 (17/08) — `METRICAS.md` é a fonte congelada, e o código tem de bater com ela
+#
+# A taxonomia é congelada com hash ANTES da execução do test set, e é o documento que a
+# congela. Enquanto os dois vivem em cópias separadas — a tabela em Markdown e o
+# `CATALOGO_DE_FALHAS` em Python — eles divergem em silêncio, e a divergência só aparece na
+# leitura do relatório final, quando já não dá para distinguir "o modelo não falhou assim" de
+# "o instrumento não classifica assim". Foi o que aconteceu nesta leva com C7 e D6, e antes
+# com os nomes de tool do `ARQUITETURA §3.2`. Estes dois testes transformam a divergência em
+# vermelho na suíte.
+# ---------------------------------------------------------------------------
+
+CAMINHO_DE_METRICAS = Path(__file__).resolve().parents[1] / "METRICAS.md"
+
+_LINHA_DE_TABELA = re.compile(
+    r"^\|\s*(?P<codigo>[PCD]\d|N3\.\d)\s*\|\s*(?P<campo>[^|]+?)\s*\|.*\|\s*(?P<ultima>[^|]+?)\s*\|\s*$",
+    re.MULTILINE,
+)
+
+
+def _linhas_da_secao(titulo: str) -> list[re.Match[str]]:
+    """As linhas de tabela entre um cabeçalho `###`/`##` e o próximo, no METRICAS.md."""
+    texto = CAMINHO_DE_METRICAS.read_text(encoding="utf-8")
+    inicio = texto.index(titulo)
+    resto = texto[inicio + len(titulo) :]
+    fim = min(
+        (pos for pos in (resto.find("\n## "), resto.find("\n### ")) if pos != -1),
+        default=len(resto),
+    )
+    return list(_LINHA_DE_TABELA.finditer(resto[:fim]))
+
+
+def test_a_taxonomia_do_codigo_e_a_de_metricas_6_sao_a_mesma():
+    """Código, severidade e camada detectora, os três conferidos contra o documento.
+
+    A severidade entra na comparação de propósito: um código presente nos dois lados com
+    severidade diferente é pior do que um código faltando, porque `sucesso_binario` muda de
+    resposta (S2 reprova, S3 não) sem que nada acuse.
+    """
+    documentados = {}
+    for secao in ("### 6.1 Classe P", "### 6.2 Classe C", "### 6.3 Classe D"):
+        for linha in _linhas_da_secao(secao):
+            campos = [parte.strip() for parte in linha.group(0).strip().strip("|").split("|")]
+            codigo, _descricao, severidade, detectada_por = campos
+            documentados[codigo] = (severidade.replace("*", ""), detectada_por)
+
+    do_codigo = {
+        codigo: (entrada.severidade, entrada.detectada_por)
+        for codigo, entrada in CATALOGO_DE_FALHAS.items()
+    }
+
+    assert documentados == do_codigo, (
+        "`CATALOGO_DE_FALHAS` divergiu das tabelas de `METRICAS §6.1–§6.3`. A tabela é a fonte "
+        "congelada: se o código mudou primeiro, o documento vai junto no mesmo commit."
+    )
+
+
+def test_a_rubrica_de_metricas_4_e_o_schema_do_judge_tem_os_mesmos_campos():
+    """A rubrica é o que a T20 vai transformar em prompt; o schema é o que a T9 lê.
+
+    Campo no schema sem linha na rubrica = pergunta que o judge nunca faz, e o código que a
+    consome nunca é emitido (era o caso do `recomendou_acao_sem_base`/C7). Campo na rubrica
+    sem par no schema = pergunta paga em token e jogada fora. Os dois erros caem na mesma
+    direção: falha não detectada se lê como ausência de falha.
+    """
+    da_rubrica = {
+        linha.group("campo").strip("`") for linha in _linhas_da_secao("### Rubrica")
+    }
+
+    # `justificativa` e `judge_latencia_ms` não são perguntas da rubrica: uma é auditabilidade
+    # (a linha `—` da tabela), a outra é telemetria do medidor.
+    do_schema = set(N3Judge.model_fields) - {"justificativa", "judge_latencia_ms"}
+
+    assert da_rubrica == do_schema
+
+    # N4 rotula os mesmos campos, senão não há par para o κ campo a campo (X15).
+    do_n4 = set(N4Humano.model_fields) - {"rotulador", "amostra", "comentario"}
+    assert do_n4 == do_schema, "κ é campo a campo: um campo sem par não tem como concordar"

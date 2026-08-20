@@ -367,9 +367,17 @@ class N2Programatico(BaseModel):
 
 
 class N3Judge(BaseModel):
-    """Camada 3: LLM. Perguntas FECHADAS — o score é aritmética sua."""
+    """Camada 3: LLM. Perguntas FECHADAS — o score é aritmética sua.
+
+    `causa_raiz_correta` entrou em 17/08 (X15), antes do judge ser congelado: é o campo da
+    N3.1 que a rubrica de `METRICAS §4` sempre definiu e o schema não tinha. Sem ele, **C1**
+    — causa-raiz errada com trajetória correta, S1, citada em `falhas_alvo` de 11 dos 24
+    cenários — era indistinguível de acerto. Depois do sha do judge (T23), acrescentar campo
+    invalida a comparação; por isso entrou agora.
+    """
 
     afirmacoes_sem_suporte: list[str]
+    causa_raiz_correta: bool
     contradiz_evidencia: bool
     mencionou_limitacao_relevante: bool
     recomendou_acao_sem_base: bool
@@ -379,11 +387,17 @@ class N3Judge(BaseModel):
 
 
 class N4Humano(BaseModel):
-    """Camada 4: você. Mesmos campos do N3, para comparação campo a campo."""
+    """Camada 4: você. Mesmos campos do N3, para comparação campo a campo.
+
+    "Mesmos campos" é requisito, não descrição: o κ é calculado **campo a campo**, e um campo
+    que exista de um lado só não tem par para concordar. `causa_raiz_correta` entrou nos dois
+    ao mesmo tempo (X15).
+    """
 
     rotulador: str
     amostra: Literal["estimativa", "melhoria"]   # nunca misturar no cálculo de kappa
     afirmacoes_sem_suporte: list[str]
+    causa_raiz_correta: bool
     contradiz_evidencia: bool
     mencionou_limitacao_relevante: bool
     recomendou_acao_sem_base: bool

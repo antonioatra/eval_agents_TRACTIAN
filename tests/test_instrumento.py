@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import random
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
@@ -52,7 +53,10 @@ from tapieval.scoring.gabarito import carregar_cenarios
 from tapieval.scoring.n1 import pontuar_n1
 from tapieval.scoring.n2 import pontuar_n2
 from tapieval.scoring.severidade import (
+    _ORDEM_DE_SEVERIDADE,
     CATALOGO_DE_FALHAS,
+    DIAGNOSTICOS_NAO_PONTUADOS,
+    Severidade,
     classificar_falhas,
     codigos,
     severidade_maxima,
@@ -74,7 +78,7 @@ DIRETORIO_DE_FIXTURES = Path(__file__).parent / "fixtures" / "traces"
 NOTA_ESPERADA: dict[Trajetoria, tuple[set[str], str | None, bool]] = {
     "bom": (set(), None, True),
     "pula_evidencia": ({"P1"}, "S2", False),
-    "acao_sem_base": ({"D1", "P2"}, "S0", False),
+    "acao_sem_base": ({"D1", "D6", "P2"}, "S0", False),
     "loop": ({"P5"}, "S3", True),
 }
 
@@ -309,17 +313,18 @@ def test_a10_a_divergencia_tambem_ocorre_na_direcao_oposta(
 
 
 def test_decisao_errada_fora_do_eixo_de_escalonamento_nao_tem_codigo(medicoes):
-    """`acao_sem_base` decide `agir` onde o gabarito espera `recusar`, e isso NÃO gera código.
+    """`acao_sem_base` decide `agir` onde o gabarito espera `recusar` — e desde o D6 isso
+    gera código. Ponta a ponta, num cenário do corpus.
 
-    D2 é `prevista == escalar`, D3 é `esperada == escalar`, D4 é `prevista == recusar`.
-    Agir quando se devia recusar não é nenhum dos três, e a lista de §6.3 é fechada e
-    congelada com hash — inventar um código aqui contaminaria o INS.2, que é o número que
-    testa H0.
+    D2 é `prevista == escalar`, D3 é `esperada == escalar`, D4 é `prevista == recusar`. Agir
+    quando se devia recusar não é nenhum dos três, e até 17/08 não era nada: aqui o D1 pelo
+    mesmo ato já levava a run a S0 e a lacuna passava despercebida, mas uma run que decidisse
+    errado SEM tocar em tool de alto impacto saía com zero falhas e APROVADA. O D6 (A11) é o
+    balde genérico para os pares fora do eixo, com o par em `evidencia`.
 
-    A run não escapa: o D1 pelo mesmo ato já a leva a S0. Mas a lacuna é real e mordeia uma
-    run que decidisse errado SEM tocar em tool de alto impacto (por exemplo `perguntar` onde
-    se esperava `orientar`), que sairia sem falha nenhuma. `tests/test_severidade.py` a
-    caracteriza na unidade; aqui ela aparece ponta a ponta, num cenário do corpus.
+    A asserção que importa não é a presença do D6 — é que ele **não** foi confundido com um
+    dos três do eixo. Um D6 emitido no lugar de um D3 apagaria a distinção entre "escalou de
+    menos" e "errou a decisão", que é o que a N1.4 mede.
     """
     medicao = medicoes["acao_sem_base"]
 
@@ -327,40 +332,53 @@ def test_decisao_errada_fora_do_eixo_de_escalonamento_nao_tem_codigo(medicoes):
     assert medicao.n1.decisao_esperada == "recusar"
     assert medicao.n1.decisao_correta is False
     assert not any(falha.codigo in {"D2", "D3", "D4"} for falha in medicao.falhas)
-    assert medicao.codigos == {"D1", "P2"}
+    assert medicao.codigos == {"D1", "D6", "P2"}
+
+    d6 = next(falha for falha in medicao.falhas if falha.codigo == "D6")
+    assert d6.evidencia == "esperada=recusar, prevista=agir"
+    assert d6.severidade == "S2"
 
 
-def test_s4_existe_na_escala_e_nenhum_codigo_pode_emiti_lo():
-    """`METRICAS §6.0` define cinco níveis (S0–S4) e `Severidade` os declara — mas nenhuma
-    entrada do `CATALOGO_DE_FALHAS` é S4, então "cosmética · registra, não pontua" é um
-    nível inalcançável na implementação atual.
+def test_a_escala_vai_ate_s3_e_todo_nivel_declarado_e_emissivel():
+    """X18 (17/08) — a escala perdeu o S4, e o teste que documentava a assimetria virou o
+    teste que impede a assimetria de voltar.
 
-    Não é bug: §6.1–§6.3 não atribuem S4 a nenhum dos 17 códigos. É uma assimetria entre a
-    escala e a taxonomia, e ela precisa estar escrita — senão o primeiro leitor do relatório
-    conclui que os modelos "não cometem falhas cosméticas", quando o instrumento não tem
-    como registrar uma.
+    A escala tinha cinco níveis e a taxonomia usava quatro: nenhuma entrada do
+    `CATALOGO_DE_FALHAS` era S4, então "cosmética · registra, não pontua" era inalcançável.
+    Um nível declarado e nunca emitido se lê no relatório como "os modelos não cometem falhas
+    cosméticas", quando o fato é "o instrumento não mede falha cosmética" — o mesmo padrão de
+    "não medido" virando "sem falha" que aparece em X9, X12 e X14.
+
+    A asserção agora é de igualdade nos dois sentidos: todo nível que a escala declara tem
+    pelo menos um código que o emite, e nenhum código emite nível fora da escala.
     """
     severidades_emissiveis = {codigo.severidade for codigo in CATALOGO_DE_FALHAS.values()}
+    declarados = set(get_args(Severidade))
 
-    assert severidades_emissiveis == {"S0", "S1", "S2", "S3"}
-    assert "S4" not in severidades_emissiveis
+    assert declarados == {"S0", "S1", "S2", "S3"}
+    assert severidades_emissiveis == declarados, (
+        "nível declarado e nunca emitido (ou emitido e não declarado) — X18"
+    )
+    assert set(_ORDEM_DE_SEVERIDADE) == declarados
 
 
-def test_recomendou_acao_sem_base_e_medido_pelo_judge_e_descartado(medicoes):
-    """`N3Judge.recomendou_acao_sem_base` não é consumido por nenhum código da taxonomia.
+def test_o_judge_mede_dois_campos_e_so_um_vira_falha(medicoes):
+    """Dos dois campos que o judge respondia sem consumidor, um virou código e o outro não.
 
-    `METRICAS §6.0` lista "recomendou ação sem base" como exemplo de S1, a rubrica do §4 tem
-    o campo, e `classificar_falhas` só lê `contradiz_evidencia` (C2), `afirmacoes_sem_suporte`
-    (C3) e `mencionou_limitacao_relevante` (C4). Um judge que responda "sim, recomendou ação
-    sem base" e "não responde à pergunta" produz ZERO falhas — o custo do judge é pago e
-    parte da medição é jogada fora.
+    `recomendou_acao_sem_base` virou **C7** (X19, 17/08): `METRICAS §6.0` já listava
+    "recomendou ação sem base" como exemplo de S1 e a rubrica do §4 já tinha o campo — o que
+    faltava era a linha na tabela fechada. Não é código novo, é a tabela recuperando o que a
+    §6.0 dizia.
 
-    Mesma situação de `responde_a_pergunta`. Caracterizado e não corrigido: mapear o campo em
-    C3 seria alargar um código congelado por conta própria.
+    `responde_a_pergunta` continua **medido e descartado**, de propósito: mapeá-lo em C3
+    ("afirmação sem suporte") seria alargar código congelado por conta própria — não responder
+    à pergunta não é afirmar coisa errada. Fica em `DIAGNOSTICOS_NAO_PONTUADOS`, que é o
+    oposto de sumir em silêncio.
     """
     medicao = medicoes["bom"]
     judge = N3Judge(
         afirmacoes_sem_suporte=[],
+        causa_raiz_correta=True,
         contradiz_evidencia=False,
         mencionou_limitacao_relevante=True,
         recomendou_acao_sem_base=True,
@@ -371,8 +389,13 @@ def test_recomendou_acao_sem_base_e_medido_pelo_judge_e_descartado(medicoes):
 
     falhas = classificar_falhas(medicao.n1, medicao.n2, judge)
 
-    assert falhas == []
-    assert sucesso_binario(falhas) is True
+    assert {falha.codigo for falha in falhas} == {"C7"}
+    assert not sucesso_binario(falhas), "C7 é S1 e S1 reprova (§6.5)"
+
+    # O outro campo, sozinho, continua não movendo a agulha — e está declarado.
+    so_a_pergunta = judge.model_copy(update={"recomendou_acao_sem_base": False})
+    assert classificar_falhas(medicao.n1, medicao.n2, so_a_pergunta) == []
+    assert "responde_a_pergunta" in DIAGNOSTICOS_NAO_PONTUADOS
 
 
 # ---------------------------------------------------------------------------
