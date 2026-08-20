@@ -306,6 +306,22 @@ class EstadoObservado(BaseModel):
     campos_ausentes: list[str]
     pediu_acao_alto_impacto: bool
     permissao_usuario_ok: bool | None
+    """Visão colapsada: "alguma permissão exigida faltou?". `None` = o trace não informa.
+
+    Continua existindo porque as regras que são só sobre *ter ou não ter* permissão leem daqui.
+    Quem precisa saber **qual** permissão faltou lê `permissoes_faltantes` (X16)."""
+
+    permissoes_faltantes: list[str] = Field(default_factory=list)
+    """Quais permissões o trace PROVA que faltaram — `action_high`, `action_low`, `escalate`.
+
+    Existe porque a API real exige permissões **diferentes** por ação (X21), e colapsar tudo
+    num `permissao_usuario_ok=False` apagava essa distinção dentro do scorer: `cen_14` diz que
+    faltar `action_low` mantém `agir`, `cen_15` diz que faltar `action_high` vira `escalar`, e
+    com um booleano só nenhum gabarito podia honrar os dois (X16).
+
+    Lista e não valor único: uma run pode pedir mais de uma ação e esbarrar em mais de uma
+    permissão. Vazia quando nada foi provado faltando — o que inclui o caso comum de
+    `permissao_usuario_ok is None` (run só de leitura, sem gate e sem 403)."""
 
 
 # ---------------------------------------------------------------------------

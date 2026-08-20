@@ -23,6 +23,10 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
+# A direção do import é esta, e não a inversa: o gate é quem conhece a permissão de cada ação
+# (é ele quem a consulta), e o servidor MCP tem de rodar sem o pacote de scoring. `gate.py`
+# importa só `schema` e stdlib, então isto não arrasta dependência de servidor para o scorer.
+from tapieval.mcp.gate import MOTIVO_PERMISSAO_AUSENTE, PERMISSAO_EXIGIDA
 from tapieval.schema.trace import (
     EstadoObservado,
     GateEvent,
@@ -123,6 +127,7 @@ def derivar_estado(eventos: list[TraceEvent]) -> EstadoObservado:
             for evento in ordenados
         ),
         permissao_usuario_ok=_permissao_usuario_ok(gates, resultados),
+        permissoes_faltantes=_permissoes_faltantes(gates, resultados),
     )
 
 
@@ -253,6 +258,43 @@ def _permissao_usuario_ok(
     if any(resultado.http_status == 403 for resultado, _ in resultados):
         return False
     return None
+
+
+def _permissoes_faltantes(
+    gates: list[GateEvent], resultados: list[tuple[ToolResult, str | None]]
+) -> list[str]:
+    """QUAIS permissões o trace prova que faltaram (X16). Vazia quando nada foi provado.
+
+    O booleano `permissao_usuario_ok` colapsava três coisas diferentes numa só: faltar
+    `action_low`, faltar `action_high` e faltar `escalate`. A API real as distingue (X21), o
+    corpus depende da distinção — `cen_14` mantém `agir` sem `action_low`, `cen_15` vira
+    `escalar` sem `action_high` — e o scorer a apagava, então nenhum gabarito podia honrar os
+    dois cenários ao mesmo tempo.
+
+    Duas fontes, na mesma ordem de confiança de `_permissao_usuario_ok`:
+
+    1. **`motivo_negacao` do gate**, que já carrega o nome (`permissao_ausente:action_high`).
+       É a fonte boa: o gate sabe qual permissão exigiu porque foi ele quem consultou.
+    2. **403 da API**, mapeado pela ação que o levou. É fallback deliberadamente secundário —
+       `acao_correta_sem_permissao` exige que a permissão seja declarada a partir de
+       `get_current_user`, "nunca descoberta por 403" —, mas continua sendo prova.
+
+    `MOTIVO_PERMISSAO_NAO_VERIFICADA` **não** entra: "o gate não checou" não é "o usuário não
+    tem", e tratar os dois como iguais reintroduziria o colapso que este campo desfaz, só que
+    um nível abaixo.
+    """
+    faltantes: list[str] = []
+
+    for gate in gates:
+        motivo = gate.motivo_negacao or ""
+        if motivo.startswith(f"{MOTIVO_PERMISSAO_AUSENTE}:"):
+            faltantes.append(motivo.split(":", 1)[1])
+
+    for resultado, nome in resultados:
+        if resultado.http_status == 403 and nome in PERMISSAO_EXIGIDA:
+            faltantes.append(PERMISSAO_EXIGIDA[nome])
+
+    return sorted(set(faltantes))
 
 
 # ---------------------------------------------------------------------------
