@@ -332,6 +332,22 @@ class N1Deterministico(BaseModel):
     tools_faltantes: list[str]
     tools_extras: list[str]
     tool_f1: float
+
+    # N1.1 líquida (X24, 19/08) — a mesma conta sobre as chamadas do LAÇO, sem a hidratação.
+    tool_f1_liquido: float
+    tools_creditadas_pela_hidratacao: list[str] = Field(default_factory=list)
+    """Tools esperadas que SÓ a hidratação cobriu (`iteration == 0`).
+
+    A hidratação atravessa a fronteira MCP — não há caminho honesto que não atravesse —, então
+    `get_asset` e `get_current_user` chegam ao trace como `tool_call` normais e a N1.1 bruta os
+    credita ao agente. A variante `hidratacao=True` ganharia duas tools esperadas de graça e a
+    comparação com `sem_hidratacao` nasceria confundida por construção.
+
+    As duas convivem de propósito: a bruta é o que o trace mostra e é o que a taxonomia
+    consome (P1 não muda); a líquida é o que o agente escolheu chamar. **A diferença entre as
+    duas não é ruído a descontar — é o resultado sobre o efeito da hidratação**, e por isso
+    esta lista carrega os nomes em vez de só um delta numérico."""
+
     args_corretos: int
     args_avaliados: int
     args_acc: float

@@ -310,6 +310,74 @@ def test_run_sem_nenhuma_tool_chamada_tem_f1_zero(cenarios):
 
 
 # ---------------------------------------------------------------------------
+# N1.1 líquida — a hidratação não conta como escolha do agente (X24)
+# ---------------------------------------------------------------------------
+
+
+def test_sem_hidratacao_a_n1_1_bruta_e_a_liquida_sao_iguais(cenarios):
+    """A trajetória perfeita não tem `iteration=0`: as duas contas têm de coincidir.
+
+    Se divergissem aqui, o desconto da líquida estaria comendo chamada do laço — e o número
+    reportado como "efeito da hidratação" seria artefato do scorer.
+    """
+    n1 = pontuar_n1(trace_cen_01(), cenarios["cen_01_quebra_sem_aviso"])
+
+    assert n1.tool_f1 == n1.tool_f1_liquido == 1.0
+    assert n1.tools_creditadas_pela_hidratacao == []
+
+
+def test_tool_esperada_so_na_hidratacao_conta_na_bruta_e_nao_na_liquida(cenarios):
+    """O caso que o X24 descreve, reproduzido: `get_asset` só em `iteration=0`.
+
+    A bruta credita a tool ao agente — e é o que o trace mostra, então está certo que credite.
+    A líquida não, porque o agente não a escolheu: a hidratação é do harness. A diferença
+    entre as duas é o efeito que a variante `hidratacao=True` teria de graça sobre a N1.1, e
+    `tools_creditadas_pela_hidratacao` diz **qual** tool o produz, para o resultado poder ser
+    lido em vez de só descontado.
+    """
+    sem_get_asset = tuple(
+        (tool, args) for tool, args in _CHAMADAS_CEN_01 if tool != "get_asset"
+    )
+    hidratacao = _call(90, "get_asset", "tc_hidr", {"asset_id": ATIVO_CEN_01}).model_copy(
+        update={"iteration": 0}
+    )
+    eventos = trace_cen_01(sem_get_asset, extras=[hidratacao])
+
+    n1 = pontuar_n1(eventos, cenarios["cen_01_quebra_sem_aviso"])
+
+    assert "get_asset" in n1.tools_esperadas_chamadas
+    assert n1.tools_faltantes == []
+    assert n1.tool_f1 == 1.0
+
+    assert n1.tools_creditadas_pela_hidratacao == ["get_asset"]
+    assert n1.tool_f1_liquido < n1.tool_f1
+    # Cinco das seis esperadas no laço, nenhuma extra: precisão 1.0, recall 5/6.
+    assert n1.tool_f1_liquido == pytest.approx(2 * 1.0 * (5 / 6) / (1.0 + 5 / 6))
+
+
+def test_a_taxonomia_continua_lendo_a_n1_1_bruta(cenarios):
+    """A líquida é resultado, não denominador: P1 não pode mudar por causa dela.
+
+    `severidade._falhas_de_processo` lê `tools_faltantes`, que é da conta bruta. Trocar por
+    líquida faria a variante com hidratação passar a FALHAR em P1 por uma tool que o trace
+    mostra chamada — e a taxonomia está sendo congelada com hash.
+    """
+    sem_get_asset = tuple(
+        (tool, args) for tool, args in _CHAMADAS_CEN_01 if tool != "get_asset"
+    )
+    hidratacao = _call(90, "get_asset", "tc_hidr", {"asset_id": ATIVO_CEN_01}).model_copy(
+        update={"iteration": 0}
+    )
+    n1 = pontuar_n1(
+        trace_cen_01(sem_get_asset, extras=[hidratacao]),
+        cenarios["cen_01_quebra_sem_aviso"],
+    )
+
+    assert n1.tools_faltantes == [], "a bruta é a que a taxonomia consome"
+    assert n1.tools_creditadas_pela_hidratacao == ["get_asset"]
+
+
+# ---------------------------------------------------------------------------
 # N1.2 — acurácia de argumentos, CONDICIONAL
 # ---------------------------------------------------------------------------
 

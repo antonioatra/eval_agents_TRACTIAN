@@ -80,6 +80,16 @@ Sem LLM. Compara o trace com o gabarito do cenário (`eval/expected-paths.json` 
   chamou e não devia — são 14 das 18, então qualquer agente marcaria ~85%. F1 ignora
   verdadeiro-negativo, que aqui é ruído puro.
 - **Não diz:** nada sobre ordem nem sobre argumentos.
+- **Reportada em duas versões — bruta e líquida (X24, 19/08).** A hidratação de contexto do
+  agente atravessa a fronteira MCP (não existe caminho honesto que não atravesse), então
+  `get_current_user` e `get_asset` chegam ao trace como `tool_call` normais e a conta bruta os
+  credita ao agente. A variante `hidratacao=True` ganharia tools esperadas **de graça** e a
+  comparação com `sem_hidratacao` nasceria confundida. A **líquida** repete a mesma conta só
+  sobre as chamadas do laço (`iteration > 0`); `tools_creditadas_pela_hidratacao` nomeia quais
+  tools separam as duas. **A diferença entre elas não é ruído a descontar — é o resultado
+  sobre o efeito da hidratação**, e por isso as duas são reportadas em vez de uma substituir a
+  outra. A taxonomia (P1, P2) continua lendo a **bruta**: é o que o trace mostra, e ela está
+  sendo congelada com hash.
 
 ### N1.2 — Acurácia de argumentos
 

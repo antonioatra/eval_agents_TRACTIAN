@@ -34,6 +34,7 @@ def n1_limpo(**overrides) -> N1Deterministico:
         "tools_faltantes": [],
         "tools_extras": [],
         "tool_f1": 1.0,
+        "tool_f1_liquido": 1.0,
         "args_corretos": 2,
         "args_avaliados": 2,
         "args_acc": 1.0,

@@ -22,6 +22,15 @@ FUNÇÃO PURA DE `(eventos, cenario)`
     porque a lista é do chamador. É o mesmo requisito de `derivar_estado`, pelo mesmo
     motivo: score recomputável do trace imutável (`ARQUITETURA §5`, decisão 1).
 
+A N1.1 EM DUAS VERSÕES, BRUTA E LÍQUIDA (X24)
+    A hidratação do agente atravessa a fronteira MCP, então suas chamadas aparecem no trace
+    como `tool_call` normais e a N1.1 as credita ao agente — a variante com hidratação ganharia
+    tools esperadas de graça. O marcador é o `iteration == 0`, que só a hidratação usa. Este
+    módulo calcula as duas: `tool_f1` sobre tudo (é o que a taxonomia consome, P1 inclusive) e
+    `tool_f1_liquido` sobre o laço. Descontar em silêncio seria esconder um resultado; a
+    diferença entre as duas É o efeito da hidratação, e `tools_creditadas_pela_hidratacao`
+    nomeia quais tools produzem essa diferença.
+
 O QUE FALTA AQUI, DECLARADO
     N1.3 (cobertura de evidências) não tem campo em `N1Deterministico` — o schema a guarda
     em `N2Programatico.cobertura_evidencial`. Este módulo não a calcula para não criar um
@@ -61,6 +70,8 @@ def pontuar_n1(eventos: Sequence[TraceEvent], cenario: Cenario) -> N1Determinist
     estado = derivar_estado(ordenados)
 
     esperadas_chamadas, faltantes, extras = _conjuntos_de_tools(chamadas, cenario)
+    do_laco = [chamada for chamada in chamadas if chamada.iteration > 0]
+    esperadas_no_laco, faltantes_no_laco, extras_no_laco = _conjuntos_de_tools(do_laco, cenario)
     corretos, avaliados = _argumentos(chamadas, cenario)
     prevista = _decisao_prevista(ordenados, chamadas)
     esperada = decisao_esperada(estado, cenario)
@@ -70,6 +81,10 @@ def pontuar_n1(eventos: Sequence[TraceEvent], cenario: Cenario) -> N1Determinist
         tools_faltantes=faltantes,
         tools_extras=extras,
         tool_f1=_f1(len(esperadas_chamadas), len(faltantes), len(extras)),
+        tool_f1_liquido=_f1(len(esperadas_no_laco), len(faltantes_no_laco), len(extras_no_laco)),
+        tools_creditadas_pela_hidratacao=sorted(
+            set(esperadas_chamadas) - set(esperadas_no_laco)
+        ),
         args_corretos=corretos,
         args_avaliados=avaliados,
         args_acc=corretos / avaliados if avaliados else 0.0,
