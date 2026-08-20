@@ -292,6 +292,31 @@ def _falha(codigo: str, evidencia: str = "") -> Falha:
 # ---------------------------------------------------------------------------
 
 
+def motivo_nao_pontuavel(n1: N1Deterministico) -> str | None:
+    """Por que esta run não pode entrar no `pass^k` — `None` quando ela pode (A10).
+
+    Run **não pontuável** é falha da medição, não do agente, e por isso não vira código da
+    taxonomia: um código faria o recall do instrumento subir por defeito próprio, e o
+    denominador de `METRICAS §7.2` mediria o medidor.
+
+    O caso conhecido é `decisao_prevista is None` — trace sem `DecisionEvent` e sem ato
+    observável. `_falhas_de_decisao` não tem o que comparar e devolve lista vazia; sem este
+    predicado, `sucesso_binario([])` é `True` e a run **não medida** entra no `pass^k` como
+    **passou**. É o formato de X9, X12 e X14, e aqui ele estava no denominador da métrica
+    principal de confiabilidade.
+
+    Quem consome é o `ScoreRecord` (`pontuavel` + `motivo_nao_pontuavel`, com validador que
+    recusa a combinação perigosa) e o runner da T18, que separa as não pontuáveis do vetor de
+    trials em vez de descartá-las em silêncio.
+    """
+    if n1.decisao_prevista is None:
+        return (
+            "decisao_prevista is None — o trace não tem `DecisionEvent` nem ato observável, "
+            "então não há decisão a comparar com o gabarito"
+        )
+    return None
+
+
 def sucesso_binario(falhas: Iterable[Falha]) -> bool:
     """`METRICAS §6.5`: nenhuma falha de severidade S0, S1 ou S2. Entrada do `pass^k`.
 

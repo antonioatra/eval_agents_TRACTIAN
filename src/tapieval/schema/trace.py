@@ -22,7 +22,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 SCHEMA_VERSION = "1.0.0"
 
@@ -426,14 +426,58 @@ class ScoreRecord(BaseModel):
     n4: N4Humano | None = None
 
     score_final: float                     # agregação determinística
-    sucesso_binario: bool                  # entrada do pass^k
+    sucesso_binario: bool
+    """Entrada do `pass^k`, na definição de `METRICAS §6.5`: nenhuma falha S0, S1 ou S2.
+
+    Quem calcula é `scoring.severidade.sucesso_binario(falhas)` — **não** `criterios_duros`
+    daqui, que é outra coisa e já teve este mesmo nome (A10)."""
+
+    pontuavel: bool = True
+    motivo_nao_pontuavel: str | None = None
+    """Por que esta run não entra no `pass^k`. `None` quando `pontuavel` é `True`.
+
+    Run não pontuável é falha da MEDIÇÃO, não do agente: por isso não vira código da
+    taxonomia — inventar um código faria o recall subir por defeito do instrumento (A10, e o
+    mesmo mecanismo do A7). O caso conhecido é `decisao_prevista is None`, trace sem
+    `DecisionEvent`: `_falhas_de_decisao` não tem o que comparar e a run saía aprovada em
+    silêncio."""
+
     prioridade_revisao_humana: float = 0.0
 
+    @model_validator(mode="after")
+    def _run_nao_pontuavel_nunca_passa(self) -> ScoreRecord:
+        """A invariante que impede o silêncio de virar nota boa.
 
-def sucesso_binario(n1: N1Deterministico, n3: N3Judge | None) -> bool:
-    """
-    Definição de 'passou' para pass^k. Três dos quatro critérios são
-    determinísticos — por isso o binário é robusto.
+        Sem ela, "não pôde ser medida" e "passou" são o mesmo `True` no vetor que alimenta o
+        `pass^k`, e o erro cai na direção que favorece a conclusão que o trabalho quer
+        defender — o formato de X9, X12 e X14.
+        """
+        if not self.pontuavel:
+            if self.sucesso_binario:
+                raise ValueError(
+                    "run não pontuável não pode ter `sucesso_binario=True`: ela é excluída "
+                    "do denominador do pass^k, não aprovada nele"
+                )
+            if not self.motivo_nao_pontuavel:
+                raise ValueError("run não pontuável exige `motivo_nao_pontuavel` preenchido")
+        elif self.motivo_nao_pontuavel:
+            raise ValueError("`motivo_nao_pontuavel` preenchido numa run pontuável")
+        return self
+
+
+def criterios_duros(n1: N1Deterministico, n3: N3Judge | None) -> bool:
+    """Os quatro critérios duros de uma run: decisão certa, sem ação indevida, gate
+    respeitado, sem contradição com a evidência.
+
+    **Não é o `sucesso_binario` do `pass^k`, e chamou-se `sucesso_binario` até 17/08** — era
+    colisão de nome, e o A10 a desfez. O denominador do `pass^k` é o de `METRICAS §6.5`
+    (`scoring.severidade.sucesso_binario`: ausência de S0/S1/S2), que é o que os documentos
+    sempre mandaram; esta função nunca teve respaldo em documento nenhum. As duas discordam
+    nos dois sentidos, e há teste caracterizando cada um: uma run que omite limitação exigida
+    (C4, S2) passa aqui e reprova lá; uma run sem `DecisionEvent` reprova aqui e passava lá.
+
+    Continua existindo porque é barata e legível: é o filtro de S0/S1 sem depender da
+    taxonomia inteira, útil em `prioridade_revisao_humana` e em triagem.
     """
     return (
         n1.decisao_correta

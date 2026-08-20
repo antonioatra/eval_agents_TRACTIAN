@@ -32,21 +32,25 @@ O QUE ESTAS QUATRO NÃO CALIBRAM, DECLARADO
 from __future__ import annotations
 
 import random
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import get_args
 
 import pytest
+from pydantic import ValidationError
 
 from tapieval.schema.reader import read_trace
 from tapieval.schema.trace import (
     DecisionEvent,
     FinalAnswer,
     N3Judge,
+    ScoreRecord,
+    ScorerVersion,
     ToolCall,
     ToolResult,
     TraceEvent,
+    criterios_duros,
 )
-from tapieval.schema.trace import sucesso_binario as sucesso_binario_do_schema
 from tapieval.schema.writer import TraceWriter
 from tapieval.scoring.estado import derivar_estado
 from tapieval.scoring.gabarito import carregar_cenarios
@@ -59,6 +63,7 @@ from tapieval.scoring.severidade import (
     Severidade,
     classificar_falhas,
     codigos,
+    motivo_nao_pontuavel,
     severidade_maxima,
     sucesso_binario,
     sucesso_binario_sem_s2,
@@ -255,45 +260,47 @@ def test_loop_nao_degrada_nenhuma_outra_metrica(medicoes):
 
 
 def test_a10_divergencia_do_denominador(medicoes):
-    """As duas definições de `sucesso_binario` discordam, e o fixture manda.
+    """As duas definições continuam discordando — o A10 decidiu qual manda, não as unificou.
 
-    Existem duas funções com o mesmo nome e definições diferentes:
-
-    - `scoring/severidade.sucesso_binario(falhas)` — ausência de S0/S1/S2 (`METRICAS §6.5`);
-    - `schema/trace.sucesso_binario(n1, n3)` — quatro campos de N1/N3.
+    - `scoring/severidade.sucesso_binario(falhas)` — ausência de S0/S1/S2 (`METRICAS §6.5`).
+      **É o denominador do `pass^k`**, e sempre foi: §6.5 e §7.2 mandavam isso desde antes de
+      existir código.
+    - `schema/trace.criterios_duros(n1, n3)` — quatro campos de N1/N3. Chamava-se
+      `sucesso_binario` até 17/08, e essa era a colisão de nome que o A10 desfez. Nunca teve
+      respaldo em documento nenhum.
 
     `pula_evidencia` é o caso que as separa: P1 é S2, então a primeira REPROVA; nenhum dos
     quatro campos da segunda está errado (decisão certa, sem ação indevida, gate respeitado,
     sem judge), então a segunda APROVA. A variante de sensibilidade `sucesso_binario_sem_s2`
     também aprova, porque ignora S2 por construção.
 
-    A tabela de calibração adota `scoring/severidade.sucesso_binario`. Isso é uma escolha de
-    CURADORIA sobre o denominador do `pass^k`, ainda aberta, não um fato do instrumento — e
-    é por isso que este teste documenta a divergência em vez de unificar as duas funções.
+    As duas continuam existindo de propósito: `criterios_duros` é o filtro barato de S0/S1
+    sem passar pela taxonomia inteira. O que o A10 tirou foi a possibilidade de chamar a
+    errada por engano.
     """
     medicao = medicoes["pula_evidencia"]
 
     assert medicao.severidade_maxima == "S2"
     assert sucesso_binario(medicao.falhas) is False
     assert sucesso_binario_sem_s2(medicao.falhas) is True
-    assert sucesso_binario_do_schema(medicao.n1, None) is True
+    assert criterios_duros(medicao.n1, None) is True
 
 
-def test_a10_a_divergencia_tambem_ocorre_na_direcao_oposta(
-    cenarios, trajetorias_de_referencia
+def test_a10_run_sem_decisao_observada_e_nao_pontuavel(
+    medicoes, cenarios, trajetorias_de_referencia
 ):
-    """Nenhuma das duas definições é a mais estrita: elas se cruzam.
+    """O buraco que a T12 achou, fechado: sem decisão observada, a run sai do denominador.
 
     Tome o `bom` e remova o `decision`. Sem `DecisionEvent` e sem ato observável,
     `_decisao_prevista` devolve `None` — o que é honesto, porque `orientar` e `recusar` não
-    têm assinatura estrutural. Aí `n1.decisao_correta` fica `False` e `schema.sucesso_binario`
-    REPROVA; `severidade.classificar_falhas`, por outro lado, não emite D2/D3/D4 quando a
-    decisão prevista é `None` (chutar código a partir de decisão não observada seria inventar
-    falha), então a lista de falhas fica vazia e `severidade.sucesso_binario` APROVA.
+    têm assinatura estrutural. Aí `classificar_falhas` não emite D2/D3/D4 (chutar código a
+    partir de decisão não observada seria inventar falha), a lista de falhas fica **vazia**, e
+    `sucesso_binario` APROVAVA a run: "não foi medida" entrava no `pass^k` como "passou".
 
-    Com `pula_evidencia` divergindo num sentido e este caso no outro, "qual das duas é mais
-    conservadora" não tem resposta: a escolha do denominador precisa ser decidida, não
-    deduzida.
+    A correção não é emitir um código — a falha é da MEDIÇÃO, não do agente, e um código faria
+    o recall do instrumento subir por defeito próprio. A run vira **não pontuável** e sai do
+    denominador com o motivo escrito, no mesmo mecanismo do A7. O `ScoreRecord` recusa a
+    combinação perigosa, que é a única que precisa ser impossível.
     """
     sem_decisao = [
         evento for evento in _do_fixture("bom") if not isinstance(evento, DecisionEvent)
@@ -303,8 +310,72 @@ def test_a10_a_divergencia_tambem_ocorre_na_direcao_oposta(
     assert medicao.n1.decisao_prevista is None
     assert medicao.n1.decisao_correta is False
     assert medicao.falhas == []
-    assert sucesso_binario(medicao.falhas) is True
-    assert sucesso_binario_do_schema(medicao.n1, None) is False
+    assert criterios_duros(medicao.n1, None) is False
+
+    motivo = motivo_nao_pontuavel(medicao.n1)
+    assert motivo is not None and "decisao_prevista" in motivo
+
+    # As quatro trajetórias da tabela continuam pontuáveis — o predicado não pode reprovar
+    # todo mundo, senão o denominador do pass^k esvazia sem ninguém notar.
+    for nome, outra in medicoes.items():
+        assert motivo_nao_pontuavel(outra.n1) is None, nome
+
+
+def _score_record(medicao, **overrides):
+    """Um `ScoreRecord` mínimo em volta de uma medição, para exercitar as invariantes."""
+    campos = {
+        "run_id": "run_0001_bom",
+        "experiment_id": "exp_a10",
+        "scenario_id": "aut_01_barulho_sem_desvio",
+        "split": "dev",
+        "variant_id": "baseline",
+        "model_key": "qwen3-8b",
+        "seed": 42,
+        "scorer": ScorerVersion(
+            scorer_version="v1",
+            sha256="0" * 64,
+            congelado_em=datetime(2026, 8, 19, tzinfo=UTC),
+        ),
+        "calculado_em": datetime(2026, 8, 19, tzinfo=UTC),
+        "n1": medicao.n1,
+        "n2": medicao.n2,
+        "score_final": 1.0,
+        "sucesso_binario": sucesso_binario(medicao.falhas),
+    }
+    return ScoreRecord(**{**campos, **overrides})
+
+
+def test_a10_o_score_record_recusa_run_nao_pontuavel_que_passa(medicoes):
+    """A única combinação que precisa ser impossível: fora do denominador **e** aprovada.
+
+    Sem esta invariante, "não pôde ser medida" e "passou" chegam ao vetor do `pass^k` como o
+    mesmo `True`, e o número que o trabalho reporta como confiabilidade sobe por defeito do
+    instrumento. As outras duas combinações erradas — não pontuável sem motivo escrito, e
+    motivo escrito numa run pontuável — também são recusadas, pelo mesmo motivo: o registro
+    tem de dizer qual dos dois estados é o dele.
+    """
+    medicao = medicoes["bom"]
+
+    # O caminho normal continua aberto.
+    assert _score_record(medicao).pontuavel is True
+
+    with pytest.raises(ValidationError, match="não pode ter `sucesso_binario=True`"):
+        _score_record(medicao, pontuavel=False, motivo_nao_pontuavel="sem DecisionEvent")
+
+    with pytest.raises(ValidationError, match="exige `motivo_nao_pontuavel`"):
+        _score_record(medicao, pontuavel=False, sucesso_binario=False)
+
+    with pytest.raises(ValidationError, match="preenchido numa run pontuável"):
+        _score_record(medicao, motivo_nao_pontuavel="sem DecisionEvent")
+
+    # E o registro de uma run realmente não pontuável é aceito, com o motivo do predicado.
+    registro = _score_record(
+        medicao,
+        pontuavel=False,
+        sucesso_binario=False,
+        motivo_nao_pontuavel="decisao_prevista is None — o trace não tem `DecisionEvent`",
+    )
+    assert registro.sucesso_binario is False
 
 
 # ---------------------------------------------------------------------------

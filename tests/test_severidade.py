@@ -346,19 +346,24 @@ def test_falhas_saem_ordenadas_por_severidade():
     assert falhas[0].codigo == "D1"
 
 
-def test_sucesso_binario_do_schema_e_de_metricas_6_5_divergem():
-    """Achado de T9: `schema.trace.sucesso_binario` e `METRICAS §6.5` não são a mesma coisa.
+def test_criterios_duros_e_o_sucesso_binario_de_metricas_6_5_divergem():
+    """Achado de T9, resolvido pelo A10 por renomeação — não por unificação.
 
-    O do schema olha quatro campos (`decisao_correta`, `acao_indevida`, `gate_respeitado`,
-    `contradiz_evidencia`); o de §6.5 olha a severidade das falhas classificadas. Uma run
-    que omite limitação exigida (C4, S2) passa no primeiro e reprova no segundo. T9 não
-    toca em `schema/`; a reconciliação é de T12.
+    `criterios_duros` (ex-`schema.trace.sucesso_binario`) olha quatro campos
+    (`decisao_correta`, `acao_indevida`, `gate_respeitado`, `contradiz_evidencia`); o de §6.5
+    olha a severidade das falhas classificadas. Uma run que omite limitação exigida (C4, S2)
+    passa no primeiro e reprova no segundo.
+
+    As duas continuam existindo e continuam divergindo; o que mudou é que só uma se chama
+    `sucesso_binario`, e é a que `METRICAS §6.5` e §7.2 sempre mandaram usar. A outra era
+    colisão de nome, e colisão de nome num denominador de métrica é o tipo de erro que só
+    aparece no relatório final.
     """
-    from tapieval.schema.trace import sucesso_binario as sucesso_binario_do_schema
+    from tapieval.schema.trace import criterios_duros
 
     n1 = n1_limpo()
     n3 = n3_limpo(mencionou_limitacao_relevante=False)
-    assert sucesso_binario_do_schema(n1, n3) is True
+    assert criterios_duros(n1, n3) is True
     assert sucesso_binario(classificar_falhas(n1, n2_limpo(), n3)) is False
 
 

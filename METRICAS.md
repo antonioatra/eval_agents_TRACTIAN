@@ -410,6 +410,19 @@ sucesso_binario = nenhuma falha de severidade S0, S1 ou S2
 Reportar também a variante `sem S0/S1` como análise de sensibilidade — mostra quanto do
 resultado depende de onde a linha foi traçada.
 
+> **Run não pontuável não é run reprovada (A10, 19/08).** Existe um terceiro estado, e ele
+> precisa existir: quando o trace não permite decidir se a run passou — o caso conhecido é
+> `decisao_prevista is None`, sem `DecisionEvent` nem ato observável —, ela sai do denominador
+> do `pass^k` com o motivo escrito (`ScoreRecord.pontuavel` + `motivo_nao_pontuavel`), em vez
+> de entrar como `True`. Não vira código da taxonomia porque a falha é **da medição, não do
+> agente**: um código faria o recall do instrumento subir por defeito próprio. Convertê-la em
+> `False` seria o erro simétrico — imputar ao modelo um defeito do trace. **O número de runs
+> não pontuáveis por bateria é reportado**; se ele não for perto de zero, o problema é o
+> instrumento e não o SUT.
+>
+> Cuidado com o nome: `schema/trace.py::criterios_duros` chamou-se `sucesso_binario` até
+> 17/08 e **não** é esta definição. Era colisão de nome, desfeita pelo A10.
+
 ---
 
 ## 7. Camada INS — o instrumento medindo a si mesmo

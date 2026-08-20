@@ -9,11 +9,20 @@ não existe "melhor de 5". `pass^k` decai rápido — 80% de acerto dá pass^5 �
 justamente esse decaimento, contrastado com a média simples, que mostra o quanto a média
 esconde de variância.
 
-A entrada de cada trial é o **sucesso binário** de `ScoreRecord.sucesso_binario`
-(`schema/trace.py`): decisão correta, sem ação indevida, gate respeitado e sem
-contradição com a evidência. Nenhuma função daqui importa o schema — elas recebem
-contagens ou listas de `bool`, para servirem igualmente ao notebook (nb05), que trabalha
-sobre DataFrame, e ao runner, que trabalha sobre `ScoreRecord`.
+A entrada de cada trial é o **sucesso binário** de `ScoreRecord.sucesso_binario`, na
+definição de `METRICAS §6.5`: ausência de falha S0, S1 ou S2 — quem calcula é
+`scoring.severidade.sucesso_binario(falhas)`. Não confundir com
+`schema.trace.criterios_duros`, que olha quatro campos de N1/N3, discorda desta nos dois
+sentidos e já se chamou `sucesso_binario` (A10).
+
+**Run não pontuável não entra aqui, nem como `True` nem como `False`** (`ScoreRecord.
+pontuavel`): ela é excluída do vetor de trials e contada à parte. Quem a converter em
+`False` transforma defeito do instrumento em erro do modelo; quem a converter em `True`
+faz o contrário, que é pior.
+
+Nenhuma função daqui importa o schema — elas recebem contagens ou listas de `bool`, para
+servirem igualmente ao notebook (nb05), que trabalha sobre DataFrame, e ao runner, que
+trabalha sobre `ScoreRecord`.
 
 O estimador puro está separado da agregação de propósito: `pass_hat_k` é a métrica e
 precisa ser auditável sozinha; como se soma cenário com cenário é decisão de análise, que
