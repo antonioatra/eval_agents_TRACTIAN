@@ -18,7 +18,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from tapieval.schema.reader import read_trace
+from tapieval.schema.reader import read_trace, validar_trace
 from tapieval.schema.trace import GateEvent, RunStart, ToolCall, ToolResult
 from tapieval.schema.writer import TraceWriter
 
@@ -292,3 +292,70 @@ def test_read_trace_erra_com_type_desconhecido(tmp_path):
 
     with pytest.raises(ValueError):
         read_trace(caminho)
+
+
+# ---------------------------------------------------------------------------
+# 6. `validar_trace` (A7) — o que torna uma run não pontuável
+# ---------------------------------------------------------------------------
+
+
+def test_trace_integro_nao_tem_defeito():
+    """O zero da função. Falha aqui invalidaria run boa, que é o pior erro deste validador:
+    ele não reprova o agente, ele **apaga a célula** da matriz da bateria."""
+    assert validar_trace([_run_start(0), _tool_call(1), _tool_result(2)]) == []
+
+
+def test_lacuna_de_seq_invalida_a_run():
+    """`ARQUITETURA §5`, decisão 9. O evento que sumiu é evidência que sumiu, e evidência que
+    sumiu vira 'o agente não consultou' na N1.1 — falha do transporte imputada ao modelo."""
+    defeitos = validar_trace([_run_start(0), _tool_call(1), _tool_result(3)])
+
+    assert [defeito.tipo for defeito in defeitos] == ["lacuna_de_seq"]
+    assert "[2]" in defeitos[0].detalhe
+
+
+def test_seq_duplicado_invalida_a_run():
+    """X23 pelo lado do leitor: dois emissores numerando no mesmo espaço sem coordenação.
+
+    A escolha da T16 foi o harness não numerar em stdio. Se um `seq` repetir, essa garantia
+    caiu e a ordem total deixou de existir — e é dela que a aderência causal da N2 depende.
+    """
+    defeitos = validar_trace([_run_start(0), _tool_call(1), _tool_result(1)])
+
+    assert [defeito.tipo for defeito in defeitos] == ["seq_duplicado"]
+    assert "[1]" in defeitos[0].detalhe
+
+
+def test_trace_sem_run_start_invalida_a_run():
+    """Sem `RunStart`, `derivar_estado` não acha o `asset_id` e a criticidade do ativo nasce
+    nula: a run seria pontuada contra um mundo vazio, em vez de não ser pontuada."""
+    assert [d.tipo for d in validar_trace([_tool_call(0), _tool_result(1)])] == [
+        "sem_run_start"
+    ]
+
+
+def test_trace_vazio_e_sem_run_start_e_nao_uma_quarta_categoria():
+    """O efeito é o mesmo, e uma categoria a mais só daria ao runner um caso a mais para
+    esquecer de tratar."""
+    assert [d.tipo for d in validar_trace([])] == ["sem_run_start"]
+
+
+def test_os_defeitos_se_acumulam_em_vez_de_curto_circuitar():
+    """O manifesto guarda o motivo, e um trace que quebrou por dois motivos quebrou por dois.
+
+    Curto-circuitar no primeiro faria o diagnóstico da bateria depender da ordem das
+    checagens — e a run seria reprocessada, corrigida pela metade, e falharia de novo.
+    """
+    defeitos = validar_trace([_tool_call(1), _tool_result(1), _gate(4)])
+
+    assert {defeito.tipo for defeito in defeitos} == {
+        "sem_run_start",
+        "seq_duplicado",
+        "lacuna_de_seq",
+    }
+
+
+def test_o_defeito_se_le_como_texto_no_manifesto():
+    """`valida: false` sem motivo legível é o mesmo que descartar em silêncio."""
+    defeito = validar_trace([_run_start(0), _tool_call(2)])[0]
+    assert str(defeito).startswith("lacuna_de_seq: ")
