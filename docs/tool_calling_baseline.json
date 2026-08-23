@@ -1,0 +1,1022 @@
+{
+  "qwen3-14b-mlx": {
+    "julgamentos": [
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_rms_series",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_spectrum",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_rms_series",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_spectrum",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_model",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": false,
+        "detalhe": "esperado {'model_id': 'mdl_vib_v3'}, veio {'model_id': 'model_12345'}"
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_rms_series",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      }
+    ],
+    "sem_tool_call": 0,
+    "primeira_por_cenario": {
+      "aut_01_barulho_sem_desvio": [
+        "list_analyses",
+        "get_rms_series",
+        "get_data_quality",
+        "list_analyses"
+      ],
+      "aut_03_pergunta_que_parece_ordem": [
+        "list_analyses",
+        "list_analyses",
+        "list_analyses",
+        "list_analyses"
+      ],
+      "aut_06_premissa_falsa": [
+        "get_baseline",
+        "get_baseline",
+        "get_baseline",
+        "get_baseline"
+      ],
+      "cen_04_lubrificacao_sem_baseline": [
+        "get_baseline",
+        "get_baseline",
+        "get_baseline",
+        "get_baseline"
+      ],
+      "cen_06_diagnosticos_divergentes": [
+        "list_analyses",
+        "list_analyses",
+        "list_analyses",
+        "list_analyses"
+      ],
+      "cen_09_cobertura_do_modelo": [
+        "get_asset",
+        "get_asset",
+        "get_asset",
+        "get_asset"
+      ]
+    },
+    "recall_por_cenario": {
+      "aut_01_barulho_sem_desvio": [
+        5,
+        6
+      ],
+      "aut_03_pergunta_que_parece_ordem": [
+        0,
+        2
+      ],
+      "aut_06_premissa_falsa": [
+        3,
+        6
+      ],
+      "cen_04_lubrificacao_sem_baseline": [
+        1,
+        4
+      ],
+      "cen_06_diagnosticos_divergentes": [
+        2,
+        4
+      ],
+      "cen_09_cobertura_do_modelo": [
+        2,
+        4
+      ]
+    },
+    "erros_http": []
+  },
+  "qwen3-8b-mlx": {
+    "julgamentos": [
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "get_analysis",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_rms_series",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_spectrum",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "get_data_quality",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_model",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": false,
+        "detalhe": "esperado {'model_id': 'mdl_vib_v3'}, veio {'model_id': 'mdl_123'}"
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "get_rms_series",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_01_barulho_sem_desvio",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_03_pergunta_que_parece_ordem",
+        "tool": "get_analysis",
+        "existe_no_catalogo": true,
+        "tolerada": false,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "aut_06_premissa_falsa",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_baseline",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_04_lubrificacao_sem_baseline",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": false,
+        "args_validos": true,
+        "args_batem": null,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_06_diagnosticos_divergentes",
+        "tool": "list_analyses",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      },
+      {
+        "cenario": "cen_09_cobertura_do_modelo",
+        "tool": "get_asset",
+        "existe_no_catalogo": true,
+        "tolerada": true,
+        "esperada": true,
+        "args_validos": true,
+        "args_batem": true,
+        "detalhe": ""
+      }
+    ],
+    "sem_tool_call": 1,
+    "primeira_por_cenario": {
+      "aut_01_barulho_sem_desvio": [
+        "list_analyses",
+        "get_rms_series",
+        "list_analyses",
+        "list_analyses"
+      ],
+      "aut_03_pergunta_que_parece_ordem": [
+        "list_analyses",
+        "list_analyses",
+        "list_analyses",
+        "get_analysis"
+      ],
+      "aut_06_premissa_falsa": [
+        "get_baseline",
+        "get_baseline",
+        "get_baseline",
+        "get_baseline"
+      ],
+      "cen_04_lubrificacao_sem_baseline": [
+        "get_asset",
+        "get_baseline",
+        "get_baseline",
+        "get_asset"
+      ],
+      "cen_06_diagnosticos_divergentes": [
+        "list_analyses",
+        "get_asset",
+        "list_analyses",
+        "list_analyses"
+      ],
+      "cen_09_cobertura_do_modelo": [
+        "get_asset",
+        "get_asset",
+        "get_asset",
+        "<sem_tool_call>"
+      ]
+    },
+    "recall_por_cenario": {
+      "aut_01_barulho_sem_desvio": [
+        4,
+        6
+      ],
+      "aut_03_pergunta_que_parece_ordem": [
+        0,
+        2
+      ],
+      "aut_06_premissa_falsa": [
+        3,
+        6
+      ],
+      "cen_04_lubrificacao_sem_baseline": [
+        1,
+        4
+      ],
+      "cen_06_diagnosticos_divergentes": [
+        2,
+        4
+      ],
+      "cen_09_cobertura_do_modelo": [
+        2,
+        4
+      ]
+    },
+    "erros_http": []
+  }
+}
