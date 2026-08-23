@@ -1,0 +1,82 @@
+# T17 — as colunas do experimento. Carregado por `tapieval.sut.variants.carregar_variantes`.
+#
+# `variant_id` vem da chave, `prompt_sha` é derivado do arquivo em `prompt:` — nenhum dos dois
+# se escreve aqui. Campo com grafia errada é recusado no carregamento, não descartado: um
+# mutante que sai igual à base faria a INS.9 medir 0% de detecção e o número seria lido como
+# "o instrumento não detecta", quando o que houve foi "não havia degradação para detectar".
+#
+# Os quatro mutantes cobrem as DUAS classes de falha, que é requisito de desenho do
+# `METRICAS §7.1`: sem equilíbrio, a curva de detecção de uma delas fica sem ponto de apoio.
+#
+#   | mutante | classe | mora em     |
+#   |---------|--------|-------------|
+#   | MUT1    | P      | servidor MCP|
+#   | MUT2    | C      | agente      |
+#   | MUT3    | P      | agente      |
+#   | MUT4    | C      | agente      |
+
+variantes:
+
+  # O original. Todo mutante se lê contra esta coluna; sem ela não existe o "distinguir do
+  # original" que a INS.9 mede.
+  base:
+    prompt: prompts/agente_v1.md
+
+  # P · A tool de qualidade de sinal não existe para este cliente.
+  #
+  # Sob MCP a degradação é honesta de um jeito que tools em processo não permitem: não é uma
+  # instrução mandando o modelo ignorar a tool — ela some de `list_tools`, e `call_tool` a
+  # recusa. É perda de capacidade real, não jogo de redação (`METRICAS §7.1`).
+  MUT1:
+    prompt: prompts/agente_v1.md
+    mutante: true
+    classe: P
+    mutacao_descricao: >-
+      o servidor não expõe `get_data_quality` em `list_tools`; o agente perde a única
+      evidência direta de completeness, SNR e staleness e tem de concluir sem ela
+    tools_ocultas: [get_data_quality]
+
+  # C · O prompt deixa de exigir fundamentação.
+  #
+  # Não muda o template: `exige_citacao` governa um bloco que o agente injeta ou não. Por isso
+  # o `prompt_sha` de MUT2 é o mesmo da base — e está certo que seja, porque o template não
+  # mudou. O que muda é o prompt renderizado, cujo hash vai em cada `LLMCall`.
+  MUT2:
+    prompt: prompts/agente_v1.md
+    mutante: true
+    classe: C
+    mutacao_descricao: >-
+      o prompt não pede `citacoes` nem exige justificativa com `tool_call_id`; afirmação sem
+      suporte deixa de ter atrito
+    exige_citacao: false
+
+  # P · Orçamento cortado de 12 para 3 chamadas.
+  #
+  # Três chamadas não cobrem a investigação de nenhum cenário do corpus — os gabaritos pedem
+  # de 2 a 6 tools. O agente é forçado a concluir cedo, e o que se mede é se o instrumento
+  # enxerga a investigação truncada como falha de processo.
+  MUT3:
+    prompt: prompts/agente_v1.md
+    mutante: true
+    classe: P
+    mutacao_descricao: >-
+      `max_tool_calls` cai de 12 para 3, abaixo do que qualquer cenário do corpus exige; a
+      run encerra por orçamento antes de reunir a evidência
+    max_tool_calls: 3
+
+  # C · O prompt autoriza concluir sem checar o baseline.
+  #
+  # O mutante que a revisão de 14/08 acrescentou. Sem ele três dos quatro seriam de processo
+  # e a classe C ficaria com um ponto só. A degradação é de conteúdo porque não tira
+  # capacidade nenhuma: a tool continua lá e o orçamento continua inteiro — o que muda é o
+  # que o agente considera suficiente para afirmar uma causa.
+  #
+  # Morde exatamente onde o corpus é mais sensível: o estado do baseline é a causa-raiz de
+  # `cen_01`, `cen_04` e `cen_13`, e afirmá-la sem ler `baseline.state` é o C1 da taxonomia.
+  MUT4:
+    prompt: prompts/agente_mut4.md
+    mutante: true
+    classe: C
+    mutacao_descricao: >-
+      o prompt declara opcional a consulta ao baseline antes de concluir; o agente pode
+      afirmar causa-raiz sem ter lido `baseline.state`

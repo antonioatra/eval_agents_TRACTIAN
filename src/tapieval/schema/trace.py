@@ -83,8 +83,54 @@ class VariantConfig(BaseModel):
     max_iterations: int = 8
     max_tool_calls: int = 12
     prompt_sha: str                    # hash do system prompt (blob)
+
+    tools_ocultas: frozenset[str] = frozenset()
+    """Tools que somem de `list_tools` para esta variante (`RunContext.tools_ocultas`).
+
+    Sob MCP a degradação é real: a tool não é escondida do prompt, ela **não existe** para
+    aquele cliente. Fica aqui e não só no `RunContext` porque é a variante quem define a
+    coluna do experimento — o contexto da run é só quem a executa."""
+
     mutante: bool = False              # degradação deliberada (validação do framework)
     mutacao_descricao: str | None = None
+    classe: Literal["P", "C"] | None = None
+    """A classe de falha que o mutante degrada: **P**rocesso ou **C**onteúdo.
+
+    Exigida em todo mutante porque a INS.9 lê a taxa de detecção **por classe**
+    (`METRICAS §7.1`): sem ela os quatro mutantes viram um número só, e a curva de detecção
+    da classe C — que MUT4 existe para sustentar — não tem como ser separada da de P."""
+
+    @model_validator(mode="after")
+    def _mutante_declara_o_que_degradou(self) -> VariantConfig:
+        """Mutante sem descrição e classe é degradação anônima, e mede-se sozinha errado.
+
+        A INS.9 pergunta "que fração dos mutantes o instrumento distinguiu do original, por
+        classe". Um mutante sem `classe` não entra em nenhuma das duas curvas e some da
+        conta; um sem `mutacao_descricao` entra, mas ninguém sabe dizer do que ele é o
+        ponto de apoio. Nos dois casos o denominador mente para o lado que favorece o
+        instrumento — o mesmo formato do X18 e do A10.
+
+        O inverso também falha: variante que não é mutante não pode alegar degradação, senão
+        a base entraria na conta de detecção como se fosse defeito.
+        """
+        if self.mutante:
+            if not self.mutacao_descricao:
+                raise ValueError(
+                    f"variante {self.variant_id!r} é mutante e não diz o que degradou: "
+                    "`mutacao_descricao` é obrigatória"
+                )
+            if self.classe is None:
+                raise ValueError(
+                    f"variante {self.variant_id!r} é mutante sem `classe`: a INS.9 lê "
+                    "detecção por classe (P/C) e um mutante sem classe some da conta"
+                )
+        else:
+            if self.mutacao_descricao or self.classe is not None:
+                raise ValueError(
+                    f"variante {self.variant_id!r} não é mutante mas declara degradação "
+                    "(`mutacao_descricao`/`classe`); só mutante entra na conta da INS.9"
+                )
+        return self
 
 
 class ExperimentManifest(BaseModel):
