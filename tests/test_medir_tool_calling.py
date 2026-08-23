@@ -155,3 +155,31 @@ def test_o_catalogo_exposto_ao_modelo_e_o_real(medidor):
         funcao = schema["function"]
         assert funcao["description"], f"{funcao['name']} sem descrição"
         assert funcao["parameters"]["additionalProperties"] is False
+
+
+def test_ruido_e_reportado_por_cenario_e_nao_agregado(medidor, cenario, operacoes):
+    """`get_asset` é esperada em cinco dos seis cenários de dev e ruído no `aut_03`.
+
+    Agregar os nomes numa lista só faria o relatório acusar a tool errada: quem lesse veria
+    `get_asset` sob "fora do gabarito" e concluiria que o modelo erra a chamada mais básica do
+    corpus. O ruído só se lê junto do cenário em que ocorreu.
+    """
+    placar = medidor.Placar(modelo="falso")
+    placar.julgamentos = [
+        medidor.julgar(_chamada(medidor, "get_data_quality", {"asset_id": "asset_H110"}),
+                       cenario, operacoes),
+    ]
+    texto = "\n".join(medidor.linhas_do_placar(placar, []))
+    assert "Cenário em que foi ruído" in texto
+    assert "`get_data_quality` | `cen_falso`" in texto
+
+
+def test_funcao_inventada_e_nomeada_no_relatorio(medidor, cenario, operacoes):
+    """Contar quantas foram inventadas sem dizer quais desperdiça o achado mais útil da T0b."""
+    placar = medidor.Placar(modelo="falso")
+    placar.julgamentos = [
+        medidor.julgar(_chamada(medidor, "diagnosticar_ativo", {}), cenario, operacoes)
+    ]
+    texto = "\n".join(medidor.linhas_do_placar(placar, []))
+    assert "não existem no catálogo" in texto
+    assert "`diagnosticar_ativo`" in texto

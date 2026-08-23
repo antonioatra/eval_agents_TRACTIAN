@@ -416,11 +416,29 @@ def linhas_do_placar(placar: Placar, cenarios: list[CenarioDeDev]) -> list[str]:
         linhas.append(f"| `{cid}` | {', '.join(f'`{e}`' for e in distintas)} | "
                       f"{'sim' if len(distintas) == 1 else '**não**'} |")
 
-    ruido = sorted({j.tool for j in js if j.existe_no_catalogo and not j.tolerada})
+    inventadas: dict[str, set[str]] = {}
+    for j in js:
+        if not j.existe_no_catalogo:
+            inventadas.setdefault(j.tool, set()).add(j.cenario)
+    if inventadas:
+        linhas += ["", "**Funções que não existem no catálogo** — é o sinal que mais importa "
+                   "aqui: nome alucinado diz se o problema é a largura do catálogo ou um nome "
+                   "que induz ao erro.", "", "| Função inventada | Onde |", "|---|---|"]
+        for nome, onde in sorted(inventadas.items()):
+            linhas.append(f"| `{nome}` | {', '.join(f'`{c}`' for c in sorted(onde))} |")
+
+    # O ruído é por cenário, nunca agregado: `get_asset` é esperada em cinco dos seis e ruído
+    # no `aut_03`. Uma lista só de nomes acusaria a tool errada.
+    ruido: dict[str, set[str]] = {}
+    for j in js:
+        if j.existe_no_catalogo and not j.tolerada:
+            ruido.setdefault(j.tool, set()).add(j.cenario)
     if ruido:
-        linhas += ["", "**Tools chamadas fora do gabarito** (ruído, não necessariamente erro — "
-                   "o gabarito lista o exigido, não o permitido): "
-                   + ", ".join(f"`{t}`" for t in ruido)]
+        linhas += ["", "**Chamadas fora do gabarito daquele cenário** (ruído — o gabarito lista "
+                   "o exigido e o aceitável, não tudo que é defensável; leia como custo, não "
+                   "como erro).", "", "| Tool | Cenário em que foi ruído |", "|---|---|"]
+        for nome, onde in sorted(ruido.items()):
+            linhas.append(f"| `{nome}` | {', '.join(f'`{c}`' for c in sorted(onde))} |")
     if placar.erros_http:
         linhas += ["", "**Erros de transporte:**", ""] + [f"- `{e}`" for e in placar.erros_http]
     return linhas
