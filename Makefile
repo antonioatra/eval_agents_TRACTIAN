@@ -1,4 +1,4 @@
-.PHONY: venv install test lint corpus api api-stop clean
+.PHONY: venv install test lint corpus api api-stop t0b clean
 
 VENV    := .venv
 PY      := $(VENV)/bin/python
@@ -27,6 +27,12 @@ lint: install
 corpus:
 	$(API_PY) scripts/validar_cenarios.py
 	$(API_PY) scripts/checar_seeds_na_api.py
+
+# T0b — portão de viabilidade: o modelo escolhe função e argumento com as 18 tools na janela?
+# Checa o servidor de inferência primeiro; sem ele o número mediria a ferramenta de servir.
+t0b: install
+	$(PY) scripts/checar_servidor_de_inferencia.py
+	$(PY) scripts/medir_tool_calling.py
 
 # Sobe a API industrial do parceiro em localhost:8000 (necessária para `make corpus`).
 api:
