@@ -7,6 +7,8 @@ Fonte: `METRICAS §6` — taxonomia FECHADA (P1–P6, C1–C7, D1–D6) e escala
 from __future__ import annotations
 
 import re
+from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -14,14 +16,21 @@ import pytest
 from tapieval.schema.trace import N1Deterministico, N2Programatico, N3Judge, N4Humano
 from tapieval.scoring.severidade import (
     CATALOGO_DE_FALHAS,
+    CONGELADA_EM,
     FALHAS_NAO_CLASSIFICAVEIS,
     SEVERIDADES_QUE_REPROVAM,
+    SHA_DA_TAXONOMIA,
     classificar_falhas,
     codigos,
     severidade_maxima,
+    sha_da_taxonomia,
     sucesso_binario,
     sucesso_binario_sem_s2,
 )
+
+# Alvo dos `monkeypatch` do congelamento, por string: `severidade` é nome de parâmetro em
+# vários testes daqui, e importar o módulo com esse nome sombrearia um pelo outro.
+_MODULO = "tapieval.scoring.severidade."
 
 # ---------------------------------------------------------------------------
 # Insumos neutros — nenhuma falha
@@ -99,6 +108,87 @@ def test_o_catalogo_e_a_lista_fechada_de_metricas_6():
         "C1", "C2", "C3", "C4", "C5", "C6", "C7",
         "D1", "D2", "D3", "D4", "D5", "D6",
     }
+
+
+def test_a_composicao_por_classe_e_6_p_7_c_6_d():
+    """A contagem, quebrada por classe — o segundo lugar onde uma inserção acidental bate.
+
+    O teste acima fixa o conjunto de códigos e o de baixo fixa o sha; este existe para que a
+    quebra seja legível. Um código a mais numa classe aparece aqui como `7 != 6` antes de
+    aparecer como um sha diferente, e a mensagem de curadoria do sha só precisa ser lida por
+    quem realmente mudou a tabela.
+    """
+    contagem = Counter(entrada.classe for entrada in CATALOGO_DE_FALHAS.values())
+    assert dict(contagem) == {"P": 6, "C": 7, "D": 6}
+    assert len(CATALOGO_DE_FALHAS) == 19
+
+
+def test_o_sha_da_taxonomia_e_o_congelado_em_24_08():
+    """O pré-registro de `METRICAS §6` virando teste.
+
+    Este é o único teste da suíte cuja falha **não** se conserta no teste.
+    """
+    assert sha_da_taxonomia() == SHA_DA_TAXONOMIA, (
+        "A taxonomia de falhas mudou depois de congelada "
+        f"(§6, {CONGELADA_EM:%d/%m/%Y}, sha {SHA_DA_TAXONOMIA[:12]}…).\n"
+        "NÃO atualize o literal `SHA_DA_TAXONOMIA` para fazer este teste passar: o sha não é "
+        "um número esperado, é o pré-registro de §6. A lista é fechada e foi congelada antes "
+        "de qualquer execução do test set ser inspecionada, justamente para que nenhuma "
+        "categoria seja criada (ou reescrita, ou re-severizada) enquanto se lê o resultado — "
+        "se isso acontecer, toda falha acha um balde, o recall de cada camada tende a 100% "
+        "por construção e o ganho incremental INS.2, que é o número que testa H0, deixa de "
+        "significar coisa alguma.\n"
+        "Se a mudança foi acidental, reverta-a. Se ela é deliberada, é decisão de CURADORIA: "
+        "ela invalida o pré-registro e precisa ser registrada como tal (o que mudou, por quê, "
+        "e o que acontece com as execuções já pontuadas) antes que o literal e o `METRICAS "
+        "§6.6` sejam reescritos juntos, no mesmo commit."
+    )
+
+
+def test_reordenar_o_catalogo_nao_muda_o_sha_mas_editar_um_campo_muda(monkeypatch):
+    """As duas metades da serialização canônica, que é o que dá sentido ao congelamento.
+
+    Sem a primeira, agrupar a tabela por classe acusaria violação de pré-registro e o sha
+    viraria ruído que se atualiza sem ler. Sem a segunda, trocar S3 por S2 num código — que
+    muda a resposta de `sucesso_binario` — passaria sem que nada acusasse.
+    """
+    embaralhado = dict(reversed(list(CATALOGO_DE_FALHAS.items())))
+    monkeypatch.setattr(_MODULO + "CATALOGO_DE_FALHAS", embaralhado)
+    assert sha_da_taxonomia() == SHA_DA_TAXONOMIA
+
+    for campo, valor in (
+        ("classe", "D"),
+        ("severidade", "S3"),
+        ("descricao", "evidência obrigatória não consultada."),
+        ("detectada_por", "N1.1"),
+    ):
+        editado = dict(CATALOGO_DE_FALHAS)
+        editado["P1"] = replace(CATALOGO_DE_FALHAS["P1"], **{campo: valor})
+        monkeypatch.setattr(_MODULO + "CATALOGO_DE_FALHAS", editado)
+        assert sha_da_taxonomia() != SHA_DA_TAXONOMIA, f"editar `{campo}` não mudou o sha"
+
+
+def test_a_escala_de_severidade_entra_no_sha_e_o_s4_nao_volta_calado(monkeypatch):
+    """A régua faz parte do congelado: o S4 foi cortado em 17/08 (X18) e não pode voltar mudo.
+
+    Um nível que existe na escala e que nenhum código emite se lê no relatório como "nenhuma
+    falha cosmética encontrada", quando o certo é "o instrumento não mede falha cosmética" —
+    exatamente o erro que a remoção corrigiu.
+    """
+    monkeypatch.setattr(_MODULO + "_ORDEM_DE_SEVERIDADE", ("S0", "S1", "S2", "S3", "S4"))
+    assert sha_da_taxonomia() != SHA_DA_TAXONOMIA
+
+
+def test_o_mapa_de_nao_classificaveis_fica_fora_do_sha(monkeypatch):
+    """Encolher `FALHAS_NAO_CLASSIFICAVEIS` é progresso do instrumento, não da taxonomia.
+
+    Ele já encolheu uma vez (P4 saiu em 16/08, quando a T11 passou a emitir o código) e deve
+    poder encolher de novo. Se o congelamento o assinasse, fechar uma lacuna de schema
+    custaria uma decisão de curadoria — incentivo invertido, e duas coisas diferentes
+    (o que a taxonomia define × o que o medidor alcança) confundidas numa só assinatura.
+    """
+    monkeypatch.setattr(_MODULO + "FALHAS_NAO_CLASSIFICAVEIS", {})
+    assert sha_da_taxonomia() == SHA_DA_TAXONOMIA
 
 
 @pytest.mark.parametrize(
