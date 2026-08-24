@@ -322,3 +322,78 @@ Com 13,5 h medidas (14,5 h na leitura conservadora) contra as 16 h de duas madru
 corte é necessário**: nem cenário de test, nem `sample_seed`, nem bateria inteira. A tabela de
 opções de corte do §1 continua no documento porque ela é o registro de como a conta era feita — e
 porque a margem é de ~1,5 h, o que **não** cobre uma noite em que o servidor esteja mais lento.
+
+## 7 · A terceira e a quarta passadas: a hidratação expõe os ids
+
+A consequência que o §6 deixou para decidir foi decidida assim: **a hidratação expõe os
+`tool_call_id` ao modelo.** As outras duas saídas foram recusadas com motivo — descontar a
+repetição hidratada na N2.3 esconderia uma chamada que o agente de fato gasta (o instrumento
+relatando uma ausência que ele próprio produziu), e sair com o número inflado deixaria a P5, que é
+o que a INS mede, dependendo de nota de rodapé.
+
+A mudança está em `_contexto_renderizado`: cada bloco do contexto pré-carregado passa a sair
+agrupado sob o id que o sustenta. Ela **não** mexe no `prompts/agente_v1.md`, de propósito —
+escrever a instrução no template mudaria o `prompt_sha`, que rotula a coluna do experimento, e
+obrigaria a reetiquetar uma variante que não mudou de prompt.
+
+### As quatro passadas, lado a lado
+
+Mesmo recorte nas quatro: 6 cenários de dev × 2 modelos × 2 seeds, só a variante `base`, mesmo
+servidor.
+
+| | 1ª (23/08) | 2ª (A17) | 3ª (A18) | 4ª (A18, rótulo seco) |
+|---|---|---|---|---|
+| repetição de chamada **hidratada** | 20 | 44 | **9** | 16 |
+| runs afetadas | 14/24 | 22/24 | **8/24** | 10/24 |
+| repetição **do que o modelo pediu** | 9 | 12 | 8 | 10 |
+| `citacoes_validas` | 6/6 | 10/12 | **9/9** | **10/10** |
+| `final_answer` | 6/24 | 12/24 | 9/24 | 10/24 |
+| `pensamento` (mediana) | 301 ch | 231 ch | 385 ch | 406 ch |
+| tokens por chamada | 161 | 126 | 202 | 183 |
+| ms por token gerado | 84,0 | 86,0 | 82,8 | 83,4 |
+| extrapolação das 600 | 19,8 h | 13,5 h | 21,3 h | 17,3 h |
+
+### O que estas duas passadas estabelecem
+
+**A repetição era compra de citação, e o diagnóstico se confirma.** Com o id disponível ela cai de
+44 para 9–16, e a repetição do que o próprio modelo pediu — o controle — não se move. A citação
+inventada, que era o outro lado da mesma moeda, zera: 9/9 e 10/10 contra 10/12.
+
+**A quarta passada existe porque a terceira produziu uma hipótese, e ela foi refutada.** Na 3ª o
+`pensamento` cresceu 67% e passou a mencionar `tc_` em 23 de 157 passos; a hipótese era que a
+oração *"cite este id em vez de chamar a tool de novo"* convidava o modelo a deliberar. A 4ª rodou
+o rótulo seco (`tool → id:`) e separou as duas coisas: a menção a `tc_` caiu (23/157 → 4/150), mas
+o `pensamento` ficou **mais longo** (385 → 406 chars) e a repetição **subiu** (9 → 16). A
+instrução causava a narração e não causava o tamanho — e estava segurando repetição de verdade.
+Ela foi mantida.
+
+### O que estas duas passadas NÃO estabelecem
+
+**A extrapolação de tempo não é separável de ruído neste tamanho de amostra.** As quatro passadas
+deram 19,8 · 13,5 · 21,3 · 17,3 h. Com n=24, temperatura 0,7 e o 8B com `honra_seed: false`, a
+dispersão basal engole diferenças de poucas horas, e nenhuma delas deve ser atribuída a uma
+mudança específica do SUT. O que é robusto é o lado grosso: **as duas últimas passadas ficaram
+acima das 16 h disponíveis.**
+
+O mesmo vale para o `final_answer` (12 → 9 → 10): três runs de diferença cabem dentro de um
+desvio-padrão e não caracterizam regressão nem melhora.
+
+### O que isto faz com o A16, de novo
+
+**O A16 volta a estar aberto.** Com 17,3 h na passada mais recente contra as 16 h de duas
+madrugadas, a tabela de opções de corte do §1 volta à mesa — e desta vez sem a folga que o §6
+tinha declarado. A quantidade a cortar não é conhecida com precisão pelo motivo acima; o que se
+sabe é que ela é da ordem de 1,5 a 5 h.
+
+### Ressalva declarada da escolha
+
+A instrução no rótulo é parte do harness, e a variante `sem_hidratacao` não recebe equivalente. O
+eixo `hidratacao × sem_hidratacao` passa a carregar meia diferença a mais que a hidratação em si —
+mesma natureza da ressalva do §6 sobre o MUT3 enxergar o corte de orçamento.
+
+### Um achado lateral que fica em observação
+
+Na 4ª passada o **`parse_erro` do 14B foi a 7,6 %** (6 de 79 chamadas, 5 runs afetadas), contra
+0 % do 8B na mesma passada e ~1 % nas passadas anteriores. O limiar de inviabilidade do enunciado
+da T19 é 20 %, então nada muda agora — mas o 14B é metade do eixo de H2 e a direção merece
+vigilância na bateria principal.

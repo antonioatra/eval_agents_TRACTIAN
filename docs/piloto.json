@@ -1,103 +1,105 @@
 {
-  "diretorio": "runs/piloto_2026-08-24",
+  "diretorio": "runs/piloto_2026-08-24c",
   "n_runs": 24,
   "status_geral": {
-    "ok": 12,
-    "budget_exceeded": 12
+    "budget_exceeded": 13,
+    "ok": 10,
+    "error": 1
   },
   "por_modelo": {
     "qwen3-14b": {
       "n_runs": 12,
       "status": {
         "ok": 6,
-        "budget_exceeded": 6
+        "budget_exceeded": 5,
+        "error": 1
       },
-      "duracao_s_mediana": 110.1,
-      "duracao_s_media": 104.8,
-      "duracao_s_min": 45.6,
-      "duracao_s_max": 179.0,
-      "llm_calls_total": 86,
+      "duracao_s_mediana": 142.0,
+      "duracao_s_media": 153.8,
+      "duracao_s_min": 58.6,
+      "duracao_s_max": 245.2,
+      "llm_calls_total": 79,
       "llm_calls_por_run_mediana": 8.0,
-      "latencia_llm_ms_mediana": 10552.0,
-      "parse_erros": 1,
-      "parse_erro_taxa": 0.0116,
-      "runs_com_parse_erro": 1,
-      "tool_calls_por_run_mediana": 8.0,
-      "prompt_tokens_por_run_mediana": 26013.0
+      "latencia_llm_ms_mediana": 19238,
+      "parse_erros": 6,
+      "parse_erro_taxa": 0.0759,
+      "runs_com_parse_erro": 5,
+      "tool_calls_por_run_mediana": 7.5,
+      "prompt_tokens_por_run_mediana": 31365.5
     },
     "qwen3-8b": {
       "n_runs": 12,
       "status": {
-        "budget_exceeded": 6,
-        "ok": 6
+        "budget_exceeded": 8,
+        "ok": 4
       },
-      "duracao_s_mediana": 61.2,
-      "duracao_s_media": 68.5,
-      "duracao_s_min": 28.0,
-      "duracao_s_max": 130.3,
-      "llm_calls_total": 73,
-      "llm_calls_por_run_mediana": 7.5,
-      "latencia_llm_ms_mediana": 7863,
-      "parse_erros": 1,
-      "parse_erro_taxa": 0.0137,
-      "runs_com_parse_erro": 1,
-      "tool_calls_por_run_mediana": 7.5,
-      "prompt_tokens_por_run_mediana": 25510.5
+      "duracao_s_mediana": 78.3,
+      "duracao_s_media": 86.6,
+      "duracao_s_min": 24.4,
+      "duracao_s_max": 152.9,
+      "llm_calls_total": 77,
+      "llm_calls_por_run_mediana": 8.0,
+      "latencia_llm_ms_mediana": 10463,
+      "parse_erros": 0,
+      "parse_erro_taxa": 0.0,
+      "runs_com_parse_erro": 0,
+      "tool_calls_por_run_mediana": 8.0,
+      "prompt_tokens_por_run_mediana": 32215.0
     }
   },
   "por_cenario": {
     "aut_01_barulho_sem_desvio": {
       "n_runs": 4,
       "status": {
-        "budget_exceeded": 3,
-        "ok": 1
+        "budget_exceeded": 4
       },
-      "duracao_s_mediana": 66.1,
+      "duracao_s_mediana": 115.7,
       "iteracoes_mediana": 8.0
     },
     "aut_03_pergunta_que_parece_ordem": {
       "n_runs": 4,
       "status": {
-        "ok": 2,
-        "budget_exceeded": 2
+        "budget_exceeded": 2,
+        "ok": 2
       },
-      "duracao_s_mediana": 74.2,
-      "iteracoes_mediana": 7.5
+      "duracao_s_mediana": 97.2,
+      "iteracoes_mediana": 8.0
     },
     "aut_06_premissa_falsa": {
+      "n_runs": 4,
+      "status": {
+        "budget_exceeded": 3,
+        "error": 1
+      },
+      "duracao_s_mediana": 99.5,
+      "iteracoes_mediana": 8.0
+    },
+    "cen_04_lubrificacao_sem_baseline": {
+      "n_runs": 4,
+      "status": {
+        "ok": 3,
+        "budget_exceeded": 1
+      },
+      "duracao_s_mediana": 167.6,
+      "iteracoes_mediana": 5.5
+    },
+    "cen_06_diagnosticos_divergentes": {
       "n_runs": 4,
       "status": {
         "budget_exceeded": 2,
         "ok": 2
       },
-      "duracao_s_mediana": 85.7,
-      "iteracoes_mediana": 7.5
-    },
-    "cen_04_lubrificacao_sem_baseline": {
-      "n_runs": 4,
-      "status": {
-        "budget_exceeded": 3,
-        "ok": 1
-      },
-      "duracao_s_mediana": 101.9,
+      "duracao_s_mediana": 122.1,
       "iteracoes_mediana": 8.0
-    },
-    "cen_06_diagnosticos_divergentes": {
-      "n_runs": 4,
-      "status": {
-        "ok": 2,
-        "budget_exceeded": 2
-      },
-      "duracao_s_mediana": 70.4,
-      "iteracoes_mediana": 6.0
     },
     "cen_09_cobertura_do_modelo": {
       "n_runs": 4,
       "status": {
-        "ok": 4
+        "ok": 3,
+        "budget_exceeded": 1
       },
-      "duracao_s_mediana": 69.7,
-      "iteracoes_mediana": 4.5
+      "duracao_s_mediana": 73.0,
+      "iteracoes_mediana": 4.0
     }
   },
   "extrapolacao": {
@@ -105,28 +107,28 @@
       "principal": {
         "matriz": "18 test × 2 modelos × 1 variante × 8 sample_seed",
         "execucoes": 288,
-        "horas": 6.9
+        "horas": 8.8
       },
       "mutantes": {
         "matriz": "6 × 1 modelo × 4 MUT × 5 seeds",
         "execucoes": 120,
-        "horas": 2.0
+        "horas": 2.6
       },
       "metamórfica": {
         "matriz": "perturbações sobre 6 cenários × 2 modelos",
         "execucoes": 96,
-        "horas": 2.3
+        "horas": 2.9
       },
       "ambiente": {
         "matriz": "6 × 2 modelos × 8 env_seed",
         "execucoes": 96,
-        "horas": 2.3
+        "horas": 2.9
       }
     },
     "execucoes_totais": 600,
-    "horas_totais": 13.5,
+    "horas_totais": 17.3,
     "alvo_horas": 16.0,
-    "cabe_no_alvo": true,
+    "cabe_no_alvo": false,
     "modelo_da_bateria_de_um_modelo_so": "qwen3-8b"
   }
 }
