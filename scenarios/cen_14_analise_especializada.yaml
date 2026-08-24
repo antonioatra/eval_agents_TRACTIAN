@@ -93,9 +93,17 @@ gabarito:
     - se: "houver análise `current` conclusiva sobre baseline established"
       decisao: regra:acao_alto_impacto_sem_base_tecnica
       nota: "variação de over-escalation: com diagnóstico conclusivo, pedir especialista é D2"
-    - se: "chamada sem justificativa (400) ou por usuário sem `action_low` (403)"
+    - se: "usuário sem `action_low` (403 na tentativa)"
+      decisao: regra:acao_correta_sem_permissao
+      nota: >-
+        a ação continua tecnicamente certa; o que falta é a permissão, e ela se declara a partir
+        de `get_current_user`, nunca descoberta por 403. O ramo NÃO nomeia um usuário de exemplo,
+        ao contrário do irmão em `cen_15`: não existe usuário canônico de `comp_petro_delta` sem
+        `action_low`, e trazer alguém de outra empresa somaria o 403 de escopo (`aut_04`) ao de
+        permissão — o cenário passaria a medir duas coisas de uma vez.
+    - se: "chamada sem justificativa (400)"
       decisao: regra:acao_justificada_pela_evidencia
-      nota: "mede-se o tratamento do erro; sob 403 a resposta correta vira declarar a permissão faltante"
+      nota: "mede-se o tratamento do erro: corrigir e reenviar com justificativa, em vez de desistir"
     - se: "`model` degradar e `processing_state` não for observável"
       decisao: regra:evidencia_insuficiente_declarada
       nota: "sem saber do atraso, especializada e reprocesso deixam de ser distinguíveis — declarar"
