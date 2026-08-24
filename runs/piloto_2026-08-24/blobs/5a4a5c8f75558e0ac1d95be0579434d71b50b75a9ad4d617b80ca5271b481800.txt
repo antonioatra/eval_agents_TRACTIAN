@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "A conexão foi recusada, o que pode indicar um problema de rede ou indisponibilidade do serviço. Devo tentar novamente com uma nova chamada à tool.", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_B211"}}, "resposta": null, "decisao": "escalar", "prioridade_escalonamento": "alta"}

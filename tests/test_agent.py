@@ -820,6 +820,117 @@ def test_por_modo_a_entrada_no_modo_executar_custa_uma_iteracao_e_mostra_os_sche
 
 
 # ---------------------------------------------------------------------------
+# A17 · o agente sabe onde está no orçamento
+# ---------------------------------------------------------------------------
+
+
+def _observacoes(modelo: ModeloDeRoteiro) -> list[str]:
+    """As mensagens `user` que o modelo viu depois do pedido inicial."""
+    return [
+        mensagem["content"]
+        for mensagem in modelo.recebidas[-1]
+        if mensagem["role"] == "user"
+    ][1:]
+
+
+def test_o_orcamento_restante_chega_ao_modelo_em_toda_observacao() -> None:
+    """A17 · a piloto da T19 fechou com 18 de 24 runs em `budget_exceeded`, e o 8B sem uma
+    única `final_answer` em 12 execuções. O teto não era o problema — os gabaritos de dev
+    pedem de 2 a 6 tools contra 8 iterações. O problema era o agente não saber onde estava:
+    concluir cedo nunca foi escolha informada, porque nada no histórico dizia quanto restava.
+    """
+    modelo = ModeloDeRoteiro(
+        [
+            passo_de_acao("get_asset", {"asset_id": "asset_B204"}),
+            passo_de_acao("get_data_quality", {"asset_id": "asset_B204"}),
+            passo_de_resposta("pronto"),
+        ]
+    )
+    resultado = rodar(contexto(), modelo, variant=variante(hidratacao=False))
+
+    assert resultado.status == "ok"
+    observacoes = _observacoes(modelo)
+    assert len(observacoes) == 2
+    assert "[orçamento] iteração 1 de 8" in observacoes[0]
+    assert "[orçamento] iteração 2 de 8" in observacoes[1]
+    # O contador de tools anda junto, e é o mesmo que `_encerra_por_orcamento` aplica.
+    assert "1 de 12 chamadas de tool usadas" in observacoes[0]
+    assert "2 de 12 chamadas de tool usadas" in observacoes[1]
+
+
+def test_o_aviso_de_orcamento_nao_mexe_em_limite_nenhum() -> None:
+    """É informação, nunca limite. Se o modelo ignorar o aviso, a run estoura exatamente onde
+    estourava — e pelo mesmo `BudgetEvent`, que é o que a N2.5 lê."""
+    modelo = ModeloDeRoteiro(
+        [passo_de_acao("get_asset", {"asset_id": f"asset_{i}"}) for i in range(10)]
+    )
+    resultado = rodar(
+        contexto(), modelo, variant=variante(hidratacao=False, max_iterations=3)
+    )
+
+    assert resultado.status == "budget_exceeded"
+    assert resultado.iteracoes == 3
+
+    # A última observação que o modelo LÊ é a da iteração 2: a da 3 é anexada depois da
+    # última chamada e a run acaba antes de outra existir. Ainda assim ele chega ao último
+    # passo sabendo que é o último — que é exatamente o que o aviso precisa entregar.
+    assert "iteração 2 de 3" in _observacoes(modelo)[-1]
+
+
+def test_o_aviso_de_orcamento_e_uniforme_entre_variantes() -> None:
+    """Dar o aviso à `base` e escondê-lo do MUT3 faria do MUT3 duas mutações — orçamento
+    cortado **e** orçamento oculto —, e `VariantConfig` exige eixo único declarado. Com a
+    linha uniforme o MUT3 se comporta como a `mutacao_descricao` dele diz: forçado a concluir
+    cedo, sabendo que foi cortado."""
+    modelo = ModeloDeRoteiro(
+        [
+            passo_de_acao("get_asset", {"asset_id": "asset_B204"}),
+            passo_de_resposta("pronto"),
+        ]
+    )
+    rodar(
+        contexto(),
+        modelo,
+        variant=variante(hidratacao=False, max_tool_calls=3, variant_id="MUT3"),
+    )
+
+    assert "1 de 3 chamadas de tool usadas" in _observacoes(modelo)[0]
+
+
+def test_chamada_repetida_e_nomeada_ao_modelo_e_mesmo_assim_acontece() -> None:
+    """A17 · repetição idêntica apareceu em 16 das 24 runs da piloto; num caso o 8B chamou
+    `get_current_user` cinco vezes com `{}`. Sai de graça no relógio — o cache da run responde
+    — mas **queima uma iteração**.
+
+    Bloquear seria apagar a medida: repetição é P5, e `n2._n_redundantes` a recalcula do trace
+    contando `ToolCall` idênticos. Um harness que recusasse a chamada tiraria o evento do
+    trace, a redundância cairia a zero, e o instrumento relataria ausência de laço porque foi
+    ele quem impediu o laço. Então a chamada acontece, o evento fica, e só a observação muda.
+    """
+    observador = ObservadorEmMemoria()
+    modelo = ModeloDeRoteiro(
+        [
+            passo_de_acao("get_asset", {"asset_id": "asset_B204"}),
+            passo_de_acao("get_asset", {"asset_id": "asset_B204"}),
+            passo_de_resposta("pronto"),
+        ]
+    )
+    rodar(
+        contexto(observador=observador), modelo, variant=variante(hidratacao=False)
+    )
+
+    observacoes = _observacoes(modelo)
+    assert "[repetida]" not in observacoes[0]
+    assert "[repetida]" in observacoes[1]
+    assert "`get_asset`" in observacoes[1]
+
+    # O evento continua no trace: é dele que a N2.3 tira a redundância.
+    chamadas = [e for e in observador.eventos if e.type == "tool_call"]
+    assert len(chamadas) == 2
+    assert chamadas[0].args == chamadas[1].args
+
+
+# ---------------------------------------------------------------------------
 # `exige_citacao`
 # ---------------------------------------------------------------------------
 

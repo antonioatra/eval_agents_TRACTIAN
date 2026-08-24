@@ -1,8 +1,16 @@
 # T19 · Bateria piloto e dimensionamento
 
-**Data:** 23/08/2026 · **Bateria:** `configs/bateria_piloto.yaml` · **Saída:** `runs/piloto_2026-08-23/`
-**Números crus:** `docs/piloto.json` (análise) e `docs/overhead_mcp.json` (fronteira MCP)
-**Reproduzir:** `make piloto`
+**Bateria:** `configs/bateria_piloto.yaml` · **Reproduzir:** `make piloto`
+**Duas passadas, e a comparação entre elas é o §6:**
+
+| | data | SUT | saída |
+|---|---|---|---|
+| 1ª | 23/08/2026 | como a T17 o deixou | `runs/piloto_2026-08-23/` |
+| 2ª | 24/08/2026 | com o A17 — o agente sabe quanto orçamento resta | `runs/piloto_2026-08-24/` |
+
+**Números crus:** `docs/piloto.json` (análise da 2ª) e `docs/overhead_mcp.json` (fronteira MCP).
+**As seções 1–5 descrevem a 1ª passada**, que é onde os achados apareceram; o §6 mede o efeito da
+correção e refaz o dimensionamento.
 
 6 cenários de dev × 2 modelos × variante `base` × 2 `sample_seed` = **24 execuções**.
 **24/24 concluíram**, zero falha de instrumento, zero run inválida — 49,9 min de relógio,
@@ -19,7 +27,7 @@
 
 | # | Pergunta | Resposta | Veredito |
 |---|---|---|---|
-| 1 | `tempo_medio × 600` cabe em duas madrugadas? | **19,8 h** contra 16 h | **não cabe** — A16 confirmado |
+| 1 | `tempo_medio × 600` cabe em duas madrugadas? | **19,8 h** contra 16 h — e **13,5 h** depois do A17 (§6) | não cabia; **passa a caber** |
 | 2 | `parse_erro` por modelo passa de 20%? | 14B **1,2%** · 8B **0,0%** | passa longe — nenhuma troca de modelo |
 | 3 | Overhead do MCP por chamada | **0,47 ms** de mediana | desprezível — número registrado |
 
@@ -235,3 +243,82 @@ enquanto o servidor serve 8192/4 por slot.
   mediana foi 138,6 s contra 187,4 s das que estouraram, apenas 26% mais rápido.
 * **Um cenário, um mundo.** `env_seed` é canônica por cenário (`CENARIOS §2.3`); a piloto não
   varia esse eixo. A variância aqui é do modelo, não do ambiente.
+
+---
+
+## 6 · A segunda passada (A17): o que mudou e o que o número faz
+
+A 1ª passada fechou com 18 de 24 runs em `budget_exceeded` e o 8B sem uma única `final_answer`
+(§4). A correção do **A17** não alargou teto nenhum — `max_iterations` continua 8 e
+`max_tool_calls` continua 12. Ela acrescentou **duas informações** ao que o modelo lê de volta:
+
+* `[orçamento] iteração 3 de 8 · 5 de 12 chamadas de tool usadas` em toda observação, com o
+  aviso de que esgotar encerra a run **sem resposta ao usuário**;
+* `[repetida] esta chamada a get_asset é idêntica a uma que você já fez` quando a chamada repete.
+
+A repetição **não é bloqueada**, e isso é desenho: `n2._n_redundantes` recalcula a redundância do
+trace contando `ToolCall` idênticos, então um harness que recusasse a chamada tiraria o evento do
+trace e o instrumento relataria ausência de laço porque foi ele quem impediu o laço.
+
+Mesmo recorte, mesmo servidor, mesma configuração de carga. **Só o SUT mudou.**
+
+| | 1ª passada | 2ª passada |
+|---|---|---|
+| runs com `final_answer` | **6/24** | **12/24** |
+| — no `qwen3-8b` | **0/12** | **6/12** |
+| — no `qwen3-14b` | 6/12 | 6/12 |
+| duração mediana `qwen3-14b` | 157,2 s | **110,1 s** |
+| duração mediana `qwen3-8b` | 93,3 s | **61,2 s** |
+| `parse_erro` | 1/182 (0,5%) | 2/159 (1,3%) |
+| **extrapolação para 600 execuções** | **19,8 h** | **13,5 h** |
+
+**O 8B saiu de zero.** É o número que mais importa: sem `final_answer` não há o que o judge da
+T20 pontue, e um dos dois modelos do eixo de H2 contribuía com nada.
+
+### A queda de tempo é do agente, não da máquina — verificado
+
+A latência mediana por chamada caiu 17,7 s → 10,6 s no 14B, o que o SUT não deveria causar. A
+verificação separa as duas explicações:
+
+| | ms por token gerado | tokens gerados por chamada |
+|---|---|---|
+| `qwen3-14b` | 100,2 → 91,4 (**−9%**) | 177 → 116 (**−34%**) |
+| `qwen3-8b` | 58,7 → 55,8 (**−5%**) | 150 → 141 (−6%) |
+
+O servidor está praticamente igual; **o que encolheu foi o que o modelo escreve** — e, no 8B, o
+número de chamadas por run (8,0 → 6,1), porque as runs acabam antes. O 14B escrever 34% menos por
+passo é efeito colateral não previsto: empurrado a concluir, ele racionaliza menos.
+
+**Extrapolação conservadora:** atribuindo **toda** a deriva de ms/token à máquina e não à
+mudança, o total vai a **14,5 h** — ainda dentro das 16 h, com ~1,5 h de margem em vez de 2,5 h.
+
+### Duas coisas pioraram, e as duas ficam declaradas
+
+**Citação inventada apareceu.** `citacoes_validas` era 6/6 na 1ª passada e é **10/12** na 2ª: duas
+runs citaram `tool_call_id` que não existe no trace. Mais runs concluindo significa mais
+oportunidade de fabricar, e é exatamente a falha que a rubrica do judge existe para pegar — mas o
+número desce de 100% e isso não se esconde.
+
+**A repetição de chamada da hidratação dobrou, e o aviso não a conteve** — 20 → 44 ocorrências,
+23 de 24 runs. A repetição **do que o próprio modelo já pediu** ficou praticamente estável (9 →
+12): o aviso não piorou nada, e também não resolveu nada.
+
+O que dobrou tem causa estrutural, não comportamental: **a hidratação chama `get_asset` e
+`get_current_user` em `iteration=0` e o modelo nunca vê os `tool_call_id` delas** — o resultado
+chega renderizado dentro de `{contexto}`, não como observação de tool. Quando o prompt exige citar
+`tool_call_id` e o orçamento empurra para concluir, a única forma de o modelo obter um id citável
+sobre o ativo ou sobre o usuário é **chamar a tool de novo**. Ele não está repetindo por
+desatenção; está comprando uma citação.
+
+Isto conecta com o risco já registrado sobre a hidratação (a N1.1 credita as duas chamadas ao
+agente, e `iteration=0` é o único marcador que as separa). **Consequência a decidir antes da
+bateria principal:** a redundância P5 que a N2.3 vai contar tem uma fração que é artefato do
+desenho da hidratação, não comportamento do agente. Ou a hidratação expõe os ids ao modelo, ou a
+N2.3 desconta repetição de chamada hidratada, ou o número sai inflado com a ressalva escrita.
+
+### O que isto faz com o A16
+
+Com 13,5 h medidas (14,5 h na leitura conservadora) contra as 16 h de duas madrugadas, **nenhum
+corte é necessário**: nem cenário de test, nem `sample_seed`, nem bateria inteira. A tabela de
+opções de corte do §1 continua no documento porque ela é o registro de como a conta era feita — e
+porque a margem é de ~1,5 h, o que **não** cobre uma noite em que o servidor esteja mais lento.

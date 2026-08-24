@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "barulho diferente martelete", "type": "guidance"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

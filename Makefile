@@ -42,7 +42,7 @@ t0b: install
 #   lms load qwen3-8b-mlx  --context-length 16384 --parallel 1 --gpu max -y
 piloto: install
 	$(PY) -m tapieval.runner --manifest configs/bateria_piloto.yaml --paralelismo 1
-	$(PY) scripts/analisar_piloto.py runs/piloto_2026-08-23 --json docs/piloto.json
+	$(PY) scripts/analisar_piloto.py runs/piloto_2026-08-24 --json docs/piloto.json
 	$(PY) scripts/medir_overhead_mcp.py --repeticoes 20 --json docs/overhead_mcp.json
 
 # Sobe a API industrial do parceiro em localhost:8000 (necessária para `make corpus`).

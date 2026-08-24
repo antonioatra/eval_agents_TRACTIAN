@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "list_assets_by_company", "args": {"company_id": "usr_lucas"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

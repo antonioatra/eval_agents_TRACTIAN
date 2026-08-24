@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "Houve um erro na conexão ao tentar obter informações do ativo asset_B21

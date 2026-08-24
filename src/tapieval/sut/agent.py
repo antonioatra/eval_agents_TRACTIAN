@@ -468,7 +468,9 @@ class Agent:
                 break
 
             observacao = await self._agir(passo)
-            self._historico.append({"role": "user", "content": observacao})
+            self._historico.append(
+                {"role": "user", "content": self._com_orcamento(observacao, iteracao)}
+            )
         else:
             # Saiu pelo `range`: gastou todas as iterações sem responder.
             self.trilha.emitir(
@@ -706,6 +708,41 @@ class Agent:
 
     # -- orçamento ---------------------------------------------------------
 
+    def _com_orcamento(self, observacao: str, iteracao: int) -> str:
+        """A observação mais uma linha dizendo quanto sobrou. A17 · 23/08.
+
+        POR QUE INFORMAR EM VEZ DE ALARGAR O TETO
+            A piloto da T19 terminou com 18 de 24 runs em `budget_exceeded`, e o 8B não
+            produziu `final_answer` em nenhuma das 12. A causa não é o teto ser baixo — os
+            gabaritos de dev pedem de 2 a 6 tools contra 8 iterações, e `max_tool_calls=12`
+            nunca chegou a morder. A causa é o agente **não saber onde está**: nada no
+            histórico dizia quantas voltas restavam, então concluir cedo nunca foi uma escolha
+            informada. Subir o teto compraria mais voltas para o mesmo laço cego e pioraria o
+            A16; informar custa uma linha de texto por observação.
+
+        É INFORMAÇÃO, NUNCA LIMITE
+            Nenhum número muda aqui. `max_iterations` e `max_tool_calls` continuam sendo os da
+            variante, e quem os aplica continua sendo o laço e `_encerra_por_orcamento`. Se o
+            modelo ignorar o aviso, a run estoura exatamente como estourava — e o
+            `BudgetEvent` que a N2.5 lê é o mesmo evento, com o mesmo gatilho.
+
+        A LINHA É UNIFORME ENTRE VARIANTES, E ISSO É EXIGÊNCIA DE DESENHO
+            Dar o aviso à `base` e escondê-lo do MUT3 faria do MUT3 duas mutações — orçamento
+            cortado **e** orçamento oculto —, e `VariantConfig` exige que o mutante declare o
+            que degradou, num eixo só. Com a linha uniforme, o MUT3 passa a se comportar como
+            a própria `mutacao_descricao` dele diz que deve: *"o agente é forçado a concluir
+            cedo"*. **Ressalva declarada:** um MUT3 que enxerga o corte pode adaptar-se a ele,
+            e a degradação observável fica menor do que ficaria com o corte escondido — a
+            INS.9 desse mutante mede truncamento assumido, não truncamento surpresa.
+        """
+        usadas = len(self._ids_vistos)
+        return (
+            f"{observacao}\n\n[orçamento] iteração {iteracao} de "
+            f"{self.variant.max_iterations} · {usadas} de {self.variant.max_tool_calls} "
+            "chamadas de tool usadas. Ao esgotar qualquer um dos dois a run encerra SEM "
+            "resposta ao usuário; se já dá para concluir, conclua agora."
+        )
+
     def _encerra_por_orcamento(self) -> Literal["budget_exceeded"] | None:
         """`max_tool_calls` — o orçamento que encerra a run. É do CLIENTE, não do servidor.
 
@@ -744,6 +781,8 @@ class Agent:
         if excedeu is not None:
             return excedeu
 
+        repetida = _chave_dos_args(args) in self._chamadas_por_tool.get(tool, set())
+
         try:
             resultado = await self.sessao.call_tool(tool, args)
         except Exception as erro:
@@ -766,9 +805,11 @@ class Agent:
             if isinstance(identificador, str):
                 self._ids_vistos.append(identificador)
             self._chamadas_por_tool.setdefault(tool, set()).add(_chave_dos_args(args))
-            return json.dumps(corpo, ensure_ascii=False, default=str)
+            return _com_aviso_de_repeticao(
+                json.dumps(corpo, ensure_ascii=False, default=str), tool, repetida
+            )
 
-        return _texto_do_resultado(resultado)
+        return _com_aviso_de_repeticao(_texto_do_resultado(resultado), tool, repetida)
 
     def _fora_do_modo(self, modo: Modo, tool: str) -> str | None:
         """Na variante `por_modo`, tool de outro subgrafo não é chamada — e não é escondida.
@@ -956,6 +997,32 @@ def _texto_do_resultado(resultado: Any) -> str:
         if getattr(bloco, "type", None) == "text"
     ]
     return "\n".join(partes) if partes else "A tool não devolveu conteúdo."
+
+
+def _com_aviso_de_repeticao(observacao: str, tool: str, repetida: bool) -> str:
+    """Nomeia a chamada idêntica repetida — e deixa que ela aconteça. A17 · 23/08.
+
+    A piloto viu repetição idêntica em 16 das 24 runs; num caso o 8B chamou `get_current_user`
+    cinco vezes com `{}`. É de graça no relógio (o cache da run responde), mas **queima uma
+    iteração**, e foi assim que boa parte das runs chegou ao fim sem responder.
+
+    BLOQUEAR SERIA APAGAR A MEDIDA
+        Repetição é P5 (`METRICAS §N2.5`), e a `n2._n_redundantes` a **recalcula do trace**
+        contando `ToolCall` idênticos — não confia só no `cache_hit` do servidor. Um harness
+        que recusasse a chamada tiraria o `ToolCall` do trace, a redundância cairia a zero, e o
+        instrumento passaria a relatar ausência de laço porque foi ele quem impediu o laço. É o
+        mesmo princípio de `_fora_do_modo`, que recusa mas registra a tentativa.
+
+    Então a chamada acontece, o evento fica, e o que muda é só o que o modelo lê de volta — o
+    prompt já dizia que repetir queima orçamento; aqui ele descobre que acabou de repetir.
+    """
+    if not repetida:
+        return observacao
+    return (
+        f"{observacao}\n\n[repetida] esta chamada a `{tool}` é idêntica a uma que você já "
+        "fez, e a resposta é a mesma: o ambiente é determinístico. Ela consumiu uma iteração "
+        "sem trazer informação nova. Use o que já está no histórico."
+    )
 
 
 def _chave_dos_args(args: Mapping[str, Any]) -> str:

@@ -25,7 +25,12 @@
 # `split: dev` e não `ids:` — a seleção por split é a que sobrevive a um cenário virar
 # inviável (X12: ele sai com o motivo no manifesto, em vez de derrubar a bateria).
 
-experiment_id: piloto_2026-08-23
+# A17 · SEGUNDA PASSADA. A primeira (`runs/piloto_2026-08-23/`) fica no repositório como o
+# "antes": ela é a evidência de que 18 de 24 runs não terminavam. Esta roda o MESMO recorte —
+# mesmos cenários, modelos, seeds e servidor — com a única mudança sendo o SUT, que agora diz ao
+# agente quanto orçamento resta e nomeia a chamada idêntica repetida. Diretório novo em vez de
+# `--do-zero` no antigo: sobrescrever o "antes" apagaria a única medida do problema.
+experiment_id: piloto_2026-08-24
 
 cenarios:
   split: dev

@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "A conexão foi recusada, o que indica um problema de rede ou inatividade do serviço. Devo verificar a disponibilidade dos dados antes de tentar novamente.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_M205"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}
