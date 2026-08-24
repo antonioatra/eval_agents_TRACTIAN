@@ -23,8 +23,10 @@ O QUE ESTE MÓDULO NÃO SABE
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date
 from typing import Literal
 
 from tapieval.schema.trace import N1Deterministico, N2Programatico, N3Judge
@@ -127,6 +129,71 @@ DIAGNOSTICOS_NAO_PONTUADOS: Mapping[str, str] = {
 Existe pelo mesmo motivo que `FALHAS_NAO_CLASSIFICAVEIS`: campo medido e descartado sem
 registro é indistinguível de campo que sempre deu "ok", e o erro cai na direção que favorece a
 conclusão que o trabalho quer defender."""
+
+
+# ---------------------------------------------------------------------------
+# Congelamento
+# ---------------------------------------------------------------------------
+
+SHA_DA_TAXONOMIA = "d155598ef89ac8b01559228bd892f72de69c5b32e032dd7f9f9bd7f0ddf793d1"
+"""O sha256 da taxonomia congelada em 24/08/2026 — `METRICAS §6`.
+
+Assina os 19 códigos (classe, severidade, descrição e camada detectora de cada um) mais a
+escala de severidade S0–S3. É o pré-registro de §6 saindo do texto e virando teste: a partir
+daqui, mexer na tabela quebra a suíte em vez de passar despercebido.
+
+A janela é esta e não outra. A bateria piloto (6 cenários de dev) já rodou e não pediu código
+novo — as duas coisas que ela mostrou já tinham balde (citação inventada é C5, repetição de
+chamada é P5) —, e o judge da T20, que é quem consome a taxonomia, ainda não existe. Congelar
+depois do judge invalidaria o pré-registro; congelar antes da piloto inflaria o recall por
+construção, que é exatamente o que §6 quer impedir.
+"""
+
+CONGELADA_EM = date(2026, 8, 24)
+
+
+def _material_do_congelamento() -> str:
+    """A serialização canônica que o sha assina — uma linha por código, ordenada por código.
+
+    Ordenar por código é o ponto: reordenar o dicionário (agrupar por classe, mover um código
+    de lugar) não muda o sha, mas renomear um código, mudar a severidade, reescrever a
+    descrição ou trocar a camada detectora muda. É a diferença entre arrumação e curadoria.
+
+    A escala entra na mesma serialização porque a régua faz parte do que está congelado: o S4
+    foi removido em 17/08 (X18) justamente porque um nível que nenhum código emite produz
+    leitura falsa e favorável, e essa remoção precisa ser tão auditável quanto a tabela.
+
+    `FALHAS_NAO_CLASSIFICAVEIS` NÃO entra, de propósito: aquele mapa descreve o que o
+    *instrumento* consegue sustentar hoje, não a taxonomia. Ele já encolheu uma vez (P4 saiu
+    em 16/08, quando a T11 passou a emitir o código) e deve poder encolher de novo — um campo
+    novo em N1/N2/N3 é progresso do medidor, não alteração da lista fechada. Congelar a
+    cobertura do instrumento junto com a taxonomia confundiria duas coisas diferentes e
+    tornaria caro fechar lacuna, que é o incentivo invertido.
+
+    `SEVERIDADES_QUE_REPROVAM` também fica fora: §6.5 reporta de propósito a variante
+    `sem S0/S1` como análise de sensibilidade, isto é, onde a linha é traçada é parâmetro que
+    se varia no relatório — assinar o corte tornaria a própria sensibilidade uma violação.
+    """
+    linhas = ["escala\t" + "\t".join(_ORDEM_DE_SEVERIDADE)]
+    for codigo in sorted(CATALOGO_DE_FALHAS):
+        entrada = CATALOGO_DE_FALHAS[codigo]
+        linhas.append(
+            "\t".join(
+                (
+                    codigo,
+                    entrada.classe,
+                    entrada.severidade,
+                    entrada.descricao,
+                    entrada.detectada_por,
+                )
+            )
+        )
+    return "\n".join(linhas)
+
+
+def sha_da_taxonomia() -> str:
+    """Recalcula o sha a partir da tabela em memória. Comparado com `SHA_DA_TAXONOMIA` no teste."""
+    return hashlib.sha256(_material_do_congelamento().encode("utf-8")).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -320,10 +387,11 @@ def motivo_nao_pontuavel(n1: N1Deterministico) -> str | None:
 def sucesso_binario(falhas: Iterable[Falha]) -> bool:
     """`METRICAS §6.5`: nenhuma falha de severidade S0, S1 ou S2. Entrada do `pass^k`.
 
-    Cuidado ao comparar com `tapieval.schema.trace.sucesso_binario`, que tem o mesmo nome
-    e uma definição diferente (quatro campos de N1/N3). As duas discordam — uma run que
-    omite limitação exigida (C4, S2) passa lá e reprova aqui. Está coberto por teste e
-    registrado como divergência para T12 reconciliar.
+    Cuidado ao comparar com `tapieval.schema.trace.criterios_duros`, que tem uma definição
+    diferente (quatro campos de N1/N3) e que **se chamou `sucesso_binario` até 17/08**, quando
+    o A10 desfez a colisão de nome. As duas discordam — uma run que omite limitação exigida
+    (C4, S2) passa lá e reprova aqui. Está coberto por teste e registrado como divergência
+    para T12 reconciliar.
     """
     return not any(falha.severidade in SEVERIDADES_QUE_REPROVAM for falha in falhas)
 

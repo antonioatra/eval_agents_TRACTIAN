@@ -449,6 +449,47 @@ resultado depende de onde a linha foi traçada.
 > Cuidado com o nome: `schema/trace.py::criterios_duros` chamou-se `sucesso_binario` até
 > 17/08 e **não** é esta definição. Era colisão de nome, desfeita pelo A10.
 
+### 6.6 O hash do congelamento (A2, 24/08)
+
+O "congelada com hash" da abertura de §6 deixou de ser promessa e virou teste.
+
+| | |
+|---|---|
+| **sha256** | `d155598ef89ac8b01559228bd892f72de69c5b32e032dd7f9f9bd7f0ddf793d1` |
+| **Congelada em** | 24/08/2026 |
+| **Onde** | `scoring/severidade.py` (`SHA_DA_TAXONOMIA`, `sha_da_taxonomia()`), verificado por `tests/test_severidade.py` |
+
+**O que o sha assina.** Os 19 códigos de §6.1–§6.3 e, de cada um, os quatro campos que mudam o
+que a medição diz: **classe**, **severidade**, **descrição** e **camada detectora**. Mais a
+**escala de severidade** de §6.0 — a lista ordenada S0–S3. A serialização é ordenada por código,
+então reagrupar a tabela não mexe no sha, mas renomear um código, reescrever uma descrição,
+trocar S3 por S2 ou mudar a coluna "Detectável por" mexe.
+
+> **Por que a escala entra junto.** O S4 foi removido em 17/08 (X18) porque nenhum código o
+> emitia, e um nível inalcançável se lê no relatório como *"os modelos não cometem falhas
+> cosméticas"* quando o certo é *"o instrumento não mede falha cosmética"*. Se a régua ficasse
+> fora do congelamento, ela poderia voltar calada — e a leitura falsa e favorável voltaria com
+> ela. A tabela e a régua respondem juntas pelo que `sucesso_binario` decide.
+
+**O que o sha NÃO assina**, e não por esquecimento:
+
+- **`FALHAS_NAO_CLASSIFICAVEIS`** (hoje C6 e D5) — aquele mapa descreve o que o *instrumento*
+  alcança, não o que a taxonomia define. Ele já encolheu uma vez (P4 saiu em 16/08, quando a T11
+  passou a emitir o código) e precisa poder encolher de novo: um campo novo em N1/N2/N3 é
+  progresso do medidor. Assinar a cobertura junto com a lista faria **fechar lacuna custar uma
+  decisão de curadoria** — incentivo exatamente invertido — e confundiria duas coisas diferentes.
+- **O corte de §6.5** (`SEVERIDADES_QUE_REPROVAM`) — §6.5 manda reportar a variante `sem S0/S1`
+  como análise de sensibilidade, ou seja, onde a linha é traçada é parâmetro que se varia de
+  propósito no relatório. Assinar o corte tornaria a própria sensibilidade uma violação.
+
+> **A janela era esta.** A bateria piloto nos 6 cenários de dev já tinha rodado — e não pediu
+> código novo: as duas coisas que ela mostrou já tinham balde (citação inventada é C5, repetição
+> de chamada é P5) — e o judge da T20, que é quem consome a taxonomia, ainda não existia.
+> Congelar **depois** do judge invalidaria o pré-registro; congelar **antes** da piloto inflaria
+> o recall por construção. Daqui em diante, mudar a tabela é decisão de curadoria que invalida o
+> pré-registro, não um número esperado que se atualiza — é o que a mensagem de falha do teste diz
+> a quem quebrar a suíte.
+
 ---
 
 ## 7. Camada INS — o instrumento medindo a si mesmo
