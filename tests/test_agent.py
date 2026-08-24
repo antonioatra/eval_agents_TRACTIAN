@@ -835,6 +835,41 @@ def test_exige_citacao_muda_o_prompt_e_e_a_unica_diferenca() -> None:
     assert "Fundamentação" not in sem.primeiro_sistema
 
 
+def test_a_exclusao_entre_acao_e_resposta_nao_cabe_no_esquema_e_por_isso_mora_no_prompt() -> None:
+    """T19 · o decodificador local não sabe dizer "exatamente um destes dois".
+
+    `_endurecer` põe TODO campo em `required` (é o que o modo `strict` exige), então a
+    gramática obriga `acao` e `resposta` a estarem presentes e permite que os dois venham
+    preenchidos. A regra "nunca as duas" vive só no validador Pydantic, que roda DEPOIS da
+    geração — e o piloto mostrou o que isso custa: 3 de 3 primeiras chamadas, nos dois
+    modelos, saíram com os dois campos cheios e a run morreu na iteração 1.
+
+    A saída natural seria um `anyOf` de duas formas fechadas no topo do esquema. **Ela não
+    existe neste stack**: `anyOf` entre objetos — no topo ou aninhado — trava o compilador de
+    gramática do LM Studio indefinidamente (medido em 23/08, nos dois modelos, com um esquema
+    mínimo de dois campos). Não é limite de tamanho do nosso esquema; é o motor.
+
+    Então a regra desceu para o prompt, e este teste é o que impede que ela suma de lá numa
+    reescrita. É uma limitação declarada, não um desenho preferido: enquanto ela valer, parte
+    do `parse_erro` mede obediência a instrução e não violação de schema, ao contrário do que
+    a docstring de `sut/llm.py` gostaria."""
+    acao = ESQUEMA_DO_PASSO["properties"]["acao"]
+    resposta = ESQUEMA_DO_PASSO["properties"]["resposta"]
+
+    # O que a gramática NÃO impede — se um dia impedir, o prompt pode parar de pedir.
+    assert {"acao", "resposta"} <= set(ESQUEMA_DO_PASSO["required"])
+    assert {"type": "null"} in acao["anyOf"]
+    assert {"type": "null"} in resposta["anyOf"]
+    assert any("$ref" in ramo for ramo in acao["anyOf"])
+    assert any("$ref" in ramo for ramo in resposta["anyOf"])
+
+    # O que o prompt tem de dizer no lugar dela.
+    prompt = carregar_prompt()
+    assert '`"resposta": null`' in prompt
+    assert '`"acao": null`' in prompt
+    assert "exatamente um" in prompt
+
+
 def test_prompt_sha_declarado_diferente_do_carregado_quebra_no_construtor() -> None:
     """A variante É o prompt. Rodar com hash de outro rotularia a coluna do experimento
     errado, e nada no resultado acusaria."""

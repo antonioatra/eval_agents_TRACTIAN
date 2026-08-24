@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "get_spectrum", "args": {"asset_id": "asset_C210", "point_id": "pt_C210_de"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

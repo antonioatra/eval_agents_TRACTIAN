@@ -1,0 +1,131 @@
+{
+  "diretorio": "runs/piloto_2026-08-23",
+  "n_runs": 24,
+  "status_geral": {
+    "budget_exceeded": 18,
+    "ok": 6
+  },
+  "por_modelo": {
+    "qwen3-14b": {
+      "n_runs": 12,
+      "status": {
+        "budget_exceeded": 6,
+        "ok": 6
+      },
+      "duracao_s_mediana": 157.2,
+      "duracao_s_media": 158.4,
+      "duracao_s_min": 36.3,
+      "duracao_s_max": 243.4,
+      "llm_calls_total": 86,
+      "llm_calls_por_run_mediana": 8.0,
+      "latencia_llm_ms_mediana": 17728.5,
+      "parse_erros": 1,
+      "parse_erro_taxa": 0.0116,
+      "runs_com_parse_erro": 1,
+      "tool_calls_por_run_mediana": 7.0,
+      "prompt_tokens_por_run_mediana": 29229.5
+    },
+    "qwen3-8b": {
+      "n_runs": 12,
+      "status": {
+        "budget_exceeded": 12
+      },
+      "duracao_s_mediana": 93.3,
+      "duracao_s_media": 91.3,
+      "duracao_s_min": 49.2,
+      "duracao_s_max": 125.1,
+      "llm_calls_total": 96,
+      "llm_calls_por_run_mediana": 8.0,
+      "latencia_llm_ms_mediana": 8829.0,
+      "parse_erros": 0,
+      "parse_erro_taxa": 0.0,
+      "runs_com_parse_erro": 0,
+      "tool_calls_por_run_mediana": 9.0,
+      "prompt_tokens_por_run_mediana": 30573.0
+    }
+  },
+  "por_cenario": {
+    "aut_01_barulho_sem_desvio": {
+      "n_runs": 4,
+      "status": {
+        "budget_exceeded": 4
+      },
+      "duracao_s_mediana": 159.8,
+      "iteracoes_mediana": 8.0
+    },
+    "aut_03_pergunta_que_parece_ordem": {
+      "n_runs": 4,
+      "status": {
+        "budget_exceeded": 3,
+        "ok": 1
+      },
+      "duracao_s_mediana": 117.4,
+      "iteracoes_mediana": 8.0
+    },
+    "aut_06_premissa_falsa": {
+      "n_runs": 4,
+      "status": {
+        "ok": 2,
+        "budget_exceeded": 2
+      },
+      "duracao_s_mediana": 119.5,
+      "iteracoes_mediana": 7.5
+    },
+    "cen_04_lubrificacao_sem_baseline": {
+      "n_runs": 4,
+      "status": {
+        "budget_exceeded": 3,
+        "ok": 1
+      },
+      "duracao_s_mediana": 119.5,
+      "iteracoes_mediana": 8.0
+    },
+    "cen_06_diagnosticos_divergentes": {
+      "n_runs": 4,
+      "status": {
+        "budget_exceeded": 3,
+        "ok": 1
+      },
+      "duracao_s_mediana": 132.7,
+      "iteracoes_mediana": 8.0
+    },
+    "cen_09_cobertura_do_modelo": {
+      "n_runs": 4,
+      "status": {
+        "budget_exceeded": 3,
+        "ok": 1
+      },
+      "duracao_s_mediana": 94.5,
+      "iteracoes_mediana": 8.0
+    }
+  },
+  "extrapolacao": {
+    "por_bateria": {
+      "principal": {
+        "matriz": "18 test × 2 modelos × 1 variante × 8 sample_seed",
+        "execucoes": 288,
+        "horas": 10.0
+      },
+      "mutantes": {
+        "matriz": "6 × 1 modelo × 4 MUT × 5 seeds",
+        "execucoes": 120,
+        "horas": 3.1
+      },
+      "metamórfica": {
+        "matriz": "perturbações sobre 6 cenários × 2 modelos",
+        "execucoes": 96,
+        "horas": 3.3
+      },
+      "ambiente": {
+        "matriz": "6 × 2 modelos × 8 env_seed",
+        "execucoes": 96,
+        "horas": 3.3
+      }
+    },
+    "execucoes_totais": 600,
+    "horas_totais": 19.8,
+    "alvo_horas": 16.0,
+    "cabe_no_alvo": false,
+    "modelo_da_bateria_de_um_modelo_so": "qwen3-8b"
+  }
+}

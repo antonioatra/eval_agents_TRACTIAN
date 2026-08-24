@@ -1,4 +1,4 @@
-.PHONY: venv install test lint corpus api api-stop t0b clean
+.PHONY: venv install test lint corpus api api-stop t0b piloto clean
 
 VENV    := .venv
 PY      := $(VENV)/bin/python
@@ -33,6 +33,17 @@ corpus:
 t0b: install
 	$(PY) scripts/checar_servidor_de_inferencia.py
 	$(PY) scripts/medir_tool_calling.py
+
+# T19 — bateria piloto e dimensionamento. Exige a API do parceiro no ar (`make api`) e os
+# dois modelos carregados com `--parallel 1`: com os 4 slots padrão do LM Studio o KV cache
+# de 8192 não comporta o prompt de ~2,6k tokens e a chamada pendura em vez de errar.
+#
+#   lms load qwen3-14b-mlx --context-length 16384 --parallel 1 --gpu max -y
+#   lms load qwen3-8b-mlx  --context-length 16384 --parallel 1 --gpu max -y
+piloto: install
+	$(PY) -m tapieval.runner --manifest configs/bateria_piloto.yaml --paralelismo 1
+	$(PY) scripts/analisar_piloto.py runs/piloto_2026-08-23 --json docs/piloto.json
+	$(PY) scripts/medir_overhead_mcp.py --repeticoes 20 --json docs/overhead_mcp.json
 
 # Sobe a API industrial do parceiro em localhost:8000 (necessária para `make corpus`).
 api:

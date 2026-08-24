@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O modelo mdl_001 não existe. Preciso verificar se há outros modelos disponíveis ou se o sistema está configurado corretamente para motores CC.", "acao": {"tool": "list_models", "args": {}}, "resposta": null, "decisao": "perguntar", "prioridade_escalonamento": null}

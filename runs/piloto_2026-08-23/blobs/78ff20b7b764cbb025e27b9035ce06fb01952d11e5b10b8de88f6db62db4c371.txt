@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "A usuária relatou um barulho diferente no martelete (asset_H110), que tem criticidade alta. Preciso verificar se há anomalias nos dados de vibração.\", " ,"acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_H110"}}, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

@@ -1,0 +1,41 @@
+{
+  "n_chamadas": 100,
+  "overhead_ms_mediana": 0.47,
+  "overhead_ms_media": 0.46,
+  "overhead_ms_p95": 0.88,
+  "overhead_ms_max": 1.21,
+  "http_ms_mediana": 3.0,
+  "total_ms_mediana": 3.55,
+  "por_tool": {
+    "get_asset": {
+      "n": 20,
+      "total_ms_mediana": 3.52,
+      "http_ms_mediana": 3.0,
+      "overhead_ms_mediana": 0.46
+    },
+    "get_current_user": {
+      "n": 20,
+      "total_ms_mediana": 2.62,
+      "http_ms_mediana": 2.0,
+      "overhead_ms_mediana": 0.43
+    },
+    "list_analyses": {
+      "n": 20,
+      "total_ms_mediana": 3.96,
+      "http_ms_mediana": 3.5,
+      "overhead_ms_mediana": 0.46
+    },
+    "get_data_quality": {
+      "n": 20,
+      "total_ms_mediana": 3.46,
+      "http_ms_mediana": 3.0,
+      "overhead_ms_mediana": 0.43
+    },
+    "get_baseline": {
+      "n": 20,
+      "total_ms_mediana": 3.89,
+      "http_ms_mediana": 3.5,
+      "overhead_ms_mediana": 0.54
+    }
+  }
+}

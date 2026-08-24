@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "A análise está atual e tem confiança de 0.93. O usuário Lucas tem permissão para ações de baixo impacto, mas reprocessar uma análise pode exigir justificativa. Vou verificar se a permissão inclui reprocessamento.", "acao": {"tool": "get_current_user", "args": {}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}
