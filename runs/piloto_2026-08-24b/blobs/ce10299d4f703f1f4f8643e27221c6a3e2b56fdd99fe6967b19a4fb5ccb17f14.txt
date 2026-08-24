@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O usuário relata um barulho diferente no martelete (ativo asset_H110) desde ontem. Preciso investigar os dados do ativo para identificar possíveis anomalias.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_H110"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

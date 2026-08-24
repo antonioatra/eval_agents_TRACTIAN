@@ -1033,10 +1033,13 @@ def _contexto_renderizado(
         if origem is None:
             linhas.extend(f"- {item}" for item in itens)
             continue
-        linhas.append(
-            f"- `{origem}` já foi chamada por você — tool_call_id `{ids[origem]}`, "
-            "cite este id em vez de chamar a tool de novo:"
-        )
+        # RÓTULO SECO, E ISSO FOI MEDIDO. A primeira redação dizia "já foi chamada por você
+        # — cite este id em vez de chamar a tool de novo". A informação é a mesma; a oração
+        # final convidava o modelo a DELIBERAR sobre chamar ou não, e ele aceitou o convite:
+        # na 3ª piloto o `pensamento` cresceu 67% (231 → 385 chars), passou a mencionar `tc_`
+        # em 23 de 157 passos (era 0), e a extrapolação subiu de 13,5 h para 21,3 h com o
+        # ms/token da máquina parado. O par `tool → id` já diz o que precisa ser dito.
+        linhas.append(f"- `{origem}` → `{ids[origem]}`:")
         linhas.extend(f"  - {item}" for item in itens)
     return "\n".join(linhas)
 

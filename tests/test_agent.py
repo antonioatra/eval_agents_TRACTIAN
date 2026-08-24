@@ -469,7 +469,27 @@ def test_variante_sem_hidratacao_nao_ganha_bloco_de_id_nenhum() -> None:
     modelo = ModeloDeRoteiro([passo_de_resposta("pronto")])
     rodar(ctx, modelo, variant=variante(variant_id="sem_hidratacao", hidratacao=False))
 
-    assert "cite este id" not in modelo.primeiro_sistema
+    assert "Nenhum contexto pré-carregado" in modelo.primeiro_sistema
+    assert " → `tc_" not in modelo.primeiro_sistema
+
+
+def test_o_rotulo_do_bloco_nao_instrui_o_modelo_a_deliberar() -> None:
+    """O rótulo é `tool → id:` e nada mais, e isso foi medido, não estilo.
+
+    A primeira redação acrescentava "cite este id em vez de chamar a tool de novo". A
+    informação era a mesma e o efeito não: na 3ª piloto o `pensamento` cresceu 67% e passou a
+    mencionar `tc_` em 23 de 157 passos (era 0 na 2ª), levando a extrapolação das 600
+    execuções de 13,5 h para 21,3 h com o ms/token da máquina parado. Este teste existe para
+    que ninguém "melhore" o rótulo devolvendo a instrução.
+    """
+    ctx = contexto()
+    modelo = ModeloDeRoteiro([passo_de_resposta("pronto")])
+    rodar(ctx, modelo)
+
+    sistema = modelo.primeiro_sistema
+    assert "chamar a tool de novo" not in sistema
+    assert "já foi chamada por você" not in sistema
+    assert " → `tc_" in sistema
 
 
 def test_expor_os_ids_nao_mexe_no_prompt_sha_da_variante() -> None:

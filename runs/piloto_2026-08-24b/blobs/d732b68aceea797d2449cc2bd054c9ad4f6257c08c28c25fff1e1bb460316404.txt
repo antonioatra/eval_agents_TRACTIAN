@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "request_specialist_analysis", "args": {"analysis_id": "ana_B211_01", "justification": "Conflito entre baseline invalidated e dados do espectro. Precisamos de análise especializada para confirmar a origem do pico.", "params": {}}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}
