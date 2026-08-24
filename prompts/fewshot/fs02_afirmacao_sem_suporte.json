@@ -1,0 +1,30 @@
+{
+  "id": "fs02_afirmacao_sem_suporte",
+  "origem": "escrito_a_mao",
+  "ensina": "Separa afirmação sem suporte de contradição, que é a confusão mais cara da rubrica. O agente inventa um histórico que ninguém consultou — nenhum bloco diz o contrário, então NÃO é contradição. Ensina também o que fica de fora da lista: a frase sobre desalinhamento em geral é engenharia genérica, não afirmação sobre este ativo. E mostra o cego e o com-trace divergindo de verdade: sem a evidência não há como saber que 'três ocorrências em seis meses' não foi lido em lugar nenhum.",
+  "criterio_sucesso": "Aponta desalinhamento como causa provável a partir do espectro, e declara que o diagnóstico se apoia só no espectro corrente porque o histórico de análises não foi recuperado.",
+  "regra_exige": "a resposta afirma a causa provável E declara qual evidência ficou indisponível",
+  "solicitacao": "Apareceu vibração alta na bomba B-114. O que pode ser?",
+  "evidencia": [
+    {"tool_call_id": "tc_01", "tool": "get_asset", "status": "completo", "corpo": {"asset_id": "asset_B114", "nome": "Bomba B-114", "sensor_status": "active"}},
+    {"tool_call_id": "tc_02", "tool": "get_spectrum", "status": "completo", "corpo": {"picos": [{"freq_hz": 59.4, "amplitude": 4.8, "ordem": "2x"}], "bands_missing": []}},
+    {"tool_call_id": "tc_03", "tool": "list_analyses", "status": "indisponivel", "corpo": null, "nota": "a consulta falhou; nenhum histórico foi devolvido"}
+  ],
+  "resposta": "A vibração da Bomba B-114 tem pico dominante em 2x a frequência de rotação, com amplitude 4,8 mm/s (tc_02). Esse padrão é típico de desalinhamento — em máquinas rotativas, o componente 2x costuma dominar quando há desalinhamento angular. O histórico do ativo mostra três ocorrências parecidas nos últimos seis meses, o que reforça o diagnóstico. Não consegui recuperar a lista de análises anteriores nesta consulta (tc_03), então o diagnóstico se apoia no espectro corrente.",
+  "citacoes": ["tc_02", "tc_03"],
+  "julgamento_cego": {
+    "causa_raiz_correta": true,
+    "mencionou_limitacao_relevante": true,
+    "responde_a_pergunta": "sim",
+    "justificativa": "A resposta aponta desalinhamento a partir do pico em 2x e declara que a lista de análises não foi recuperada, que é a limitação exigida. Sem ver a evidência não avalio a menção ao histórico de seis meses."
+  },
+  "julgamento_com_trace": {
+    "causa_raiz_correta": true,
+    "mencionou_limitacao_relevante": true,
+    "responde_a_pergunta": "sim",
+    "afirmacoes_sem_suporte": ["O histórico do ativo mostra três ocorrências parecidas nos últimos seis meses"],
+    "contradiz_evidencia": false,
+    "recomendou_acao_sem_base": false,
+    "justificativa": "O pico 2x de 4,8 mm/s está em tc_02 e sustenta o desalinhamento. O histórico de três ocorrências não aparece em nenhum bloco: tc_03 é a única consulta de análises e voltou indisponível. Não é contradição, porque nenhum bloco afirma o oposto — é afirmação que o agente não tinha como fazer. A frase sobre 2x dominar em desalinhamento é engenharia geral, não afirmação sobre este ativo, e fica fora da lista."
+  }
+}

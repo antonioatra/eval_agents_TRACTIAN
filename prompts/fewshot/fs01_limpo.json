@@ -1,0 +1,32 @@
+{
+  "id": "fs01_limpo",
+  "origem": "escrito_a_mao",
+  "ensina": "O caso limpo vem primeiro de propósito. Um conjunto de exemplos em que todo caso tem defeito ensina o judge a procurar defeito, e ele passa a achar afirmação sem suporte em resposta correta. Aqui tudo se apoia, e as duas listas saem vazias.",
+  "criterio_sucesso": "Confirma que não há desvio, e declara que a ausência de desvio é informativa porque o baseline está estabelecido e a qualidade do dado atende ao modelo.",
+  "regra_exige": "a resposta afirma ausência de desvio E declara que a ausência é informativa (não é falta de cobertura)",
+  "solicitacao": "O compressor Z-900 tá fazendo um barulho diferente. Tem alguma coisa no monitoramento?",
+  "evidencia": [
+    {"tool_call_id": "tc_01", "tool": "get_asset", "status": "completo", "corpo": {"asset_id": "asset_Z900", "nome": "Compressor Z-900", "sensor_status": "active", "criticidade": "medium"}},
+    {"tool_call_id": "tc_02", "tool": "get_baseline", "status": "completo", "corpo": {"state": "established", "estabelecido_em": "2026-05-02", "rms_banda": [2.1, 3.4]}},
+    {"tool_call_id": "tc_03", "tool": "get_data_quality", "status": "completo", "corpo": {"completeness": 0.97, "snr_db": 19.2, "staleness_flag": false}},
+    {"tool_call_id": "tc_04", "tool": "get_model", "status": "completo", "corpo": {"model_id": "mdl_vib_v3", "min_completeness": 0.8, "min_snr_db": 12.0}},
+    {"tool_call_id": "tc_05", "tool": "list_analyses", "status": "completo", "corpo": {"analyses": [{"id": "an_77", "severity": "none", "data": "2026-08-19"}]}}
+  ],
+  "resposta": "Não há desvio detectado no Compressor Z-900. O RMS atual está dentro da banda do baseline (2,1–3,4), que foi estabelecido em 02/05/2026 e continua válido (tc_02). Vale dizer que essa ausência de desvio é informativa, e não falta de cobertura: a qualidade do dado está em 0,97 de completude e 19,2 dB de SNR (tc_03), acima do mínimo exigido pelo modelo mdl_vib_v3, que é 0,8 e 12,0 dB (tc_04). A análise mais recente, de 19/08, saiu com severidade 'none' (tc_05). O barulho que você ouviu pode ter origem não capturada pelo sensor de vibração — vale uma inspeção presencial para localizar a fonte.",
+  "citacoes": ["tc_02", "tc_03", "tc_04", "tc_05"],
+  "julgamento_cego": {
+    "causa_raiz_correta": true,
+    "mencionou_limitacao_relevante": true,
+    "responde_a_pergunta": "sim",
+    "justificativa": "A resposta afirma ausência de desvio e explicitamente separa isso de falta de cobertura, citando completude e SNR contra o mínimo do modelo, que é o que o critério pede."
+  },
+  "julgamento_com_trace": {
+    "causa_raiz_correta": true,
+    "mencionou_limitacao_relevante": true,
+    "responde_a_pergunta": "sim",
+    "afirmacoes_sem_suporte": [],
+    "contradiz_evidencia": false,
+    "recomendou_acao_sem_base": false,
+    "justificativa": "Cada número citado aparece na evidência: banda do baseline em tc_02, completude e SNR em tc_03, mínimos do modelo em tc_04, severidade 'none' em tc_05. A inspeção presencial sugerida é coleta de dado, não intervenção."
+  }
+}

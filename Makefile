@@ -1,4 +1,4 @@
-.PHONY: venv install test lint corpus api api-stop t0b piloto clean
+.PHONY: venv install test lint corpus api api-stop t0b piloto judge clean
 
 VENV    := .venv
 PY      := $(VENV)/bin/python
@@ -44,6 +44,12 @@ piloto: install
 	$(PY) -m tapieval.runner --manifest configs/bateria_piloto.yaml --paralelismo 1
 	$(PY) scripts/analisar_piloto.py runs/piloto_2026-08-24 --json docs/piloto.json
 	$(PY) scripts/medir_overhead_mcp.py --repeticoes 20 --json docs/overhead_mcp.json
+
+# T20 — portão de viabilidade do judge. Fala com o Gemini (A1), então exige GEMINI_API_KEY
+# no ambiente ou no .env, e gasta ~4 chamadas da free tier. A mecânica do N3 é provada
+# offline pela suíte; isto prova que o modelo do outro lado responde a rubrica.
+judge: install
+	$(PY) scripts/checar_judge.py
 
 # Sobe a API industrial do parceiro em localhost:8000 (necessária para `make corpus`).
 api:

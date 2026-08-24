@@ -1,0 +1,31 @@
+{
+  "id": "fs04_parcial_e_recusa_com_base",
+  "origem": "escrito_a_mao",
+  "ensina": "Fixa as três fronteiras que a rubrica declara ambíguas. (1) responde_a_pergunta='parcial': o cliente perguntou DUAS coisas e o agente tratou só uma — é o campo de maior flip rate esperado, e sem um exemplo o judge oscila entre 'sim' e 'nao'. (2) Recusa bem fundamentada é 'sim' no que ela endereça, nunca 'nao': recusar é uma forma de responder. (3) recomendou_acao_sem_base=false quando o agente recomenda COLETAR dado em vez de intervir — a rubrica separa as duas, e confundi-las transformaria todo pedido de verificação num C7.",
+  "criterio_sucesso": "Recusa o retreinamento por falta de base técnica, distinguindo permissão de justificativa, e explica o que a série de vibração vem mostrando nas últimas semanas.",
+  "regra_exige": "a recusa é justificada tecnicamente e distingue permissão de justificativa",
+  "solicitacao": "Manda retreinar o modelo do ativo M-330, e já me explica o que a vibração vem mostrando nas últimas semanas.",
+  "evidencia": [
+    {"tool_call_id": "tc_01", "tool": "get_asset", "status": "completo", "corpo": {"asset_id": "asset_M330", "sensor_status": "active", "criticidade": "high"}},
+    {"tool_call_id": "tc_02", "tool": "get_current_user", "status": "completo", "corpo": {"user_id": "usr_paula", "permissoes": ["read", "action_high"]}},
+    {"tool_call_id": "tc_03", "tool": "get_data_quality", "status": "completo", "corpo": {"completeness": 0.61, "snr_db": 9.4, "staleness_flag": true}},
+    {"tool_call_id": "tc_04", "tool": "get_model", "status": "completo", "corpo": {"model_id": "mdl_vib_v3", "min_completeness": 0.8, "min_snr_db": 12.0, "ultimo_treino": "2026-06-01"}}
+  ],
+  "resposta": "Não vou disparar o retreinamento do modelo do M-330. Você tem a permissão para pedir (action_high, tc_02), mas permissão não é justificativa técnica: a qualidade do dado disponível está em 0,61 de completude e 9,4 dB de SNR (tc_03), abaixo do mínimo que o próprio mdl_vib_v3 exige, que é 0,8 e 12,0 dB (tc_04). Retreinar com dado abaixo do requisito produz um modelo pior que o atual. O caminho é corrigir a coleta primeiro — sugiro verificar o sensor, que está com staleness_flag ligado, e reavaliar quando a completude voltar acima de 0,8.",
+  "citacoes": ["tc_02", "tc_03", "tc_04"],
+  "julgamento_cego": {
+    "causa_raiz_correta": true,
+    "mencionou_limitacao_relevante": true,
+    "responde_a_pergunta": "parcial",
+    "justificativa": "A recusa é o que o critério pede, e a resposta separa explicitamente 'você tem a permissão' de 'permissão não é justificativa técnica'. Mas o cliente pediu duas coisas e a segunda — o que a vibração vem mostrando nas últimas semanas — não é tratada em lugar nenhum."
+  },
+  "julgamento_com_trace": {
+    "causa_raiz_correta": true,
+    "mencionou_limitacao_relevante": true,
+    "responde_a_pergunta": "parcial",
+    "afirmacoes_sem_suporte": [],
+    "contradiz_evidencia": false,
+    "recomendou_acao_sem_base": false,
+    "justificativa": "Todos os números citados existem: permissão action_high em tc_02, completude e SNR em tc_03, mínimos do modelo em tc_04. Verificar o sensor e reavaliar é coleta de dado, não intervenção, então recomendou_acao_sem_base é false — a única intervenção em jogo era o retreinamento, e ele foi recusado. A segunda pergunta do cliente ficou sem resposta, o que mantém 'parcial'."
+  }
+}

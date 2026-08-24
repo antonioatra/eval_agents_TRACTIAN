@@ -129,10 +129,25 @@ class MedidorDeCusto:
         # depois de gastar 40 s gastou 40 s, e esconder isso barateia a curva.
         self._fim = perf_counter()
 
-    def registrar_llm(self, prompt_tokens: int, completion_tokens: int) -> None:
-        """Acumula o que o servidor de inferência devolveu. Nada é estimado aqui."""
+    def registrar_llm(
+        self, prompt_tokens: int, completion_tokens: int, tokens_raciocinio: int = 0
+    ) -> None:
+        """Acumula o que o servidor de inferência devolveu. Nada é estimado aqui.
+
+        `tokens_raciocinio` soma em `tokens_out`, e o parâmetro existe separado para que o
+        call site diga o que está fazendo. Modelos com raciocínio interno cobram e gastam
+        esses tokens sem os devolver em `completion_tokens` — medido em 24/08 no endpoint
+        OpenAI-compatible do Gemini, onde 21 + 228 tokens reportados correspondiam a 711
+        totais. Deixá-los de fora subestimaria o custo do judge em ~65% no eixo x de H0,
+        na direção que favorece a conclusão que o trabalho quer defender (o formato de X9).
+
+        Somam em `tokens_out` em vez de virar quarto campo porque, para H0, um token de
+        raciocínio custa o mesmo que um token de saída — e o `CustoRecord` fica com os oito
+        campos escalares que garantem a atomicidade do append (ver `CustoWriter.registrar`).
+        Quem quiser separá-los depois precisa reabrir aquela análise.
+        """
         self.tokens_in += prompt_tokens
-        self.tokens_out += completion_tokens
+        self.tokens_out += completion_tokens + tokens_raciocinio
         self.chamadas_llm += 1
 
     def registrar_minutos_humano(self, minutos: float) -> None:
