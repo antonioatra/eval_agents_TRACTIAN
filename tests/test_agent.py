@@ -400,6 +400,88 @@ def test_as_chamadas_de_hidratacao_ficam_em_iteracao_zero() -> None:
     assert [c.tool_name for c in chamadas if c.iteration > 0] == ["get_baseline"]
 
 
+def test_os_tool_call_id_da_hidratacao_chegam_ao_modelo_no_bloco_do_contexto() -> None:
+    """A18: enquanto o modelo não via os ids, repetir a chamada era a única forma de citar.
+
+    Na 2ª piloto foram 44 repetições de chamada hidratada em 23 das 24 runs, contra 9→12 de
+    repetição do que o próprio modelo pediu — a diferença entre desenho do harness e
+    comportamento do agente. O id sempre existiu e sempre esteve em `_ids_vistos` (o servidor
+    aceita a citação); o que faltava era o modelo poder lê-lo.
+    """
+    ctx = contexto()
+    modelo = ModeloDeRoteiro([passo_de_resposta("pronto")])
+    rodar(ctx, modelo)
+
+    hidratadas = {
+        evento.tool_name: evento.tool_call_id
+        for evento in eventos(ctx)
+        if isinstance(evento, ToolCall) and evento.iteration == 0
+    }
+    sistema = modelo.primeiro_sistema
+    assert hidratadas, "a hidratação tem de ter chamado alguma tool"
+    for tool, identificador in hidratadas.items():
+        assert f"`{identificador}`" in sistema, f"o id de {tool} não chegou ao prompt"
+
+
+def test_cada_linha_do_contexto_fica_sob_o_id_que_a_sustenta() -> None:
+    """Um id solto no prompt não resolveria nada: citar exige saber QUAL id sustenta O QUÊ.
+
+    `caso.case_id` não vem de tool nenhuma e por isso continua sem id — a ausência é o
+    formato, não um esquecimento.
+    """
+    ctx = contexto()
+    modelo = ModeloDeRoteiro([passo_de_resposta("pronto")])
+    rodar(ctx, modelo, solicitacao=Solicitacao(
+        message="A bomba B-204 está com vibração alta?",
+        user_id="usr_lucas",
+        asset_id="asset_B204",
+        case_id="case_9",
+    ))
+
+    hidratadas = {
+        evento.tool_name: evento.tool_call_id
+        for evento in eventos(ctx)
+        if isinstance(evento, ToolCall) and evento.iteration == 0
+    }
+    linhas = modelo.primeiro_sistema.splitlines()
+    sob = {}
+    atual = None
+    for linha in linhas:
+        for tool, identificador in hidratadas.items():
+            if f"`{tool}`" in linha and f"`{identificador}`" in linha:
+                atual = tool
+                break
+        else:
+            if linha.startswith("  - "):
+                sob.setdefault(atual, []).append(linha.strip()[2:])
+            elif linha.startswith("- "):
+                atual = None
+
+    assert any(item.startswith("asset.criticality:") for item in sob["get_asset"])
+    assert any(item.startswith("user.permissions:") for item in sob["get_current_user"])
+    assert "- caso.case_id: case_9" in modelo.primeiro_sistema.splitlines()
+    assert None not in sob
+
+
+def test_variante_sem_hidratacao_nao_ganha_bloco_de_id_nenhum() -> None:
+    """O bloco só existe quando há id: sem hidratação não há chamada, e nada a citar."""
+    ctx = contexto()
+    modelo = ModeloDeRoteiro([passo_de_resposta("pronto")])
+    rodar(ctx, modelo, variant=variante(variant_id="sem_hidratacao", hidratacao=False))
+
+    assert "cite este id" not in modelo.primeiro_sistema
+
+
+def test_expor_os_ids_nao_mexe_no_prompt_sha_da_variante() -> None:
+    """A troca mora na renderização do `{contexto}`, não no template — e isso é de propósito.
+
+    `prompt_sha` rotula a coluna do experimento (`_conferir_prompt_declarado`). Escrever a
+    instrução no `agente_v1.md` mudaria o hash e obrigaria a reetiquetar variante que não
+    mudou de prompt, misturando o A18 com o eixo que a variante mede.
+    """
+    assert sha_do_prompt(PROMPT) == variante().prompt_sha
+
+
 def test_o_case_id_do_cenario_chega_ao_prompt_e_fecha_o_x22() -> None:
     """X22: `escalate_case` exige `case_id` e NENHUMA tool descobre um.
 

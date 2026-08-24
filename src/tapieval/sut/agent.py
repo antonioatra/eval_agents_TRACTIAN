@@ -380,6 +380,7 @@ class Agent:
         self._historico: list[dict[str, str]] = []
         self._catalogo: tuple[types.Tool, ...] = ()
         self._ids_vistos: list[str] = []
+        self._ids_da_hidratacao: dict[str, str] = {}
         self._visiveis: frozenset[str] = frozenset()
         self._chamadas_por_tool: dict[str, set[str]] = {}
         self._contadores = _Contadores()
@@ -548,6 +549,16 @@ class Agent:
             construção. O `iteration=0` é o único marcador que separa as duas coisas, e o que
             fazer com ele é decisão de scoring (registrado como risco, dono T10/T24), não
             deste módulo — que não pode escondê-las nem inventá-las.
+
+        OS `tool_call_id` DA HIDRATAÇÃO SÃO MOSTRADOS AO MODELO (A18, 24/08)
+            Eles sempre existiram e sempre foram citáveis, mas viviam só em `_ids_vistos`: o
+            resultado chega ao modelo renderizado dentro de `{contexto}`, não como observação
+            de tool. Com `exige_citacao` pedindo `tool_call_id`, repetir a chamada era a única
+            forma de comprar um id — e a repetição virava P5 que a N2.3 contaria como
+            redundância do agente. Agora `_contexto_renderizado` agrupa cada bloco sob o id
+            que o sustenta. A alternativa era a N2.3 descontar repetição hidratada, e foi
+            recusada: o defeito era do harness, e o scorer compensar por dentro esconderia
+            uma chamada que o agente de fato gasta.
         """
         if not self.variant.hidratacao:
             return {"case_id": solicitacao.case_id} if solicitacao.case_id else {}
@@ -602,6 +613,13 @@ class Agent:
 
         O `tool_call_id` entra em `_ids_vistos` porque ele É citável — o dado hidratado está no
         prompt e o agente pode e deve se referir a ele.
+
+        E entra também em `_ids_da_hidratacao`, que é o que o modelo LÊ (A18). Enquanto o id
+        existia só aqui dentro, citá-lo era impossível: o resultado da hidratação chega
+        renderizado em `{contexto}` e não como observação de tool. Com `exige_citacao` pedindo
+        `tool_call_id`, chamar a tool de novo era a única forma de comprar um id citável — 44
+        repetições em 23 das 24 runs da 2ª piloto, contra 9→12 de repetição do que o próprio
+        modelo pediu. A repetição não era desatenção do agente; era desenho do harness.
         """
         resultado = await self.sessao.call_tool(tool, dict(args))
         corpo = _estruturado(resultado)
@@ -609,6 +627,7 @@ class Agent:
             identificador = corpo.get("tool_call_id")
             if isinstance(identificador, str):
                 self._ids_vistos.append(identificador)
+                self._ids_da_hidratacao[tool] = identificador
         return corpo
 
     # -- o passo do modelo -------------------------------------------------
@@ -894,7 +913,10 @@ class Agent:
     def _prompt(self, contexto: Mapping[str, Any], modo: Modo | None) -> str:
         return (
             self.prompt_sistema.replace("{catalogo}", self._catalogo_visivel(modo))
-            .replace("{contexto}", _contexto_renderizado(contexto))
+            .replace(
+                "{contexto}",
+                _contexto_renderizado(contexto, self._ids_da_hidratacao),
+            )
             .replace("{exigencia_de_citacao}", self._exigencia_de_citacao())
         )
 
@@ -968,13 +990,55 @@ def _pedido(solicitacao: Solicitacao) -> str:
     return linhas[0] + "\n\n" + "".join(linhas[2:])
 
 
-def _contexto_renderizado(contexto: Mapping[str, Any]) -> str:
+# De qual tool da hidratação veio cada prefixo de chave do `resumo`. É o que permite dizer ao
+# modelo QUAL `tool_call_id` sustenta QUAL linha do contexto — sem isso o id seria uma etiqueta
+# solta e citá-lo continuaria sendo adivinhação. `caso.case_id` não vem de tool nenhuma e por
+# isso não está aqui: ele sai sem id, como sempre saiu.
+_ORIGEM_DO_CONTEXTO: Mapping[str, str] = {
+    "asset.": "get_asset",
+    "user.": "get_current_user",
+}
+
+
+def _origem_do_contexto(chave: str) -> str | None:
+    for prefixo, tool in _ORIGEM_DO_CONTEXTO.items():
+        if chave.startswith(prefixo):
+            return tool
+    return None
+
+
+def _contexto_renderizado(
+    contexto: Mapping[str, Any], ids_da_hidratacao: Mapping[str, str] | None = None
+) -> str:
+    """As linhas do contexto, agrupadas sob o `tool_call_id` que as sustenta (A18).
+
+    A hidratação atravessa o servidor MCP e ganha `tool_call_id` como qualquer chamada — o que
+    faltava era o modelo VER esses ids. Um bloco sem id (`caso.case_id`, ou a variante
+    `sem_hidratacao`) sai como linha solta, no formato de antes.
+    """
     if not contexto:
         return (
             "Nenhum contexto pré-carregado. Descubra o que precisar pelas tools — inclusive "
             "quem é o usuário e quais permissões ele tem."
         )
-    return "\n".join(f"- {chave}: {valor}" for chave, valor in contexto.items())
+
+    ids = dict(ids_da_hidratacao or {})
+    blocos: dict[str | None, list[str]] = {}
+    for chave, valor in contexto.items():
+        origem = _origem_do_contexto(chave)
+        blocos.setdefault(origem if origem in ids else None, []).append(f"{chave}: {valor}")
+
+    linhas: list[str] = []
+    for origem, itens in blocos.items():
+        if origem is None:
+            linhas.extend(f"- {item}" for item in itens)
+            continue
+        linhas.append(
+            f"- `{origem}` já foi chamada por você — tool_call_id `{ids[origem]}`, "
+            "cite este id em vez de chamar a tool de novo:"
+        )
+        linhas.extend(f"  - {item}" for item in itens)
+    return "\n".join(linhas)
 
 
 def _estruturado(resultado: Any) -> dict[str, Any] | None:
