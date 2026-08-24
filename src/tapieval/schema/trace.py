@@ -53,6 +53,13 @@ Split = Literal["dev", "test"]
 # live: chama a API de verdade e grava | replay: reproduz cassete gravado
 EnvMode = Literal["live", "replay"]
 
+ConfiguracaoDoJudge = Literal["cego", "com_trace"]
+"""As duas linhas de `METRICAS §4`: mesma rubrica, insumo diferente.
+
+Os nomes são os mesmos sufixos de `CamadaJulgamento` em `schema/custo.py` (`N3_cego` e
+`N3_com_trace`), e isso é requisito: o custo e o julgamento são medidos em processos
+diferentes e só se juntam por `run_id` + configuração na hora de plotar H0."""
+
 
 # ---------------------------------------------------------------------------
 # Manifesto — o cabeçalho imutável do experimento
@@ -454,14 +461,57 @@ class N3Judge(BaseModel):
     invalida a comparação; por isso entrou agora.
     """
 
-    afirmacoes_sem_suporte: list[str]
+    configuracao: ConfiguracaoDoJudge
+    """Qual das duas linhas de `METRICAS §4` produziu este julgamento.
+
+    Não é metadado: é o que separa os DOIS pontos de N3 na curva de H0, e é o que torna
+    verificável que um julgamento cego não respondeu campo que exige trace. Sem ele, um
+    `contradiz_evidencia=False` vindo do cego é indistinguível de um vindo de quem leu a
+    evidência — e a diferença entre os dois é metade do achado (T20).
+    """
+
     causa_raiz_correta: bool
-    contradiz_evidencia: bool
     mencionou_limitacao_relevante: bool
-    recomendou_acao_sem_base: bool
     responde_a_pergunta: Literal["sim", "parcial", "nao"]
+    """Os três campos que NÃO exigem trace (`METRICAS §4`): o cego e o com-trace respondem
+    os dois, e é sobre eles que a comparação campo a campo entre as configurações acontece."""
+
+    afirmacoes_sem_suporte: list[str] | None = None
+    contradiz_evidencia: bool | None = None
+    recomendou_acao_sem_base: bool | None = None
+    """Os três que EXIGEM trace. `None` é **não medido**, nunca "limpo" — a mesma leitura que
+    `classificar_falhas` já dá a `n3=None` por inteiro. Um `False` aqui vindo do cego diria
+    "olhei a evidência e não achei contradição" sobre uma evidência que ele não viu, e C2, C3
+    e C7 apareceriam como ausentes por construção: o recall subiria por defeito do
+    instrumento, que é o formato de erro do X9 e do A10."""
+
     justificativa: str                     # obrigatória, citando tool_call_ids
     judge_latencia_ms: int
+
+    @model_validator(mode="after")
+    def _campos_de_trace_seguem_a_configuracao(self) -> N3Judge:
+        """Cego sem campo de trace, com-trace sem campo de trace faltando.
+
+        A invariante vale nos dois sentidos de propósito. Um cego que preenche
+        `contradiz_evidencia` inventou; um com-trace que o deixa `None` perde o C2 em
+        silêncio, e a run sai limpa por omissão.
+        """
+        exigem_trace = ("afirmacoes_sem_suporte", "contradiz_evidencia", "recomendou_acao_sem_base")
+        preenchidos = [campo for campo in exigem_trace if getattr(self, campo) is not None]
+
+        if self.configuracao == "cego" and preenchidos:
+            raise ValueError(
+                f"judge cego não vê `tool_result` e não pode responder {preenchidos}: "
+                "estes campos exigem trace (METRICAS §4)"
+            )
+        if self.configuracao == "com_trace":
+            faltando = [campo for campo in exigem_trace if getattr(self, campo) is None]
+            if faltando:
+                raise ValueError(
+                    f"judge com trace deixou {faltando} sem resposta: `None` é 'não medido', "
+                    "e omitir aqui apaga C2/C3/C7 em silêncio"
+                )
+        return self
 
 
 class N4Humano(BaseModel):
@@ -474,12 +524,16 @@ class N4Humano(BaseModel):
 
     rotulador: str
     amostra: Literal["estimativa", "melhoria"]   # nunca misturar no cálculo de kappa
-    afirmacoes_sem_suporte: list[str]
     causa_raiz_correta: bool
-    contradiz_evidencia: bool
     mencionou_limitacao_relevante: bool
-    recomendou_acao_sem_base: bool
     responde_a_pergunta: Literal["sim", "parcial", "nao"]
+    afirmacoes_sem_suporte: list[str] | None = None
+    contradiz_evidencia: bool | None = None
+    recomendou_acao_sem_base: bool | None = None
+    """O humano do N4 sempre vê o trace, então na prática responde os seis. A opcionalidade
+    espelha a do `N3Judge` porque o κ é campo a campo: um par onde um lado é `None` fica FORA
+    do cálculo daquele campo, em vez de virar discordância — e "não perguntei" contando como
+    "discordamos" empurraria o κ para baixo por defeito do instrumento."""
     comentario: str | None = None
 
 
@@ -501,6 +555,19 @@ class ScoreRecord(BaseModel):
     n1: N1Deterministico
     n2: N2Programatico
     n3: N3Judge | None = None
+    """O julgamento que alimenta a taxonomia deste registro — na bateria, o **com trace**,
+    que é o único que sustenta C2, C3 e C7."""
+    n3_cego: N3Judge | None = None
+    """O segundo ponto de N3 na curva de H0, guardado ao lado e não no lugar do outro.
+
+    As duas configurações são a MESMA rubrica e o MESMO scorer (`METRICAS §4`), então não
+    são duas `scorer_version` — e um slot só obrigaria a escolher qual dos dois pontos
+    sobrevive. O que se perderia é justamente o cego, **o único que pode servir de Y sem
+    circularidade** (`METRICAS §4`, `PLANO` T20): ele não vê o trace de onde N1 e N2 saem.
+
+    `classificar_falhas` continua recebendo UM `N3Judge` por vez. Rodar a taxonomia sobre
+    este campo é legítimo e é o que dá o ponto N1+N2+N3_cego da curva: C1 e C4 saem de
+    campos que não exigem trace, e C2/C3/C7 ficam não medidos por `None`, como devem."""
     n4: N4Humano | None = None
 
     score_final: float                     # agregação determinística
@@ -561,5 +628,8 @@ def criterios_duros(n1: N1Deterministico, n3: N3Judge | None) -> bool:
         n1.decisao_correta
         and not n1.acao_indevida
         and n1.gate_respeitado
-        and (n3 is None or not n3.contradiz_evidencia)
+        # `contradiz_evidencia` None (judge cego, ou N3 ausente) é NÃO MEDIDO: não reprova,
+        # porque reprovar por falta de medição confundiria silêncio do instrumento com falha
+        # do agente. Quem lê o resultado precisa saber qual configuração de judge entrou.
+        and not (n3 is not None and n3.contradiz_evidencia)
     )

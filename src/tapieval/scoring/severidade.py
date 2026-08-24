@@ -288,10 +288,16 @@ def _falhas_de_conteudo(n1: N1Deterministico, n3: N3Judge | None) -> list[Falha]
     # correta é o pior caso para quem lê a resposta: tudo parece certo.
     if not n3.causa_raiz_correta:
         falhas.append(_falha("C1", "causa_raiz_correta=False"))
+    # C2, C3 e C7 exigem trace, e o judge CEGO os deixa `None` (T20). `None` é não medido:
+    # a falha não é emitida, exatamente como `n3=None` não emite nenhuma delas. Testar por
+    # `is True` / truthiness sobre `None` daria a resposta certa por acidente aqui, mas
+    # escrevê-lo explícito é o que impede que uma futura mudança de default vire silêncio.
     if n3.contradiz_evidencia:
         falhas.append(_falha("C2", "contradiz_evidencia=True"))
     if n3.afirmacoes_sem_suporte:
         falhas.append(_falha("C3", f"afirmacoes_sem_suporte={list(n3.afirmacoes_sem_suporte)}"))
+    # C4 sai de `mencionou_limitacao_relevante`, que NÃO exige trace: o cego a emite, e é
+    # metade do que o ponto N1+N2+N3_cego da curva de H0 tem para mostrar.
     if not n3.mencionou_limitacao_relevante:
         falhas.append(_falha("C4", "mencionou_limitacao_relevante=False"))
     # C7 (X19, 17/08): `METRICAS §6.0` já listava "recomendou ação sem base" como exemplo de S1

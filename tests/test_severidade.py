@@ -77,6 +77,10 @@ def n2_limpo(**overrides) -> N2Programatico:
 
 def n3_limpo(**overrides) -> N3Judge:
     campos = {
+        # `com_trace` é o default do helper porque é a configuração que responde os seis
+        # campos: um cego limpo não teria como preencher os três que exigem trace, e o
+        # catálogo de falhas de conteúdo abaixo ficaria sem C2, C3 e C7 para exercitar.
+        "configuracao": "com_trace",
         "afirmacoes_sem_suporte": [],
         "causa_raiz_correta": True,
         "contradiz_evidencia": False,
@@ -528,8 +532,14 @@ def test_a_rubrica_de_metricas_4_e_o_schema_do_judge_tem_os_mesmos_campos():
     }
 
     # `justificativa` e `judge_latencia_ms` não são perguntas da rubrica: uma é auditabilidade
-    # (a linha `—` da tabela), a outra é telemetria do medidor.
-    do_schema = set(N3Judge.model_fields) - {"justificativa", "judge_latencia_ms"}
+    # (a linha `—` da tabela), a outra é telemetria do medidor. `configuracao` também não é
+    # pergunta: é QUAL das duas linhas da tabela produziu o julgamento (T20), e não tem par
+    # no N4 porque o humano nunca rotula às cegas quanto à evidência — ele vê o trace.
+    do_schema = set(N3Judge.model_fields) - {
+        "justificativa",
+        "judge_latencia_ms",
+        "configuracao",
+    }
 
     assert da_rubrica == do_schema
 

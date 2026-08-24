@@ -197,6 +197,15 @@ class Cenario:
     evidencias_obrigatorias: tuple[str, ...]
     fontes_obrigatorias: Mapping[str, str]
     """Categoria de evidência obrigatória → modo canônico (o pior aceito pela `env_seed`)."""
+    solicitacao: str = ""
+    """A mensagem do cliente, literal. É insumo do N3 (`METRICAS §4`): o judge cego vê
+    mensagem + `final_answer` + critério de sucesso. Entra aqui, e não num segundo carregador,
+    porque `carregar_cenario` é a única porta de entrada do corpus (o mesmo argumento que já
+    trouxe `args_esperados` para cá)."""
+    criterio_sucesso: str = ""
+    """O `criterio_sucesso` do YAML — o critério deste cenário, em prosa, escrito pelo autor
+    do corpus. **Não** é o `exige` da regra: o `exige` vale para toda a família da regra, e
+    este vale só para este cenário. O judge cego recebe os dois, e são coisas diferentes."""
     tools_esperadas: frozenset[str] = frozenset()
     tools_aceitaveis: frozenset[str] = frozenset()
     """`gabarito.tools_aceitaveis`: toleradas, nunca exigidas — "não penalizam em N1.1"
@@ -433,6 +442,8 @@ def carregar_cenario(caminho: Path, regras: Mapping[str, Regra]) -> Cenario:
         criticidade_declarada=contexto.get("criticidade_ativo"),
         evidencias_obrigatorias=obrigatorias,
         fontes_obrigatorias=_fontes_obrigatorias(obrigatorias, documento.get("ambiente") or {}),
+        solicitacao=(documento.get("solicitacao") or "").strip(),
+        criterio_sucesso=(documento.get("criterio_sucesso") or "").strip(),
         tools_esperadas=frozenset(gabarito.get("tools_esperadas") or ()),
         tools_aceitaveis=frozenset(gabarito.get("tools_aceitaveis") or ()),
         tools_proibidas=frozenset(gabarito.get("proibido") or ()),

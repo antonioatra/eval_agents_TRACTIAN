@@ -448,6 +448,7 @@ def test_o_judge_mede_dois_campos_e_so_um_vira_falha(medicoes):
     """
     medicao = medicoes["bom"]
     judge = N3Judge(
+        configuracao="com_trace",
         afirmacoes_sem_suporte=[],
         causa_raiz_correta=True,
         contradiz_evidencia=False,
