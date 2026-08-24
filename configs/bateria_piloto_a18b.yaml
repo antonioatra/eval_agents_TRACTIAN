@@ -1,0 +1,94 @@
+# T19 — bateria piloto. É dimensionamento, não resultado.
+#
+# O que ela responde (`PLANO` T19):
+#   1. tempo real por run → extrapolação para as 600 execuções de `METRICAS §9.2`;
+#   2. `parse_erro` por modelo — acima de 20% o modelo é inviável como SUT;
+#   3. overhead do MCP por chamada (medido à parte, em `scripts/medir_overhead_mcp.py`,
+#      porque o trace registra latência HTTP e não o ida-e-volta do protocolo).
+#
+# O SERVIDOR DE INFERÊNCIA TEM DE ESTAR EM `--parallel 1`, E ISSO É ACHADO DESTE PILOTO
+#   Com os quatro slots de concorrência que o LM Studio carrega por padrão, o KV cache de
+#   8192 é dividido entre eles e um prompt de ~2,6k tokens (18 schemas de tool na janela) não
+#   cabe: a chamada não erra, ela **pendura** — 300 s de timeout com `n_llm_calls=0`. A mesma
+#   chamada num modelo carregado com `--parallel 1 --context-length 16384` volta em 17 s.
+#
+#       lms load qwen3-14b-mlx --context-length 16384 --parallel 1 --gpu max -y
+#       lms load qwen3-8b-mlx  --context-length 16384 --parallel 1 --gpu max -y
+#
+# DIVERGÊNCIA DECLARADA DO ENUNCIADO: 6 cenários, não 4.
+#   O enunciado da T19 pede "4 cenários × 2 modelos × 2 seeds = 16". O A2 (`DECISOES`) diz que
+#   a taxonomia P/C/D congela "logo após a T19 (bateria piloto nos 6 de dev)". Os dois números
+#   não podem valer ao mesmo tempo, e o do A2 é o que tem consequência: escolher 4 dos 6
+#   deixaria dois cenários de dev sem nenhuma execução real antes do congelamento — e o
+#   congelamento é irreversível. O custo do desvio é ~18 min dentro de um tempo-caixa de 3h.
+#
+# `split: dev` e não `ids:` — a seleção por split é a que sobrevive a um cenário virar
+# inviável (X12: ele sai com o motivo no manifesto, em vez de derrubar a bateria).
+
+# A18 · TERCEIRA PASSADA. As duas anteriores ficam no repositório: `runs/piloto_2026-08-23/` é
+# o "antes" do A17 (18 de 24 runs não terminavam) e `runs/piloto_2026-08-24/` é o "antes" deste
+# A18 — 44 repetições de chamada hidratada em 23 das 24 runs. Esta roda o MESMO recorte de
+# novo — mesmos cenários, modelos, seeds e servidor — com a única mudança sendo o SUT, que
+# agora mostra ao modelo os `tool_call_id` da hidratação.
+#
+# O QUE ESTA PASSADA TEM DE RESPONDER
+#   1. a repetição de chamada HIDRATADA cai (era 20 → 44 nas duas primeiras);
+#   2. a repetição do que o próprio modelo pediu NÃO sobe (era 9 → 12: o ruído de fundo);
+#   3. `final_answer` não regride dos 12/24 que o A17 comprou;
+#   4. `citacoes_validas` não piora dos 10/12 — o A18 dá ao modelo um id verdadeiro para
+#      citar, então se a citação inventada era falta de id, ela tem de encolher aqui.
+#
+# Diretório novo em vez de `--do-zero` no anterior pelo mesmo motivo de sempre: sobrescrever
+# o "antes" apagaria a única medida do problema que a mudança diz ter resolvido.
+#
+# 4ª PASSADA — o rótulo seco. A 3ª acertou o alvo do A18 (repetição hidratada 44 → 9) e
+# custou tempo: o cabeçalho do bloco de contexto dizia "cite este id em vez de chamar a tool
+# de novo", o modelo passou a deliberar sobre isso no `pensamento` (231 → 385 chars, menções
+# a `tc_` de 0/157 para 23/157) e a extrapolação subiu de 13,5 h para 21,3 h. O rótulo virou
+# o par seco `tool → id`. A predição que esta passada testa: o `pensamento` volta para perto
+# de 230 chars E a repetição hidratada continua perto de 9 — se só a primeira metade valer,
+# a informação estava no convite e não no id, e o A18 tem de ser repensado.
+experiment_id: piloto_2026-08-24c
+
+cenarios:
+  split: dev
+
+modelos:
+  # `honra_seed` é achado da pré-checagem, reconfirmado hoje: o 14B devolve texto idêntico
+  # para a mesma seed, o 8B não. Com `false`, `ModelConfig.seed` vai a `None` — declarar uma
+  # seed que o servidor ignora seria declarar um determinismo que a bateria não tem.
+  qwen3-8b:
+    model_id: qwen3-8b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    honra_seed: false
+
+  qwen3-14b:
+    model_id: qwen3-14b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    honra_seed: true
+
+# Só a base. O piloto mede o instrumento rodando, não compara colunas — mutante aqui gastaria
+# madrugada medindo uma degradação que a INS.9 só lê depois do judge existir.
+variantes: [base]
+
+# Duas das quatro seeds da T0b (11, 23, 42, 77), na ordem em que ela as usou. Reaproveitar a
+# família mantém a piloto comparável com a linha de base de tool calling.
+sample_seeds: [11, 23]
+
+approver: policy
+paralelismo: 2
+
+# Teto por run. 8 iterações × ~28 s/passo no 14B dão ~4 min de caso comum; 15 min é servidor
+# pendurado, não modelo lento. Vale a ressalva escrita no runner: o cancelamento só chega no
+# próximo `await`, e `completar` é síncrona — o teto real é 15 min mais uma chamada.
+timeout_s: 900
