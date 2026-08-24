@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "A falta de baseline pode explicar a detecção. Vou verificar o estado do baseline do ativo." , "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_M208"}} , "resposta": null, "decisao": null, "prioridade_escalonamento": null}

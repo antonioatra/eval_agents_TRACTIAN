@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "martelete hidráulico BPFO 38.2", "type": "guidance"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

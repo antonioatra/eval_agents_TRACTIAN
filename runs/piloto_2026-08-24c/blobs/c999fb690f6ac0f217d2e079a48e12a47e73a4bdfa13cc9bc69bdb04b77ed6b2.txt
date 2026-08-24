@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "escalate_case", "args": {"case_id": "case_tkt_inv_08", "justification": "Conflito entre análise de desalinhamento (an_9907) e base solta (an_9908) no ativo asset_M205. Necessário revisão humana para resolução.", "params": {}}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "A análise que apontou desalinhamento não está disponível. Vou verificar as análises existentes do ativo para identificar o contexto." , "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_M205", "status": "current"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

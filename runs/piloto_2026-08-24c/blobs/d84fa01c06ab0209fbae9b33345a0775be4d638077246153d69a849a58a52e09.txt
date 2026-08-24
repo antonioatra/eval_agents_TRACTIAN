@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "A ferramenta 'list_models' não está disponível. Preciso verificar as ferramentas disponíveis para encontrar um modelo adequado que possa processar dados do ativo asset_M102.", "acao": {"tool": "list_tools", "args": {}}, "resposta": null, "decisao": "agir", "prioridade_escalonamento": "alta"}

@@ -1033,13 +1033,25 @@ def _contexto_renderizado(
         if origem is None:
             linhas.extend(f"- {item}" for item in itens)
             continue
-        # RÓTULO SECO, E ISSO FOI MEDIDO. A primeira redação dizia "já foi chamada por você
-        # — cite este id em vez de chamar a tool de novo". A informação é a mesma; a oração
-        # final convidava o modelo a DELIBERAR sobre chamar ou não, e ele aceitou o convite:
-        # na 3ª piloto o `pensamento` cresceu 67% (231 → 385 chars), passou a mencionar `tc_`
-        # em 23 de 157 passos (era 0), e a extrapolação subiu de 13,5 h para 21,3 h com o
-        # ms/token da máquina parado. O par `tool → id` já diz o que precisa ser dito.
-        linhas.append(f"- `{origem}` → `{ids[origem]}`:")
+        # A ORAÇÃO FINAL FICA, E ELA FOI MEDIDA CONTRA A ALTERNATIVA. A 4ª piloto rodou o
+        # rótulo seco (`tool → id:`, sem instrução) no mesmo recorte: a repetição de chamada
+        # hidratada subiu de 9 para 16, contra 44 sem id nenhum. Ou seja, o id sozinho segura
+        # a maior parte, e a instrução segura o resto — ela não é enfeite.
+        #
+        # A hipótese que motivou o rótulo seco foi REFUTADA pela mesma passada: suspeitava-se
+        # que a instrução causava verborragia (o `pensamento` foi de 231 para 385 chars na 3ª),
+        # mas sem ela o `pensamento` ficou em 406 — mais longo, não menos. O que a instrução
+        # de fato causava era o modelo mencionar `tc_` ao raciocinar (23/157 contra 4/150), e
+        # isso não é o que custa. A verborragia vem de o modelo TER os ids, e o texto do
+        # rótulo não é a alavanca dela.
+        #
+        # Custo declarado: a instrução é parte do harness e a variante `sem_hidratacao` não
+        # recebe equivalente, então o eixo hidratação × sem_hidratacao carrega meia diferença
+        # a mais que a hidratação em si.
+        linhas.append(
+            f"- `{origem}` já foi chamada por você — tool_call_id `{ids[origem]}`, "
+            "cite este id em vez de chamar a tool de novo:"
+        )
         linhas.extend(f"  - {item}" for item in itens)
     return "\n".join(linhas)
 
