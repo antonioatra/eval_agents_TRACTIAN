@@ -1,0 +1,105 @@
+# BATERIA DE REFERÊNCIA — o teto de leitura. `ARQUITETURA §13`.
+#
+#   6 cenários de **dev** × 1 modelo de fronteira × variante `base` × 4 `sample_seed` = 24
+#   execuções.
+#
+# ═════════════════════════════════════════════════════════════════════════════════════════
+# ELA NÃO É A TERCEIRA CÉLULA DE NENHUM FATORIAL, E NÃO ENTRA NAS TABELAS DAS OUTRAS.
+#
+#   A comparação `qwen3-8b × qwen3-14b` da bateria principal responde "quanto do erro é do
+#   PORTE do modelo?", e só funciona porque os dois são da mesma família: cruzar famílias
+#   introduz diferença de treino, de formato de tool calling e de tokenizer, e aí não se sabe
+#   se a diferença veio do tamanho ou da marca. Enfiar um modelo de fronteira nessa tabela
+#   quebraria H2 — o parâmetro que ela isola deixaria de estar isolado.
+#
+#   Esta bateria responde outra pergunta: "quanto do erro medido é do porte do modelo e quanto
+#   é do problema ser difícil?". O número dela é um TETO contra o qual ler os dois SUTs locais,
+#   e reporta-se sozinho, em texto separado. As duas perguntas convivem no desenho **desde que
+#   não se misturem na mesma tabela**.
+# ═════════════════════════════════════════════════════════════════════════════════════════
+#
+# ═════════════════════════════════════════════════════════════════════════════════════════
+# TRÊS BLOQUEIOS ANTES DE RODAR. NENHUM É CONFIGURAÇÃO. Ver `docs/dimensionamento.md §5`.
+#
+#   1. **O cliente do SUT não fala com a nuvem, de propósito.** `sut/llm.py` declara em
+#      docstring que "não conhece provedor pago, não lê chave de API de ambiente nenhum e não
+#      tem fallback para nuvem" — e `ClienteDeInferencia._corpo` não monta header de
+#      `Authorization`. A promessa existe para garantir que o SUT medido é o modelo local que o
+#      manifesto declara; enfiar chave de API ali abriria caminho para um SUT sair para a rede
+#      sem nada quebrar. A saída limpa é um `ClienteDeReferencia` ao lado, como
+#      `scoring/judge_llm.py` já é para o judge — reaproveitando o que é protocolo
+#      (`esquema_estrito`, `RespostaDoModelo`) e não o que é política. **Decisão do operador.**
+#
+#   2. **O modelo abaixo não pode ser o mesmo do judge.** `ARQUITETURA §13` põe o judge na free
+#      tier com o critério "o maior disponível, **≠ dos SUTs**", pelo motivo escrito: juiz igual
+#      ao réu prefere as próprias respostas. Se o SUT de referência for `gemini-3.6-flash`, que
+#      é o `MODELO_PADRAO` do judge, o judge julga a si mesmo — exatamente o viés que a regra
+#      existe para evitar, e ele cairia sobre a única linha que serve de teto. Por isso o
+#      `model_id` abaixo é o Pro e não o Flash: os ~200 chamadas desta bateria cabem no RPD do
+#      Pro, ao contrário das ~1.400 do judge, que foi o motivo de o judge ser Flash.
+#      **`gemini-3.6-pro` é um id A CONFERIR contra o catálogo da free tier na noite da
+#      execução, e tem de ser um snapshot datado, nunca um alias `-latest`** — alias muda de
+#      modelo sob o pé e tornaria decorativo o congelamento que o resto do trabalho faz.
+#
+#   3. **RPD: 200 + 1.400 não cabem no mesmo dia.** A conta do A1 dá ~1.400 chamadas de judge
+#      na free tier; esta bateria são 24 runs × ~8 chamadas ≈ 200. Somadas passam do teto
+#      diário. As duas têm de cair em dias diferentes — o que é fácil, porque o judge roda
+#      **depois**, sobre traces já gravados, e não na madrugada da bateria.
+# ═════════════════════════════════════════════════════════════════════════════════════════
+#
+# ─────────────────────────────────────────────────────────────────────────────────────────
+# RODAR SEM O JUDGE CONGELADO É ERRO
+#   `configs/judge_frozen.json` — ainda não existe. Um teto pontuado por outra rubrica que a
+#   dos SUTs locais não é teto de coisa nenhuma. Sem campo no carregador; declaração aqui.
+# ─────────────────────────────────────────────────────────────────────────────────────────
+#
+# CUSTO NA MADRUGADA: praticamente zero, e é por isso que ela NÃO entra na fila de cortes.
+# Roda na nuvem, não ocupa a GPU e é paralelizável com as baterias locais. ~24 runs a ~40 s de
+# relógio ≈ 0,3 h, limitadas por RPD e não por hardware. Cortá-la não compraria madrugada
+# nenhuma — o que ela consome é cota, e cota não é o recurso escasso aqui.
+experiment_id: referencia_2026_08
+
+# `split: dev`, e não test. Duas razões, e a segunda é a que decide:
+#   (a) `ARQUITETURA §13` diz "só nos 6 cenários de dev", pelo volume — SUT é o papel de alto
+#       volume e a free tier tem RPD;
+#   (b) o teto se lê contra a piloto e contra as baterias de mutantes/metamórfica, que também
+#       são de dev. Rodar o teto em test o tornaria incomparável com tudo que está ao lado dele,
+#       e ainda gastaria cenário de test numa leitura que não é resultado sobre o corpus.
+cenarios:
+  split: dev
+
+modelos:
+  gemini-referencia:
+    model_id: gemini-3.6-pro          # snapshot datado — CONFERIR na noite (bloqueio 2 acima)
+    served_by: gemini_free_tier
+    quantization: null                # servido, não quantizado por nós
+    temperature: 0.7                  # a mesma dos SUTs locais: o teto tem de ser lido sob a
+                                      # mesma condição de amostragem, senão a diferença medida
+                                      # inclui a diferença de temperatura
+    max_tokens: 1200
+    structured_output: json_schema    # o endpoint OpenAI-compatible aceita `strict: true`
+    context_window: 1048576
+    # A free tier não expõe `seed` no endpoint compatível. `false` manda `ModelConfig.seed` a
+    # `None`, que é o que o schema reserva para "servidor não suporta seed" — e mantém honesto
+    # o mesmo tratamento que o `qwen3-8b` recebe pelo mesmo motivo.
+    honra_seed: false
+
+variantes: [base]
+
+# Quatro repetições — as quatro da T0b, prefixo das oito da principal. Quatro e não oito porque
+# o produto aqui é um teto por cenário, não um `pass^8`: `pass^4` já separa "acerta sempre" de
+# "acerta às vezes", que é o que a leitura de teto precisa, e oito dobrariam o consumo de RPD
+# numa cota compartilhada com o judge (bloqueio 3 acima).
+sample_seeds: [11, 23, 42, 77]
+
+approver: policy
+
+# Aqui `paralelismo` PODE subir: o gargalo é RPD e latência de rede, não a GPU única que forçou
+# `--paralelismo 1` nas locais. Fica em 2 (o padrão do runner) porque o limite de requisições
+# por minuto da free tier é a próxima parede, e estourá-lo devolve 429 — que o runner registra
+# como `falha_do_instrumento` e não como resultado.
+paralelismo: 2
+
+# 300 s, não 900. Modelo de fronteira servido não fica pendurado como o LM Studio ficava; o que
+# acontece aqui é 429 ou corte de rede, e esperar 15 minutos por isso só queima relógio.
+timeout_s: 300
