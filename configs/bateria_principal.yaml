@@ -1,0 +1,102 @@
+# BATERIA PRINCIPAL — `METRICAS §9.2`. É o resultado, não o dimensionamento.
+#
+#   18 cenários de **test** × 2 modelos × variante `base` × 8 `sample_seed` = 288 execuções.
+#   Serve a H0 (ganho incremental de N3), H2 (tamanho de modelo) e ao `pass^8` (INS.8).
+#
+# ─────────────────────────────────────────────────────────────────────────────────────────
+# RODAR SEM O JUDGE CONGELADO É ERRO
+#   Todo `ScoreRecord` desta bateria tem de carregar o `ScorerVersion` de
+#   **`configs/judge_frozen.json`** — prompt + rubrica + few-shots + snapshot do modelo, com o
+#   sha256 que a T23 congela. O arquivo AINDA NÃO EXISTE; ele é pré-requisito da execução, não
+#   subproduto dela. Pontuar contra um judge não congelado torna a curva de H0 incomparável
+#   com ela mesma entre duas noites, e o congelamento é o que impede que a rubrica se ajuste
+#   ao resultado depois de vê-lo.
+#
+#   DIVERGÊNCIA DECLARADA (ver `docs/dimensionamento.md §5`): `runner/matriz.py` recusa campo
+#   desconhecido no topo do YAML (`CAMPOS_DA_BATERIA`), então **não há como declarar
+#   `judge: configs/judge_frozen.json` em campo**. A declaração fica aqui, no cabeçalho, até
+#   que o carregador ganhe o campo. O caminho é fixo e não se negocia por bateria.
+# ─────────────────────────────────────────────────────────────────────────────────────────
+#
+# `split: test` e não `ids:` — o split é o que separa calibração de resultado (`METRICAS §9.3`),
+# e é a seleção que sobrevive a um cenário virar inviável (X12: ele sai do denominador com o
+# motivo escrito no manifesto, em vez de derrubar a bateria inteira). Os 18 são 13 oficiais + 5
+# autorais; os 6 de dev, que calibraram rubrica e taxonomia, NÃO entram aqui — nem eles nem os
+# ativos reservados ao holdout.
+#
+# A `env_seed` NÃO aparece neste arquivo, e isso é a regra, não omissão. Ela é canônica **por
+# cenário** e mora no YAML do próprio cenário (`ambiente.env_seed`), porque nenhuma seed serve
+# aos 8 autorais ao mesmo tempo (`CENARIOS §8.4`). Nesta bateria ela fica **fixa**: se as
+# repetições variassem o mundo, o `pass^8` mediria robustez ao ambiente em vez de consistência
+# do modelo (`METRICAS §9.1`) — e o `pass^k` é o resultado central. Quem varia `env_seed` é a
+# `bateria_ambiente.yaml`, e ela é outra pergunta.
+experiment_id: principal_2026_08
+
+cenarios:
+  split: test
+
+modelos:
+  # Mesma família nos dois, para que a diferença medida seja tamanho e não marca
+  # (`ARQUITETURA §13`). Mesma configuração da piloto: trocar qualquer campo aqui tornaria as
+  # quatro passadas da piloto inúteis como base do dimensionamento.
+  #
+  # Os dois ficam carregados ao mesmo tempo (5 GB + 9 GB nos ~16 GB efetivos), como nas quatro
+  # passadas da piloto — a bateria alterna de modelo dentro de cada cenário (`Bateria.expandir`)
+  # e recarregar a cada troca custaria 36 recargas só na principal.
+  #
+  #   lms load qwen3-14b-mlx --context-length 16384 --parallel 1 --gpu max -y
+  #   lms load qwen3-8b-mlx  --context-length 16384 --parallel 1 --gpu max -y
+  qwen3-8b:
+    model_id: qwen3-8b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    # O 8B devolve texto diferente para a mesma seed (T0b, reconfirmado na piloto). Com
+    # `false`, `ModelConfig.seed` vai a `None`: declarar seed que o servidor ignora seria
+    # declarar um determinismo que a bateria não tem. `RunStart.seed` continua registrando a
+    # `sample_seed` da célula — a repetição aconteceu, mesmo sendo irreprodutível.
+    honra_seed: false
+
+  qwen3-14b:
+    model_id: qwen3-14b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    honra_seed: true
+
+# Uma variante só. É o trade-off explícito de `METRICAS §9.2`: 4 variantes × 3 seeds daria 432
+# execuções e um `pass^3` fraco; 1 variante × 8 seeds dá 288 e um `pass^8` sólido. Um eixo a
+# mais gera uma comparação; repetições geram um intervalo de confiança. Os mutantes rodam na
+# `bateria_mutantes.yaml`, sobre dev, e não entram nesta tabela.
+variantes: [base]
+
+# Oito repetições — o eixo do `pass^8` (INS.8), e o único que não se corta para caber no tempo
+# sem trocar o resultado que se reporta (ver `docs/dimensionamento.md §3`, corte 4).
+#
+# As quatro primeiras são as da T0b (`scripts/medir_tool_calling.py::SEEDS_DO_BLOCO_B`), na
+# mesma ordem, o que mantém a bateria comparável com a linha de base de tool calling e com as
+# quatro passadas da piloto. As quatro seguintes foram fixadas **antes** de qualquer resultado
+# da bateria principal existir e não se re-sorteiam: a propriedade que importa não é a
+# aritmética delas, é terem sido escolhidas a priori — trocar seed depois de ver o número é a
+# forma mais barata de fabricar um `pass^k` melhor.
+sample_seeds: [11, 23, 42, 77, 101, 137, 199, 251]
+
+approver: policy
+
+# `--paralelismo 1` é achado medido da piloto, não cautela: com 2, as mesmas duas células
+# levaram 446 s contra 222 s e uma run se perdeu em `falha_do_instrumento` — sob contenção de
+# GPU cada chamada passa dos 300 s do cliente de inferência e a contenção vira run perdida em
+# vez de run lenta. O valor fica no arquivo para que o manifesto grave a condição que valeu.
+paralelismo: 1
+
+# 15 min por run. 8 iterações × ~19 s/chamada no 14B dão ~2,5 min de caso comum e a pior run da
+# piloto fechou em 245 s; 900 s é servidor pendurado, não modelo lento. Ressalva do runner: o
+# cancelamento só chega no próximo `await` e `completar` é síncrona — o teto real é 900 s mais
+# uma chamada.
+timeout_s: 900

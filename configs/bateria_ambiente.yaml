@@ -1,0 +1,115 @@
+# BATERIA DE AMBIENTE — sensibilidade a mundo (H4). `METRICAS §9.2`, `§7.2`, `CENARIOS §8.3`.
+#
+# O que ela mede: a diferença entre `pass^k` com `env_seed` FIXO (só o modelo varia) e `pass^k`
+# com `env_seed` LIVRE (modelo + ambiente). A área entre as duas curvas é a inconsistência
+# atribuível à plataforma, e é isso que sustenta H4.
+#
+# ═════════════════════════════════════════════════════════════════════════════════════════
+# ESTE ARQUIVO **NÃO** EXECUTA A BATERIA DE AMBIENTE. ELE DECLARA O BRAÇO CANÔNICO DELA.
+#
+#   `runner/matriz.py` não tem eixo de `env_seed`. A seed do ambiente é lida do YAML do
+#   cenário (`carregar_cenario_executavel`) e entra na célula por `Celula.run_id` como
+#   constante — não há campo `env_seeds:` em `CAMPOS_DA_BATERIA`, e campo desconhecido é
+#   recusado no carregamento. A docstring de `matriz.py` já previu isto ("a bateria de
+#   ambiente (T26b), que varia justamente este eixo, não precisará renomear célula nenhuma
+#   para caber"), mas o eixo nunca foi implementado.
+#
+#   O que este arquivo declara e roda hoje: as 12 células do braço canônico
+#   (6 cenários de dev × 2 modelos × 1 `sample_seed`, cada cenário na SUA `env_seed` canônica).
+#   Elas são o ponto de comparação — sem o mundo canônico medido na mesma seed de amostragem,
+#   as outras 78 células não têm contra o que ser lidas. As 78 restantes exigem o eixo.
+#
+#   Extensão mínima que destrava (ver `docs/dimensionamento.md §5`):
+#     1. `CAMPOS_DA_BATERIA` ganha `env_seeds`;
+#     2. `env_seeds` é um mapeamento `cenario_id -> [seeds]`, nunca uma lista global — seed de
+#        ambiente global não existe (`CENARIOS §2.3`);
+#     3. `Bateria.expandir` passa a iterar as seeds do cenário e `Celula.run_id` usa a seed da
+#        célula em vez de `cenario.env_seed` (o nome do trace já reserva o campo `env<seed>`);
+#     4. o carregador recusa, para cenário `dado_dependente`, seed fora de
+#        `ambiente.seeds_equivalentes ∪ {ambiente.env_seed}` — a restrição do `CENARIOS §8.3`
+#        tem de morar no código, senão ela vive só neste comentário.
+# ═════════════════════════════════════════════════════════════════════════════════════════
+#
+# ═════════════════════════════════════════════════════════════════════════════════════════
+# A MATRIZ DE `METRICAS §9.2` (6 × 2 × 8 = 96) **NÃO É REALIZÁVEL**. A realizável é 90.
+#
+#   `CENARIOS §8.3`: só cenário **política-dependente** aceita `env_seed` livre. Para o
+#   **dado-dependente**, seed fora da lista de válidas troca o cenário por outro — em AUT-01,
+#   `analyses` em `inconclusive` faz o cenário deixar de ser um negativo verdadeiro, e o que
+#   sobra não é robustez, é outro teste.
+#
+#   Contado nos YAMLs do corpus (canônica INCLUÍDA, porque ela é o ponto de comparação):
+#
+#     | cenário de dev | natureza  | env_seed | seeds válidas declaradas        | usáveis |
+#     |----------------|-----------|----------|---------------------------------|---------|
+#     | aut_01         | dado      | s001     | s013 s015 s021 s048 s053 s081 s091 |  8  |
+#     | aut_03         | POLÍTICA  | s002     | livre (330/1000); 7 enumeradas  |    8    |
+#     | aut_06         | dado      | s004     | s023 s032 s055 s079 s089 s116 s206 |  8  |
+#     | cen_04         | dado      | s004     | s006 s019 s021 s023 s030 s032   |    7    |
+#     | cen_06         | dado      | s003     | s006 s008 s009 s015 s016 s023   |    7    |
+#     | cen_09         | dado      | s017     | s024 s032 s040 s067 s078 s089   |    7    |
+#     |                |           |          | **por modelo**                  |  **45** |
+#
+#   45 × 2 modelos = **90 execuções**, não 96. Três dos seis (cen_04, cen_06, cen_09) trazem 6
+#   equivalentes e não 7. Forçar a oitava seed neles significaria sortear uma seed fora da lista
+#   — e a lista não é amostra de conveniência: ela é o resultado da varredura de 1000 seeds do
+#   `CENARIOS §8.4`, exigindo `complete` em TODOS os recursos da trajetória esperada.
+#
+#   LIMITE MAIS FUNDO, E ELE É SOBRE H4, NÃO SOBRE ARITMÉTICA. Dos 5 cenários
+#   política-dependentes do corpus (AUT-03, AUT-04, AUT-05, AUT-07, CEN-15), **só AUT-03 está
+#   em dev**. Nos outros cinco cenários desta bateria a `env_seed` varia dentro de uma lista
+#   escolhida justamente para PRESERVAR o gabarito — isto é, dentro de mundos equivalentes.
+#   O que se mede ali é variação de `notes` e de forma, não robustez a mundo degradado. A H4
+#   sai desta bateria apoiada em 1 cenário de 6, e isso tem de aparecer no texto do resultado.
+#   Trocar para os 5 política-dependentes daria uma H4 forte e violaria o split — três deles
+#   são de test, e queimar cenário de test numa bateria de robustez contamina o resultado.
+# ═════════════════════════════════════════════════════════════════════════════════════════
+#
+# ─────────────────────────────────────────────────────────────────────────────────────────
+# RODAR SEM O JUDGE CONGELADO É ERRO
+#   `configs/judge_frozen.json` — ainda não existe. Sem campo no carregador (ver
+#   `docs/dimensionamento.md §5`), a declaração é esta linha.
+# ─────────────────────────────────────────────────────────────────────────────────────────
+#
+# RECOMENDAÇÃO DE CORTE: esta é a bateria nº 1 da fila (`docs/dimensionamento.md §3`).
+# Economiza 2,75 h, é a única bloqueada por código que ainda não existe, e é a que entrega
+# menos — H4 apoiada em 1 cenário de 6. Cortada, "sensibilidade a mundo" vira trabalho futuro
+# declarado, com esta matriz de 90 já escrita para quem retomar.
+experiment_id: ambiente_2026_08_braco_canonico
+
+cenarios:
+  split: dev
+
+modelos:
+  qwen3-8b:
+    model_id: qwen3-8b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    honra_seed: false
+
+  qwen3-14b:
+    model_id: qwen3-14b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    honra_seed: true
+
+variantes: [base]
+
+# UMA `sample_seed`, e é o ponto da bateria. Aqui o eixo que varia tem de ser o ambiente; se a
+# amostragem variasse junto, as duas fontes de variância ficariam somadas dentro da mesma
+# célula e a decomposição de `METRICAS §7.2` — que é o produto desta bateria — deixaria de ser
+# possível. `11` é a primeira das oito da principal, então a célula canônica desta bateria é
+# comparável, cenário a cenário, com a célula correspondente da piloto.
+sample_seeds: [11]
+
+approver: policy
+paralelismo: 1
+timeout_s: 900

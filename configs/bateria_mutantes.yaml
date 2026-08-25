@@ -1,0 +1,95 @@
+# BATERIA DE MUTANTES — INS.9. O instrumento medindo a si mesmo.
+#
+#   6 cenários de **dev** × 1 modelo × 4 mutantes × 5 `sample_seed` = 120 execuções.
+#
+# A pergunta é "que fração de MUT1–MUT4 o instrumento distingue do original, **por classe**?"
+# (`METRICAS §7.1`). É a fonte de verdade-terreno de viés zero — a degradação é sabida por
+# construção — e a contraparte das 35 rotulagens humanas, que têm cobertura ampla e viés de
+# anotador único. Se as duas curvas de recall tiverem o mesmo formato a conclusão é sólida; se
+# divergirem, a divergência é o achado.
+#
+# ─────────────────────────────────────────────────────────────────────────────────────────
+# RODAR SEM O JUDGE CONGELADO É ERRO
+#   `configs/judge_frozen.json` (prompt + rubrica + few-shots + snapshot, sha256 da T23) é
+#   pré-requisito da execução. Aqui ele pesa duas vezes: a INS.9 é sobre o **poder do
+#   instrumento**, e um judge que muda entre a coluna `base` e a coluna mutante mede a mudança
+#   do judge, não a detecção da degradação. O arquivo ainda não existe.
+#
+#   DIVERGÊNCIA: `runner/matriz.py` recusa campo desconhecido no topo, então a declaração fica
+#   no cabeçalho e não em campo. Ver `docs/dimensionamento.md §5`.
+# ─────────────────────────────────────────────────────────────────────────────────────────
+#
+# ─────────────────────────────────────────────────────────────────────────────────────────
+# LACUNA ABERTA — A COLUNA `base` NÃO ESTÁ NESTA MATRIZ, E A INS.9 PRECISA DELA
+#   INS.9 é "fração distinguida **do original**". A matriz de `METRICAS §9.2` (6 × 1 × 4 MUT ×
+#   5 seeds) lista só os quatro mutantes: não há coluna `base` contra a qual ler a degradação.
+#   Este arquivo reproduz a matriz da spec **como está**, para não trocar o denominador por
+#   conta própria — e deixa a lacuna escrita em vez de resolvê-la em silêncio.
+#
+#   As três saídas, com o preço:
+#     a) acrescentar `base` à lista de variantes → 6 × 1 × 5 × 5 = 150 execuções, +30 runs,
+#        +0,65 h no 8B. É a única que dá coluna de controle nas mesmas 5 seeds.
+#     b) reaproveitar as runs `base`/8B/dev da 4ª passada da piloto (`runs/piloto_2026-08-24c`)
+#        — mas são 2 seeds das 5, e só valem se o `prompt_sha` e o SUT forem os mesmos da noite.
+#     c) ler a degradação contra a bateria principal — **não serve**: ela roda sobre test, e
+#        comparar mutante-em-dev com base-em-test confunde degradação com dificuldade de split.
+#   Recomendação: (a). Decisão do operador — ver `docs/dimensionamento.md §6`.
+# ─────────────────────────────────────────────────────────────────────────────────────────
+#
+# `split: dev` porque os mutantes são validação do framework, não resultado sobre o corpus: a
+# degradação é conhecida de antemão, então não há gabarito de test a queimar. Manter os
+# mutantes fora de test também protege a higiene do §9.3 — o judge calibrou em dev, e é em dev
+# que ele pode ver a mesma execução duas vezes sem custo.
+experiment_id: mutantes_2026_08
+
+cenarios:
+  split: dev
+
+modelos:
+  # UM modelo, e é o 8B. `METRICAS §9.2` diz "1 modelo" sem nomear qual; a piloto fixou o
+  # barato (78,3 s de mediana contra 142,0 s do 14B) e é o que a extrapolação de
+  # `docs/piloto.md` usa. Com o 14B esta linha vai de 2,6 h para 4,7 h — 2,1 h a mais numa
+  # conta que já não fecha, para medir o mesmo instrumento.
+  #
+  # O custo científico do 8B está declarado: INS.9 mede a detecção **num SUT fraco**. Um
+  # mutante detectado no 8B pode ser indetectável no 14B, cuja base é melhor e cuja degradação
+  # é mais sutil. A INS.9 desta bateria é um piso, não um número sobre "o agente".
+  qwen3-8b:
+    model_id: qwen3-8b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    honra_seed: false
+
+# Os quatro de `configs/variants.yaml`, e os quatro cobrem as DUAS classes — que é requisito de
+# desenho de `METRICAS §7.1`, não gosto:
+#
+#   MUT1  P  servidor MCP  `get_data_quality` some de `list_tools`
+#   MUT2  C  agente        o prompt para de exigir citação
+#   MUT3  P  agente        `max_tool_calls` 12 → 3
+#   MUT4  C  agente        o prompt autoriza concluir sem ler `baseline.state`
+#
+# Cortar MUT4 deixaria a classe C com um ponto só e a curva custo × recall dela sem apoio — é
+# exatamente por isso que ele foi acrescentado. Se um mutante tiver de cair por tempo, o
+# candidato é MUT3 (ver `docs/dimensionamento.md §3`, corte 3) — e a economia é menor do que a
+# aritmética ingênua sugere, porque MUT3 roda com 3 chamadas de tool em vez de 12 e por isso
+# suas runs são as mais curtas da bateria.
+#
+# RESSALVA HERDADA DO A17/A18, e ela é do MUT3: o SUT diz ao agente quanto orçamento resta
+# ("iteração 3 de 8 · 5 de 12 chamadas"). Sob MUT3 o agente **enxerga** o corte de 12 para 3 em
+# vez de bater nele às cegas, então o que MUT3 degrada não é só "menos orçamento", é "menos
+# orçamento, e o agente sabe". A INS.9 do MUT3 fica com esse confundimento declarado.
+variantes: [MUT1, MUT2, MUT3, MUT4]
+
+# Cinco repetições: o prefixo das oito da principal, na mesma ordem. Prefixo e não sorteio novo
+# para que a run mutante e a run `base` da mesma seed sejam pareáveis se a saída (a) da lacuna
+# acima for adotada — sem pareamento, a detecção teria de ser lida entre distribuições em vez
+# de entre pares, e o n de 5 não sustenta isso.
+sample_seeds: [11, 23, 42, 77, 101]
+
+approver: policy
+paralelismo: 1
+timeout_s: 900
