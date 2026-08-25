@@ -101,7 +101,29 @@ mensagem diz `model: gemini-3.6-flash`), e o catálogo da conta lista `gemini-3.
 modelo compra quota nova — ao preço de mexer em `MODELO_PADRAO`, que a T23 congela, e de
 julgar com um modelo cuja qualidade não foi verificada contra a rubrica.
 
-## 6 · O que isto ainda não estabelece
+## 6 · A quota é por modelo — confirmado, não deduzido
+
+Com `gemini-3.6-flash` esgotado, uma chamada mínima a cada alternativa foi aceita:
+
+| modelo | resposta com o 3.6 esgotado |
+|---|---|
+| `gemini-3.7-flash` | **200** |
+| `gemini-3.5-flash` | **200** |
+
+Então trocar de modelo compra quota nova, e a leitura `model: gemini-3.6-flash` dentro da
+mensagem de erro é literal.
+
+**Mas isso resolve menos do que parece.** Se cada modelo trouxer os mesmos 20/dia, o catálogo
+inteiro de flash soma algo como 120 chamadas por dia — contra as ~1.400 que o judge das
+baterias precisa. Distribuir o judge entre modelos também **destruiria a comparação**: o N3 é
+um instrumento só, e julgar metade da amostra com um modelo e metade com outro faria a variação
+entre modelos entrar no número como se fosse variação do agente. A T23 congela o judge
+justamente contra isso.
+
+O que **não** foi medido é se os outros modelos têm quota maior que 20 — descobrir custa
+esgotá-los, um a um.
+
+## 7 · O que isto ainda não estabelece
 
 - **O TPM**, que nunca apareceu: nenhum 429 citou quota de tokens. Não é prova de que não
   exista — é prova de que a nossa carga não chegou lá.
