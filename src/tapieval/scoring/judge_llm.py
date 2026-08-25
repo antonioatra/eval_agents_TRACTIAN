@@ -5,9 +5,15 @@ POR QUE UM SEGUNDO CLIENTE (A1, 15/08)
     `sut/llm.py` declara que não conhece provedor pago, não lê chave de API de ambiente
     nenhum e não tem fallback para nuvem — e essa promessa vale, porque é ela que garante
     que o SUT medido é o modelo local que o manifesto declara. O judge é o outro lado do
-    arranjo híbrido do A1: SUT local (alto volume, modelo pequeno), judge na free tier
-    (baixo volume, modelo grande). Ele PRECISA sair para a rede, e enfiar essa capacidade no
+    arranjo híbrido do A1: SUT local (alto volume, modelo pequeno), judge na nuvem (baixo
+    volume, modelo grande). Ele PRECISA sair para a rede, e enfiar essa capacidade no
     cliente do SUT abriria caminho para um SUT sair para a rede sem que nada quebrasse.
+
+    Desde 25/08 o judge fala com o **Vertex** e não com a free tier do AI Studio. O motivo
+    é de cronograma, não de qualidade: a free tier dava 20 chamadas por DIA (§5 do
+    `docs/limites_free_tier.md`), o que punha as ~1.400 do judge a 70 dias. O Vertex serve
+    os flash por dynamic shared quota, sem RPD, e o crédito de trial o paga. Os dois
+    provedores continuam implementados: o AI Studio é para onde se volta.
 
     O que este módulo reaproveita é o que é protocolo, não política: `esquema_estrito` e o
     `RespostaDoModelo` de `sut/llm.py`. O endpoint do Gemini é OpenAI-compatible e aceita
@@ -15,21 +21,30 @@ POR QUE UM SEGUNDO CLIENTE (A1, 15/08)
     — que é o que impede `parse_erro` de virar variável do experimento (`ARQUITETURA §5`,
     decisão 4) — vale igual dos dois lados.
 
-TOKENS DE RACIOCÍNIO SÃO CUSTO, E O ENDPOINT OPENAI NÃO OS SEPARA (medido em 24/08)
-    O `usage` do endpoint compatível devolve `prompt_tokens` e `completion_tokens` cuja soma
-    é MENOR que `total_tokens`: numa medição de controle, 21 + 228 contra 711. A diferença
-    são os tokens de raciocínio, que o endpoint nativo expõe como `thoughtsTokenCount` e o
-    compatível só entrega pela subtração.
+TOKENS DE RACIOCÍNIO SÃO CUSTO, E SÓ UM DOS DOIS PROVEDORES OS DECLARA
+    O `usage` do compat do **AI Studio** devolve `prompt_tokens` e `completion_tokens` cuja
+    soma é MENOR que `total_tokens`: numa medição de controle, 21 + 228 contra 711. A
+    diferença são os tokens de raciocínio, que o endpoint nativo expõe como
+    `thoughtsTokenCount` e o compatível só entrega pela subtração (A20, 24/08).
+
+    O compat do **Vertex** declara o número: `completion_tokens_details.reasoning_tokens`
+    (medido em 25/08). `RespostaDoJudge` prefere o declarado e cai na subtração quando ele
+    não vem — então a migração troca um custo reconstruído por um custo medido.
 
     Ignorá-los subestimaria o custo do judge em ~65% no eixo x de H0 — exatamente na direção
-    que favorece a conclusão que o trabalho quer defender ("julgar com LLM é barato"). Por
-    isso `RespostaDoJudge.tokens_raciocinio` existe e entra em `tokens_out` no medidor. Ver
-    `A20` no `DECISOES.md`.
+    que favorece a conclusão que o trabalho quer defender ("julgar com LLM é barato").
 
-O SNAPSHOT É FIXO, NUNCA `-latest`
-    `MODELO_PADRAO` é um id datado. Os aliases `gemini-flash-latest` e afins mudam de modelo
-    sob o pé, e a T23 congela o judge por sha256 justamente para que ele não mude: um alias
-    tornaria o congelamento decorativo.
+O ID DO MODELO É UM ALIAS NOS DOIS PROVEDORES (corrigido em 25/08)
+    Esta seção dizia que `MODELO_PADRAO` era um id datado e que "um alias tornaria o
+    congelamento decorativo". A segunda metade continua verdadeira; a primeira não era.
+
+    O catálogo do AI Studio NOMEIA o snapshot (`version: 3.6-flash-07-2026`), mas chamar
+    esse id datado devolve **404**: ele é legível, não chamável. No Vertex o `versionId` é
+    `default`, e nem legível é. Os dois lados servem o alias.
+
+    Consequência para a T23: o sha256 congela o PROMPT e o id, não o peso do outro lado.
+    Contra troca de modelo sob o pé o que resta é medir — o canário do `checar_judge.py`,
+    rodado antes e depois da bateria.
 """
 
 from __future__ import annotations
@@ -37,7 +52,7 @@ from __future__ import annotations
 import os
 import re
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
@@ -48,21 +63,65 @@ import httpx
 from tapieval.schema.trace import ModelConfig
 from tapieval.sut.llm import RespostaDoModelo, _interpretar
 
-BASE_URL_PADRAO = "https://generativelanguage.googleapis.com/v1beta/openai"
+AI_STUDIO = "ai_studio"
+VERTEX = "vertex"
+
+PROVEDOR_PADRAO = VERTEX
+"""Migrado em 25/08. O AI Studio continua inteiro e chamável de propósito: é o único dos
+dois cujo catálogo ainda NOMEIA o snapshot por trás do alias, e é para lá que se volta se
+o canário da T23 acusar troca de modelo sob o pé."""
+
+BASE_URL_AI_STUDIO = "https://generativelanguage.googleapis.com/v1beta/openai"
+
+LOCAL_VERTEX_PADRAO = "global"
+"""Medido em 25/08: os flash 3.x respondem em `global` e dão 404 em `us-central1`. E
+`global` é a única região cujo host não leva prefixo — `global-aiplatform...` não existe."""
+
+VARIAVEL_DO_PROJETO = "GOOGLE_CLOUD_PROJECT"
+
+ESCOPO_DO_VERTEX = "https://www.googleapis.com/auth/cloud-platform"
+
+
+def base_url_do_vertex(projeto: str, local: str = LOCAL_VERTEX_PADRAO) -> str:
+    """O endpoint OpenAI-compatible do Vertex, que carrega projeto e região na própria URL.
+
+    É por isso que o Vertex não precisa de `x-goog-user-project` aqui e o catálogo precisa:
+    lá o projeto vai no cabeçalho, aqui ele já está no caminho.
+    """
+    if local == "global":
+        host = "aiplatform.googleapis.com"
+    else:
+        host = f"{local}-aiplatform.googleapis.com"
+    return f"https://{host}/v1/projects/{projeto}/locations/{local}/endpoints/openapi"
+
 
 MODELO_PADRAO = "gemini-3.6-flash"
-"""Snapshot `3.6-flash-07-2026`, escolhido em 24/08. Flash e não Pro porque o judge são
-~1.400 chamadas (A1) e o Pro não cabe no RPD da free tier; datado e não preview porque a T23
-o congela. Folgadamente mais forte que os SUTs Qwen3 8B/14B locais, que é o requisito de
-validade da N3 que o A1 nomeia."""
+"""Flash e não Pro porque o judge são ~1.400 chamadas (A1). Folgadamente mais forte que os
+SUTs Qwen3 8B/14B locais, que é o requisito de validade da N3 que o A1 nomeia.
+
+ATENÇÃO, CORRIGIDO EM 25/08: este id é um ALIAS, e sempre foi. O catálogo do AI Studio diz
+`version: 3.6-flash-07-2026`, mas esse id datado responde **404** — ele é legível, não
+chamável. No Vertex nem legível: o `versionId` é `default`. Então a T23 nunca teve um
+snapshot fixo para congelar, e o sha256 congela o PROMPT e o id, não o peso do outro lado.
+A defesa real contra troca de modelo sob o pé é o canário: rodar o fixture de defeito
+plantado do `checar_judge.py` antes e depois da bateria e comparar."""
 
 TIMEOUT_PADRAO_S = 120.0
 """O judge faz uma chamada por execução, não um laço. Mais curto que os 300 s do SUT local
-porque aqui o custo de esperar é RPD queimado, não GPU ocupada."""
+porque aqui o custo de esperar é tempo de bateria, não GPU ocupada."""
 
-SERVIDO_POR = "gemini_api"
+SERVIDO_POR_POR_PROVEDOR = {AI_STUDIO: "gemini_api", VERTEX: "vertex_ai"}
 """O que vai para `ModelConfig.served_by` e daí para o manifesto. O TAPI §9 exige declarar
-que o judge roda em serviço externo, e este é o campo que o declara (A1)."""
+que o judge roda em serviço externo, e este é o campo que o declara (A1). Os dois provedores
+servem o MESMO modelo, então distinguir aqui é o que impede uma bateria julgada metade em
+cada um de passar despercebida na leitura do manifesto."""
+
+PREFIXO_DO_PUBLISHER = "google/"
+"""O compat do Vertex exige `google/gemini-3.6-flash`; o do AI Studio recusa o prefixo.
+
+Ele é detalhe de fio, não identidade: `ModelConfig.model_id` guarda `gemini-3.6-flash` nos
+dois casos, para que os manifestos da piloto e da bateria continuem comparáveis campo a
+campo. Quem diz o provedor é `served_by`."""
 
 JANELA_DO_MODELO_PADRAO = 1_048_576
 """`inputTokenLimit` do `gemini-3.6-flash`, lido do catálogo da API em 24/08. Registrado
@@ -74,8 +133,10 @@ CAMINHO_DE_COMPLETACAO = "/chat/completions"
 VARIAVEL_DA_CHAVE = "GEMINI_API_KEY"
 
 STATUS_TRANSITORIOS = frozenset({429, 500, 502, 503, 504})
-"""Falha do serviço, não do julgamento. 429 é o limite de RPM da free tier, e os 5xx são o
-que o Google devolve sob carga — um 503 apareceu na primeira chamada de smoke em 24/08.
+"""Falha do serviço, não do julgamento. Os 5xx são o que o Google devolve sob carga — um 503
+apareceu na primeira chamada de smoke em 24/08 — e o 429 muda de sentido com o provedor:
+na free tier do AI Studio era quota estourada, no Vertex é capacidade compartilhada
+("Vertex AI is overloaded"), que passa sozinha.
 
 Existe porque o judge são ~1.400 chamadas (A1) numa free tier com limite por minuto: sem
 retry, a bateria da T24 morre no meio da noite e as runs afetadas ficariam sem N3. E run sem
@@ -83,8 +144,10 @@ N3 não é run limpa — sumiriam C1..C7 da amostra, que é o mesmo silêncio do
 
 ESPERAS_S = (2.0, 8.0, 30.0)
 """Backoff das retentativas de transporte, usado quando a resposta NÃO diz quanto esperar.
-Cresce até meio minuto porque o limite da free tier é por MINUTO: esperar 2 s três vezes não
-sai da janela que causou o 429."""
+
+Passa a valer MAIS depois da migração, não menos: o 429 de quota do AI Studio vinha com
+`Please retry in ...s`, e o 429 de sobrecarga do Vertex não traz número nenhum. Lá o
+`espera_pedida` devolve `None` quase sempre, e este backoff é o plano inteiro."""
 
 TETO_DE_ESPERA_S = 75.0
 """Teto para a espera pedida pela própria API. A janela do limite de RPM é de um minuto, e
@@ -144,9 +207,76 @@ def ler_chave(env_path: Path | None = None) -> str:
     )
 
 
+def credencial_estatica(chave: str) -> Callable[[], str]:
+    """A chave do AI Studio não expira, então o portador é sempre o mesmo."""
+    return lambda: chave
+
+
+def credencial_do_vertex() -> Callable[[], str]:
+    """O portador do Vertex, renovado quando vence.
+
+    POR QUE UM CALLABLE E NÃO UMA STRING
+        O token OAuth do Google vale **1 h**. A bateria da T24 roda a madrugada inteira e o
+        judge são ~1.400 chamadas: um token lido uma vez no `__init__` expira no meio, e o
+        que se perde não é a chamada — é a noite, com as runs afetadas ficando sem N3. Esse
+        é o mesmo silêncio do X9 que o §3 do `docs/limites_free_tier.md` já pagou para
+        aprender uma vez, e não vale a pena aprender de novo por outro motivo.
+
+        `google-auth` guarda o vencimento e renova sozinho; o que este módulo faz é chamar
+        o portador A CADA request em vez de fixá-lo no cabeçalho do cliente.
+    """
+    try:
+        import google.auth
+        import google.auth.transport.requests
+    except ModuleNotFoundError as erro:  # pragma: no cover — depende do ambiente
+        raise ChaveAusente(
+            "google-auth não está instalado; o judge no Vertex precisa dele para renovar "
+            "o token de 1 h. `pip install google-auth`."
+        ) from erro
+
+    try:
+        credencial, _ = google.auth.default(scopes=[ESCOPO_DO_VERTEX])
+    except Exception as erro:  # pragma: no cover — depende do ambiente
+        raise ChaveAusente(
+            f"sem credencial de aplicação (ADC) para o Vertex: {erro}. "
+            "Rode `gcloud auth application-default login`."
+        ) from erro
+
+    pedido = google.auth.transport.requests.Request()
+
+    def portador() -> str:
+        if not credencial.valid:
+            credencial.refresh(pedido)
+        return str(credencial.token)
+
+    return portador
+
+
+def ler_projeto() -> str:
+    """O projeto do Vertex, do ambiente ou da configuração do gcloud."""
+    do_ambiente = os.environ.get(VARIAVEL_DO_PROJETO, "").strip()
+    if do_ambiente:
+        return do_ambiente
+
+    try:
+        import google.auth
+
+        _, projeto = google.auth.default(scopes=[ESCOPO_DO_VERTEX])
+    except Exception:  # pragma: no cover — depende do ambiente
+        projeto = None
+
+    if not projeto:
+        raise ChaveAusente(
+            f"projeto do Vertex não determinado. Defina {VARIAVEL_DO_PROJETO} ou rode "
+            "`gcloud config set project SEU_PROJETO`."
+        )
+    return str(projeto)
+
+
 def config_do_judge(
     model_id: str = MODELO_PADRAO,
     *,
+    provedor: str = PROVEDOR_PADRAO,
     temperature: float = 0.0,
     max_tokens: int = 2048,
     seed: int | None = None,
@@ -159,7 +289,7 @@ def config_do_judge(
     """
     return ModelConfig(
         model_id=model_id,
-        served_by=SERVIDO_POR,
+        served_by=SERVIDO_POR_POR_PROVEDOR[provedor],
         quantization=None,
         temperature=temperature,
         max_tokens=max_tokens,
@@ -181,19 +311,42 @@ class ClienteDoJudge:
         self,
         modelo: ModelConfig | None = None,
         *,
+        provedor: str | None = None,
         chave: str | None = None,
-        base_url: str = BASE_URL_PADRAO,
+        credencial: Callable[[], str] | None = None,
+        projeto: str | None = None,
+        local: str = LOCAL_VERTEX_PADRAO,
+        base_url: str | None = None,
         timeout_s: float = TIMEOUT_PADRAO_S,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
-        self.modelo = modelo if modelo is not None else config_do_judge()
-        self.base_url = base_url
-        self._chave = chave if chave is not None else ler_chave()
+        # `chave` explícita significa AI Studio mesmo quando o padrão é Vertex: é assim que
+        # a suíte injeta um portador falso sem precisar de ADC nem de rede.
+        if provedor is None:
+            provedor = AI_STUDIO if chave is not None else PROVEDOR_PADRAO
+        if provedor not in SERVIDO_POR_POR_PROVEDOR:
+            raise ValueError(f"provedor desconhecido: {provedor!r}")
+
+        self.provedor = provedor
+        self.modelo = modelo if modelo is not None else config_do_judge(provedor=provedor)
+
+        if provedor == VERTEX:
+            self.projeto = projeto if projeto is not None else ler_projeto()
+            self.base_url = base_url or base_url_do_vertex(self.projeto, local)
+            # Injetável para que a suíte exercite o portador RENOVÁVEL sem ADC e sem rede:
+            # é a única forma de provar por teste que o token é relido a cada tentativa.
+            self._credencial = credencial or credencial_do_vertex()
+        else:
+            self.projeto = None
+            self.base_url = base_url or BASE_URL_AI_STUDIO
+            self._credencial = credencial or credencial_estatica(
+                chave if chave is not None else ler_chave()
+            )
+
         self._http = httpx.Client(
-            base_url=base_url,
+            base_url=self.base_url,
             timeout=timeout_s,
             transport=transport,
-            headers={"Authorization": f"Bearer {self._chave}"},
         )
         self.eventos_de_limite: list[dict[str, Any]] = []
         """Todo status transitório recebido, com o instante e a espera que se seguiu.
@@ -234,7 +387,14 @@ class ClienteDoJudge:
         """
         ultima: httpx.Response | None = None
         for tentativa in range(len(ESPERAS_S) + 1):
-            resposta = self._http.post(CAMINHO_DE_COMPLETACAO, json=corpo)
+            # O cabeçalho é montado A CADA tentativa, e não no cliente: no Vertex o token
+            # vence em 1 h, e uma retentativa depois de uma espera longa pode ser a primeira
+            # chamada do outro lado do vencimento.
+            resposta = self._http.post(
+                CAMINHO_DE_COMPLETACAO,
+                json=corpo,
+                headers={"Authorization": f"Bearer {self._credencial()}"},
+            )
             if resposta.status_code not in STATUS_TRANSITORIOS:
                 resposta.raise_for_status()
                 return resposta
@@ -269,8 +429,13 @@ class ClienteDoJudge:
         self, mensagens: Sequence[Mapping[str, str]], esquema: Mapping[str, Any]
     ) -> dict[str, Any]:
         modelo = self.modelo
+        id_no_fio = (
+            f"{PREFIXO_DO_PUBLISHER}{modelo.model_id}"
+            if self.provedor == VERTEX
+            else modelo.model_id
+        )
         corpo: dict[str, Any] = {
-            "model": modelo.model_id,
+            "model": id_no_fio,
             "messages": [dict(mensagem) for mensagem in mensagens],
             "temperature": modelo.temperature,
             "max_tokens": modelo.max_tokens,
@@ -313,7 +478,18 @@ class RespostaDoJudge(RespostaDoModelo):
     def a_partir_de(
         cls, base: RespostaDoModelo, payload: Mapping[str, Any]
     ) -> RespostaDoJudge:
-        """Deriva o raciocínio por subtração: `total - prompt - completion`.
+        """O número declarado quando existe; a subtração quando não.
+
+        MEDIDO EM 25/08, E É UM GANHO DA MIGRAÇÃO
+            O compat do **Vertex** devolve `completion_tokens_details.reasoning_tokens`
+            explícito. O do **AI Studio** não: numa chamada de controle ele devolveu
+            `{prompt: 2, completion: 0, total: 6}`, e os 4 tokens de raciocínio só existiam
+            pela subtração — que é exatamente o que o A20 registrou.
+
+            Preferir o declarado importa porque este número entra em `tokens_out` e daí no
+            eixo x de H0. Subtrair é reconstrução: ela assume que `total` não contém mais
+            nada além das três parcelas, e essa suposição não é verificável do lado de cá.
+            Com o campo declarado, o custo do judge passa a ser medido em vez de inferido.
 
         Nunca negativo: um servidor que não devolva `total_tokens`, ou que o devolva já
         somado de outro jeito, produz zero em vez de um número inventado — subestimar com
@@ -321,11 +497,18 @@ class RespostaDoJudge(RespostaDoModelo):
         `usage_ausente` que o `RespostaDoModelo` já carrega."""
         uso = payload.get("usage")
         raciocinio = 0
-        if isinstance(uso, dict) and "total_tokens" in uso:
-            raciocinio = max(
-                0,
-                int(uso["total_tokens"]) - base.prompt_tokens - base.completion_tokens,
+        if isinstance(uso, dict):
+            detalhes = uso.get("completion_tokens_details")
+            declarado = (
+                detalhes.get("reasoning_tokens") if isinstance(detalhes, dict) else None
             )
+            if declarado is not None:
+                raciocinio = max(0, int(declarado))
+            elif "total_tokens" in uso:
+                raciocinio = max(
+                    0,
+                    int(uso["total_tokens"]) - base.prompt_tokens - base.completion_tokens,
+                )
         return cls(
             texto=base.texto,
             conteudo=base.conteudo,

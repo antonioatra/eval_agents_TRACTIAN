@@ -130,3 +130,20 @@ esgotá-los, um a um.
 - **Se o limite é por projeto ou por chave.** A documentação diz que rate limits são por
   projeto, não por chave, então trocar de chave dentro do mesmo projeto não compra quota. Não
   testado.
+
+---
+
+## 8 · Fechado em 25/08: o judge saiu da free tier
+
+A consequência de cronograma do §5 — 70 dias para as ~1.400 chamadas do judge — foi resolvida
+migrando o judge para o **Vertex**, que serve o mesmo `gemini-3.6-flash` por dynamic shared
+quota, sem RPD. O crédito de trial paga (a Gemini API do AI Studio é explicitamente excluída
+dele; o Vertex não).
+
+Isso torna obsoleta a saída barata que o §6 registrou e desaconselhou — distribuir o judge entre
+modelos para comprar quota nova. Ela deixa de ser necessária, e continua sendo uma má ideia
+pelo motivo que o §6 já dava.
+
+Ver `docs/migracao_vertex.md`. Ele também corrige, com medição, a afirmação de que o
+`MODELO_PADRAO` era um snapshot datado: o id datado responde 404 nos **dois** provedores, e o
+que a T23 congela é o prompt e o id, não o peso do outro lado.

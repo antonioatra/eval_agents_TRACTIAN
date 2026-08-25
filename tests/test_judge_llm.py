@@ -18,9 +18,14 @@ import httpx
 import pytest
 
 from tapieval.scoring.judge_llm import (
+    AI_STUDIO,
+    BASE_URL_AI_STUDIO,
     ESPERAS_S,
+    MODELO_PADRAO,
     TETO_DE_ESPERA_S,
+    VERTEX,
     ClienteDoJudge,
+    base_url_do_vertex,
     espera_pedida,
 )
 
@@ -168,3 +173,134 @@ def test_sucesso_na_primeira_nao_gera_evento_de_limite(dorme: list[float]) -> No
         cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
         assert cliente.eventos_de_limite == []
     assert dorme == []
+
+
+# ---------------------------------------------------------------------------
+# A migração para o Vertex (25/08) — o que muda no fio e o que NÃO muda no manifesto
+# ---------------------------------------------------------------------------
+
+
+def test_base_url_do_vertex_nao_prefixa_a_regiao_global() -> None:
+    """O falso negativo que fez a primeira sonda do catálogo dar 404 em tudo.
+
+    `global` é servido por `aiplatform.googleapis.com` puro; toda outra região leva o prefixo.
+    Montar `global-aiplatform...` produz um host que não existe, e o 404 resultante parece
+    "o modelo não está lá" quando o problema é o endereço."""
+    assert base_url_do_vertex("proj") == (
+        "https://aiplatform.googleapis.com/v1/projects/proj/locations/global/endpoints/openapi"
+    )
+    assert base_url_do_vertex("proj", "us-central1").startswith(
+        "https://us-central1-aiplatform.googleapis.com/"
+    )
+
+
+def test_o_prefixo_do_publisher_vai_no_fio_e_nao_no_manifesto(dorme: list[float]) -> None:
+    """`google/` é detalhe de protocolo do compat do Vertex, não identidade do modelo.
+
+    Se ele vazasse para `ModelConfig.model_id`, os manifestos da piloto (AI Studio) e da
+    bateria (Vertex) deixariam de ser comparáveis campo a campo por uma diferença que não é
+    do modelo. Quem declara o provedor é `served_by`, e é lá que a diferença deve aparecer."""
+    enviados: list[str] = []
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        enviados.append(json.loads(request.content)["model"])
+        return httpx.Response(200, json=RESPOSTA_OK)
+
+    with ClienteDoJudge(
+        provedor=VERTEX,
+        projeto="proj",
+        credencial=lambda: "tok",
+        transport=httpx.MockTransport(roteiro),
+    ) as cliente:
+        cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+        assert cliente.modelo.model_id == MODELO_PADRAO, "o prefixo vazou para o manifesto"
+        assert cliente.modelo.served_by == "vertex_ai"
+
+    assert enviados == [f"google/{MODELO_PADRAO}"]
+
+
+def test_o_portador_e_relido_a_cada_tentativa(dorme: list[float]) -> None:
+    """O token do Vertex vale 1 h e a bateria da T24 roda a madrugada inteira.
+
+    Fixar o cabeçalho no `httpx.Client` faria a renovação do `google-auth` acontecer sem que
+    ninguém a usasse: as chamadas continuariam mandando o token velho até o fim da noite. O
+    que se perde não é a chamada — são as runs, que ficam sem N3."""
+    portadores = iter(["token-velho", "token-novo"])
+    vistos: list[str] = []
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        vistos.append(request.headers["Authorization"])
+        if len(vistos) == 1:
+            return httpx.Response(503, text="backend unavailable")
+        return httpx.Response(200, json=RESPOSTA_OK)
+
+    with ClienteDoJudge(
+        provedor=VERTEX,
+        projeto="proj",
+        credencial=lambda: next(portadores),
+        transport=httpx.MockTransport(roteiro),
+    ) as cliente:
+        cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+
+    assert vistos == ["Bearer token-velho", "Bearer token-novo"]
+
+
+def test_chave_explicita_continua_significando_ai_studio(dorme: list[float]) -> None:
+    """A suíte inteira injeta `chave=` e não pode passar a exigir ADC por causa do default.
+
+    Também é a garantia de que voltar para o AI Studio é uma linha, e não uma reversão."""
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=RESPOSTA_OK)
+
+    with cliente_com(roteiro) as cliente:
+        assert cliente.provedor == AI_STUDIO
+        assert cliente.modelo.served_by == "gemini_api"
+        assert cliente.base_url == BASE_URL_AI_STUDIO
+
+
+# ---------------------------------------------------------------------------
+# A20 — o custo do raciocínio, declarado contra reconstruído
+# ---------------------------------------------------------------------------
+
+
+def test_tokens_de_raciocinio_preferem_o_numero_declarado(dorme: list[float]) -> None:
+    """O compat do Vertex declara `reasoning_tokens`; o do AI Studio só entrega por subtração.
+
+    Preferir o declarado importa porque este número entra em `tokens_out` e daí no eixo x de
+    H0. A subtração assume que `total` não contém nada além das três parcelas — suposição que
+    não é verificável do lado de cá. Aqui os dois discordam de propósito: 40-10-5 daria 25, e
+    o teste exige o 7 que o serviço afirmou."""
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": '{"ok": true}'}}],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 5,
+                    "total_tokens": 40,
+                    "completion_tokens_details": {"reasoning_tokens": 7},
+                },
+            },
+        )
+
+    with cliente_com(roteiro) as cliente:
+        resposta = cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+
+    assert resposta.tokens_raciocinio == 7
+
+
+def test_tokens_de_raciocinio_caem_na_subtracao_quando_nao_ha_declaracao(
+    dorme: list[float],
+) -> None:
+    """O caminho do AI Studio, que continua sendo o plano B e não pode regredir (A20)."""
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=RESPOSTA_OK)
+
+    with cliente_com(roteiro) as cliente:
+        resposta = cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+
+    assert resposta.tokens_raciocinio == 40 - 10 - 5

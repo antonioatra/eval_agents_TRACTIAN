@@ -1,0 +1,50 @@
+[
+  {
+    "modelo": "gemini-3.6-flash",
+    "metadados_status": 200,
+    "version_id": "default",
+    "launch_stage": "GA",
+    "completacao_status": 200,
+    "detalhe": "publishers/google/models/gemini-3.6-flash"
+  },
+  {
+    "modelo": "gemini-3-6-flash",
+    "metadados_status": 404,
+    "version_id": null,
+    "launch_stage": null,
+    "completacao_status": 404,
+    "detalhe": "[{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Publisher model `projects/694389037885/locations/global/publishers/google/models/gemini-3-6-flash` was not found or your project does not have access to it. Ensure you are using a valid model name and that the model is available in the specified regio"
+  },
+  {
+    "modelo": "gemini-3.6-flash-07-2026",
+    "metadados_status": 404,
+    "version_id": null,
+    "launch_stage": null,
+    "completacao_status": 404,
+    "detalhe": "[{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Publisher model `projects/694389037885/locations/global/publishers/google/models/gemini-3.6-flash-07-2026` was not found or your project does not have access to it. Ensure you are using a valid model name and that the model is available in the specifi"
+  },
+  {
+    "modelo": "gemini-3-6-flash-07-2026",
+    "metadados_status": 404,
+    "version_id": null,
+    "launch_stage": null,
+    "completacao_status": 404,
+    "detalhe": "[{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Publisher model `projects/694389037885/locations/global/publishers/google/models/gemini-3-6-flash-07-2026` was not found or your project does not have access to it. Ensure you are using a valid model name and that the model is available in the specifi"
+  },
+  {
+    "modelo": "gemini-3.7-flash",
+    "metadados_status": 200,
+    "version_id": "default",
+    "launch_stage": "GA",
+    "completacao_status": 200,
+    "detalhe": "publishers/google/models/gemini-3.7-flash"
+  },
+  {
+    "modelo": "gemini-3-7-flash",
+    "metadados_status": 404,
+    "version_id": null,
+    "launch_stage": null,
+    "completacao_status": 404,
+    "detalhe": "[{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Publisher model `projects/694389037885/locations/global/publishers/google/models/gemini-3-7-flash` was not found or your project does not have access to it. Ensure you are using a valid model name and that the model is available in the specified regio"
+  }
+]

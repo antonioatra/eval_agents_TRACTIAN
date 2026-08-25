@@ -16,6 +16,10 @@ dependencies = [
     "scipy",
     "jupyter",
     "watermark",
+    # Credencial do judge quando ele fala com o Vertex: o token OAuth vale 1 h, e a
+    # bateria da T24 roda a madrugada inteira. Renovar na mão perderia a noite na
+    # segunda hora — google-auth faz o refresh.
+    "google-auth",
 ]
 
 [project.optional-dependencies]
