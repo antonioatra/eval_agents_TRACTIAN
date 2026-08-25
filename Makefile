@@ -41,6 +41,14 @@ t0b: install
 	$(PY) scripts/checar_servidor_de_inferencia.py
 	$(PY) scripts/medir_tool_calling.py
 
+# X25 — a passada corrente da piloto vive em UMA variável, e o teste de estrutura reprova se
+# ela divergir do diretório que o `docs/piloto.json` versionado declara. O defeito que isto
+# conserta: o alvo rodava `configs/bateria_piloto.yaml` (1ª passada) e analisava
+# `runs/piloto_2026-08-24` enquanto o `docs/piloto.json` descrevia a 4ª — então `make piloto`
+# sobrescrevia a aritmética do A16 com números de um SUT anterior ao A17 e ao A18.
+PILOTO_CONFIG := configs/bateria_piloto_a18b.yaml
+PILOTO_DIR    := runs/piloto_2026-08-24c
+
 # T19 — bateria piloto e dimensionamento. Exige a API do parceiro no ar (`make api`) e os
 # dois modelos carregados com `--parallel 1`: com os 4 slots padrão do LM Studio o KV cache
 # de 8192 não comporta o prompt de ~2,6k tokens e a chamada pendura em vez de errar.
@@ -48,8 +56,8 @@ t0b: install
 #   lms load qwen3-14b-mlx --context-length 16384 --parallel 1 --gpu max -y
 #   lms load qwen3-8b-mlx  --context-length 16384 --parallel 1 --gpu max -y
 piloto: install
-	$(PY) -m tapieval.runner --manifest configs/bateria_piloto.yaml --paralelismo 1
-	$(PY) scripts/analisar_piloto.py runs/piloto_2026-08-24 --json docs/piloto.json
+	$(PY) -m tapieval.runner --manifest $(PILOTO_CONFIG) --paralelismo 1
+	$(PY) scripts/analisar_piloto.py $(PILOTO_DIR) --json docs/piloto.json
 	$(PY) scripts/medir_overhead_mcp.py --repeticoes 20 --json docs/overhead_mcp.json
 
 # T20 — portão de viabilidade do judge. Fala com o Gemini (A1), então exige GEMINI_API_KEY
