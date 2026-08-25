@@ -177,11 +177,26 @@ def traces_julgaveis(run: Path) -> list[Path]:
 # ---------------------------------------------------------------------------
 
 
-def chave(linha: Mapping[str, Any]) -> tuple[str, str, int]:
-    return (linha["trace"], linha["configuracao"], int(linha["repeticao"]))
+def chave(linha: Mapping[str, Any]) -> tuple[str, str, int, str]:
+    """A célula, e **por quem ela foi julgada**.
+
+    O `served_by` entra na chave porque em 25/08 o judge trocou de provedor (A23), e a mesma
+    célula julgada dos dois lados não é a mesma medição: o Vertex conta **6–8% mais tokens de
+    entrada** para o prompt byte a byte idêntico (`docs/migracao_vertex.md §5`). Sem o
+    provedor na chave, uma retomada depois da migração daria a célula por feita e o flip rate
+    compararia um julgamento do AI Studio contra quatro do Vertex — atribuindo à rubrica uma
+    variação que é de infraestrutura. Linha antiga sem o campo é do AI Studio, que é o único
+    provedor que existia quando ela foi escrita.
+    """
+    return (
+        linha["trace"],
+        linha["configuracao"],
+        int(linha["repeticao"]),
+        str(linha.get("served_by", "gemini_api")),
+    )
 
 
-def ja_gravados(arquivo: Path) -> set[tuple[str, str, int]]:
+def ja_gravados(arquivo: Path) -> set[tuple[str, str, int, str]]:
     """As células que já existem. Linha corrompida é ignorada e será refeita.
 
     Ignorar em vez de explodir é deliberado: a única forma de uma linha sair pela metade é o
@@ -190,7 +205,7 @@ def ja_gravados(arquivo: Path) -> set[tuple[str, str, int]]:
     """
     if not arquivo.exists():
         return set()
-    vistos: set[tuple[str, str, int]] = set()
+    vistos: set[tuple[str, str, int, str]] = set()
     for linha in arquivo.read_text(encoding="utf-8").splitlines():
         if not linha.strip():
             continue
@@ -332,15 +347,21 @@ def rodar(
     cenarios = carregar_cenarios()
     feitos = ja_gravados(arquivo)
 
+    # Decidido aqui, e não junto do cliente, porque a fila depende dele: `served_by` faz parte
+    # da chave de retomada desde a migração para o Vertex (A23).
+    modelo = config_do_judge()
+    servido_por = modelo.served_by
+
     celulas = [
         (caminho, configuracao, repeticao)
         for caminho in caminhos
         for configuracao in configuracoes
         for repeticao in range(1, repeticoes + 1)
-        if (identificar(caminho), configuracao, repeticao) not in feitos
+        if (identificar(caminho), configuracao, repeticao, servido_por) not in feitos
     ]
 
     total = len(caminhos) * len(configuracoes) * repeticoes
+    print(f"judge: {modelo.model_id} via {servido_por}")
     print(f"itens: {len(caminhos)} traces × {len(configuracoes)} configurações × {repeticoes}×")
     for cenario, origens in procedencia.items():
         print(f"  {cenario:<36} {len(origens):>2} · {', '.join(origens)}")
@@ -357,7 +378,6 @@ def rodar(
         print("nada a fazer — tudo já está gravado.")
         return 0
 
-    modelo = config_do_judge()
     falhas = 0
     cliente = ClienteDoJudge(modelo)
     # `try/finally` e não `with` porque `limites.json` precisa ser escrito TAMBÉM quando a
@@ -387,6 +407,8 @@ def rodar(
                         "cenario": cenario.id,
                         "configuracao": configuracao,
                         "repeticao": repeticao,
+                        "served_by": servido_por,
+                        "judge_model_id": modelo.model_id,
                         "erro": "id_inventado",
                         "detalhe": str(erro),
                         "julgamento": {},
@@ -404,6 +426,8 @@ def rodar(
                     "cenario": cenario.id,
                     "configuracao": configuracao,
                     "repeticao": repeticao,
+                    "served_by": servido_por,
+                    "judge_model_id": modelo.model_id,
                     "erro": None,
                     "julgamento": _serializar(julgamento),
                     "custo": custo,
