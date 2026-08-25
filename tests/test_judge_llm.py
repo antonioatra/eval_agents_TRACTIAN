@@ -1,0 +1,170 @@
+"""A porta do judge sob rate limit — o que a T21 descobriu batendo na free tier de verdade.
+
+`tests/test_n3.py` cobre a mecânica do julgamento com um duplo de roteiro fixo, e nunca vê
+transporte. O que falta é o comportamento do cliente quando o serviço do outro lado diz
+"devagar": foi exatamente aí que a primeira calibração morreu, e foi um erro de raciocínio
+sobre a janela, não um bug de digitação.
+
+Nada aqui fala com a rede: `httpx.MockTransport` responde por ela, e `time.sleep` é
+substituído para que a suíte não durma os 35 s que o teste descreve.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Callable
+
+import httpx
+import pytest
+
+from tapieval.scoring.judge_llm import (
+    ESPERAS_S,
+    TETO_DE_ESPERA_S,
+    ClienteDoJudge,
+    espera_pedida,
+)
+
+CORPO_429 = json.dumps(
+    [
+        {
+            "error": {
+                "code": 429,
+                "message": (
+                    "You exceeded your current quota, please check your plan and billing "
+                    "details. \n* Quota exceeded for metric: generativelanguage.googleapis."
+                    "com/generate_content_free_tier_requests, limit: 20, model: "
+                    "gemini-3.6-flash\nPlease retry in 35.52310516s."
+                ),
+                "status": "RESOURCE_EXHAUSTED",
+            }
+        }
+    ]
+)
+"""O corpo literal que a API devolveu em 24/08, com a quota nomeada e a espera pedida.
+
+É copiado do real e não inventado de propósito: o parser tem de sobreviver ao formato que o
+Google manda mesmo, inclusive à lista externa e às quebras de linha no meio da mensagem."""
+
+RESPOSTA_OK = {
+    "choices": [{"message": {"content": '{"ok": true}'}}],
+    "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 40},
+}
+
+
+@pytest.fixture
+def dorme(monkeypatch: pytest.MonkeyPatch) -> list[float]:
+    """Registra as esperas em vez de cumpri-las — o teste mede a DECISÃO, não a paciência."""
+    esperas: list[float] = []
+    monkeypatch.setattr(
+        "tapieval.scoring.judge_llm.time.sleep", lambda segundos: esperas.append(segundos)
+    )
+    return esperas
+
+
+def cliente_com(roteiro: Callable[[httpx.Request], httpx.Response]) -> ClienteDoJudge:
+    return ClienteDoJudge(chave="fake", transport=httpx.MockTransport(roteiro))
+
+
+# ---------------------------------------------------------------------------
+# `espera_pedida` — o número que o serviço manda
+# ---------------------------------------------------------------------------
+
+
+def test_espera_pedida_le_o_numero_que_a_api_manda() -> None:
+    """35,52 s viram 36,52: o segundo a mais é margem contra a janela deslizante.
+
+    Voltar no instante exato que o serviço citou é apostar que os dois relógios concordam.
+    Concordam quase sempre — e "quase" é o que derruba bateria de madrugada."""
+    assert espera_pedida(CORPO_429) == pytest.approx(36.52310516)
+
+
+def test_espera_pedida_devolve_none_quando_a_resposta_nao_pede_nada() -> None:
+    """Sem o número, quem decide é o backoff fixo. `None` é o que sinaliza isso."""
+    assert espera_pedida('{"error": {"code": 503, "message": "backend unavailable"}}') is None
+
+
+def test_espera_pedida_nao_passa_do_teto() -> None:
+    """Espera pedida acima da janela de um minuto não é rate limit de minuto.
+
+    É quota diária ou projeto suspenso — casos em que dormir o que foi pedido queima a noite
+    inteira sem chance de sucesso. O teto transforma isso em falha rápida."""
+    assert espera_pedida("Please retry in 86400.0s") == TETO_DE_ESPERA_S
+
+
+# ---------------------------------------------------------------------------
+# O cliente sob 429
+# ---------------------------------------------------------------------------
+
+
+def test_cliente_espera_o_que_a_api_pediu_e_nao_o_backoff_fixo(dorme: list[float]) -> None:
+    """O bug que matou a primeira calibração, preso por teste.
+
+    `ESPERAS_S` começa em 2 s. A resposta pede 35,5. Esperar 2 s aqui devolve a chamada para
+    dentro da mesma janela que acabou de recusá-la, e as três esperas fixas somam 40 s — todas
+    dentro de uma janela que o serviço disse durar 35 s a partir de um instante POSTERIOR ao
+    início da nossa contagem. A quarta tentativa levanta, e a rodada morre."""
+    tentativas: list[int] = []
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        tentativas.append(1)
+        if len(tentativas) == 1:
+            return httpx.Response(429, text=CORPO_429)
+        return httpx.Response(200, json=RESPOSTA_OK)
+
+    with cliente_com(roteiro) as cliente:
+        cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+
+    assert dorme == [pytest.approx(36.52310516)], "esperou o backoff fixo, não o pedido"
+    assert dorme[0] != ESPERAS_S[0]
+
+
+def test_cliente_cai_no_backoff_fixo_quando_a_resposta_nao_pede_nada(
+    dorme: list[float],
+) -> None:
+    """Um 503 sob carga não traz `retry in`. O backoff antigo continua sendo o plano B."""
+    tentativas: list[int] = []
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        tentativas.append(1)
+        if len(tentativas) == 1:
+            return httpx.Response(503, text="backend unavailable")
+        return httpx.Response(200, json=RESPOSTA_OK)
+
+    with cliente_com(roteiro) as cliente:
+        cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+
+    assert dorme == [ESPERAS_S[0]]
+
+
+def test_eventos_de_limite_guardam_o_corpo_que_nomeia_a_quota(dorme: list[float]) -> None:
+    """Sem este registro, o 429 some dentro do backoff — que o engole por desenho.
+
+    E o corpo é a parte que importa: é ele que diz `generate_content_free_tier_requests,
+    limit: 20`, que é a diferença entre saber QUE bateu no limite e saber em QUAL limite."""
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429, text=CORPO_429)
+
+    with cliente_com(roteiro) as cliente:
+        with pytest.raises(httpx.HTTPStatusError):
+            cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+        eventos = cliente.eventos_de_limite
+
+    assert len(eventos) == len(ESPERAS_S) + 1, "todo 429 vira evento, inclusive o último"
+    assert all(evento["status"] == 429 for evento in eventos)
+    assert "generate_content_free_tier_requests" in eventos[0]["corpo"]
+    assert eventos[0]["espera_pedida_s"] == pytest.approx(36.52310516)
+    assert eventos[-1]["espera_s"] is None, "a última tentativa não espera: ela levanta"
+
+
+def test_sucesso_na_primeira_nao_gera_evento_de_limite(dorme: list[float]) -> None:
+    """A lista vazia é informação: "rodou e nunca bateu no limite" precisa ser distinguível
+    de "esqueci de medir", que é o formato de erro que o X9 nomeia."""
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=RESPOSTA_OK)
+
+    with cliente_com(roteiro) as cliente:
+        cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+        assert cliente.eventos_de_limite == []
+    assert dorme == []

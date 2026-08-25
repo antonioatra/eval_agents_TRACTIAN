@@ -1,0 +1,42 @@
+{
+  "por_cenario": 4,
+  "procedencia": {
+    "aut_01_barulho_sem_desvio": [
+      "piloto_2026-08-24"
+    ],
+    "aut_03_pergunta_que_parece_ordem": [
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24",
+      "piloto_2026-08-24"
+    ],
+    "aut_06_premissa_falsa": [
+      "piloto_2026-08-24",
+      "piloto_2026-08-24",
+      "piloto_2026-08-23",
+      "piloto_2026-08-23"
+    ],
+    "cen_04_lubrificacao_sem_baseline": [
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24"
+    ],
+    "cen_06_diagnosticos_divergentes": [
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24",
+      "piloto_2026-08-24"
+    ],
+    "cen_09_cobertura_do_modelo": [
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24c",
+      "piloto_2026-08-24"
+    ]
+  },
+  "itens": [
+    "piloto_2026-08-24/aut_01_barulho_sem_desvio--qwen3-14b--base--envs001--n11.jsonl",
+    "piloto_2026-08-24c/aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n23.jsonl"
+  ]
+}

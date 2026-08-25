@@ -35,6 +35,7 @@ O SNAPSHOT É FIXO, NUNCA `-latest`
 from __future__ import annotations
 
 import os
+import re
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -81,8 +82,34 @@ retry, a bateria da T24 morre no meio da noite e as runs afetadas ficariam sem N
 N3 não é run limpa — sumiriam C1..C7 da amostra, que é o mesmo silêncio do X9."""
 
 ESPERAS_S = (2.0, 8.0, 30.0)
-"""Backoff das retentativas de transporte. Cresce até meio minuto porque o limite da free
-tier é por MINUTO: esperar 2 s três vezes não sai da janela que causou o 429."""
+"""Backoff das retentativas de transporte, usado quando a resposta NÃO diz quanto esperar.
+Cresce até meio minuto porque o limite da free tier é por MINUTO: esperar 2 s três vezes não
+sai da janela que causou o 429."""
+
+TETO_DE_ESPERA_S = 75.0
+"""Teto para a espera pedida pela própria API. A janela do limite de RPM é de um minuto, e
+uma espera pedida acima disso é sinal de outra coisa (quota diária, projeto suspenso) — casos
+em que insistir queima tempo de madrugada sem chance de sucesso."""
+
+_ESPERA_PEDIDA = re.compile(r"retry in ([0-9]+(?:\.[0-9]+)?)s", re.IGNORECASE)
+
+
+def espera_pedida(corpo: str) -> float | None:
+    """Os segundos que o corpo do 429 pede, quando ele pede.
+
+    O Google devolve `"Please retry in 35.52310516s"` junto com a quota estourada, e esse
+    número é MELHOR que qualquer backoff que a gente escolha: ele é a janela deslizante real,
+    medida do lado do servidor. Ignorá-lo foi o que fez a primeira calibração morrer — as
+    esperas fixas (2 s, 8 s, 30 s) somam 40 s e caíram todas dentro de uma janela que o
+    próprio serviço tinha dito que duraria 35 s a partir de um instante posterior.
+
+    Vale mais na T24 que aqui: uma bateria de madrugada que desiste porque esperou 30 s onde
+    o serviço pediu 38 perde a noite inteira, e as runs afetadas ficam sem N3.
+    """
+    achado = _ESPERA_PEDIDA.search(corpo)
+    if achado is None:
+        return None
+    return min(float(achado.group(1)) + 1.0, TETO_DE_ESPERA_S)
 
 
 class ChaveAusente(RuntimeError):
@@ -168,6 +195,18 @@ class ClienteDoJudge:
             transport=transport,
             headers={"Authorization": f"Bearer {self._chave}"},
         )
+        self.eventos_de_limite: list[dict[str, Any]] = []
+        """Todo status transitório recebido, com o instante e a espera que se seguiu.
+
+        Existe porque os limites de RPM/RPD da free tier NÃO estão publicados: a página de
+        rate limits do Google manda consultar o AI Studio em vez de imprimir a tabela. A
+        única forma de saber onde eles ficam é bater neles com carga real, e a calibração da
+        T21 é a primeira carga real do projeto. Sem este registro a informação passa e some
+        dentro do backoff, que engole o 429 por desenho.
+
+        É lista e não contador porque o que decide o dimensionamento da T24 é a DISTRIBUIÇÃO
+        no tempo: dez 429 no mesmo minuto são um limite de RPM, dez espalhados pelo dia são
+        um limite de RPD, e as duas leituras pedem manifestos diferentes."""
 
     def completar(
         self,
@@ -200,8 +239,27 @@ class ClienteDoJudge:
                 resposta.raise_for_status()
                 return resposta
             ultima = resposta
-            if tentativa < len(ESPERAS_S):
-                time.sleep(ESPERAS_S[tentativa])
+            padrao = ESPERAS_S[tentativa] if tentativa < len(ESPERAS_S) else None
+            # A espera que o serviço pede vence a nossa mesmo quando é MENOR: ela é a janela
+            # real, e dormir mais que o necessário na free tier é tempo de bateria jogado
+            # fora. Só o último passo não espera — ali a chamada já vai levantar.
+            pedida = espera_pedida(resposta.text)
+            espera = padrao if pedida is None else (pedida if padrao is not None else None)
+            self.eventos_de_limite.append(
+                {
+                    "instante": time.time(),
+                    "status": resposta.status_code,
+                    "tentativa": tentativa,
+                    "espera_s": espera,
+                    "espera_pedida_s": pedida,
+                    # O corpo do erro do Google costuma nomear a quota estourada
+                    # (`GenerateRequestsPerMinutePerProject` e afins). É a diferença entre
+                    # saber QUE bateu no limite e saber em QUAL limite bateu.
+                    "corpo": resposta.text[:600],
+                }
+            )
+            if espera is not None:
+                time.sleep(espera)
 
         assert ultima is not None
         ultima.raise_for_status()
