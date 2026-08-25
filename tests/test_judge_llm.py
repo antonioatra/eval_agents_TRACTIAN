@@ -304,3 +304,54 @@ def test_tokens_de_raciocinio_caem_na_subtracao_quando_nao_ha_declaracao(
         resposta = cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
 
     assert resposta.tokens_raciocinio == 40 - 10 - 5
+
+
+# ---------------------------------------------------------------------------
+# Falha de transporte — o defeito que o canário encontrou em 25/08
+# ---------------------------------------------------------------------------
+
+
+def test_read_timeout_e_retentado_e_nao_mata_a_rodada(dorme: list[float]) -> None:
+    """O laço só sabia retentar STATUS, e um `ReadTimeout` subia direto.
+
+    Na free tier isso quase não aparecia: o modo de falha de lá era 429, que está tratado. No
+    Vertex a chamada pendura, e foi assim que a primeira comparação do canário morreu — depois
+    de a gravação da linha de base ter passado com as mesmas três chamadas.
+
+    Alargar o timeout não seria conserto: a chamada normal responde em ~6 s, então 120 s
+    pendurados não são lentidão, são uma requisição perdida. O que se perde sem a retentativa
+    não é a chamada — são as runs, que ficam sem N3."""
+    tentativas: list[int] = []
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        tentativas.append(1)
+        if len(tentativas) == 1:
+            raise httpx.ReadTimeout("The read operation timed out", request=request)
+        return httpx.Response(200, json=RESPOSTA_OK)
+
+    with cliente_com(roteiro) as cliente:
+        resposta = cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+
+    assert resposta.parse_ok
+    assert dorme == [ESPERAS_S[0]]
+    assert len(cliente.eventos_de_limite) == 1
+    assert cliente.eventos_de_limite[0]["erro"] == "ReadTimeout"
+    assert cliente.eventos_de_limite[0]["status"] is None
+
+
+def test_timeout_em_todas_as_tentativas_sobe(dorme: list[float]) -> None:
+    """Retentar não é insistir para sempre: esgotadas as esperas, o erro sobe.
+
+    E sobe COM o registro completo — os eventos são o que diz, depois, se a noite morreu por
+    uma requisição pendurada ou por outra coisa."""
+
+    def roteiro(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("The read operation timed out", request=request)
+
+    with cliente_com(roteiro) as cliente:
+        with pytest.raises(httpx.ReadTimeout):
+            cliente.completar([{"role": "user", "content": "oi"}], {"type": "object"})
+
+    assert len(cliente.eventos_de_limite) == len(ESPERAS_S) + 1
+    assert all(evento["erro"] == "ReadTimeout" for evento in cliente.eventos_de_limite)
+    assert cliente.eventos_de_limite[-1]["espera_s"] is None, "a última não espera: ela levanta"

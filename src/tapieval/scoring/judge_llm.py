@@ -133,6 +133,9 @@ CAMINHO_DE_COMPLETACAO = "/chat/completions"
 VARIAVEL_DA_CHAVE = "GEMINI_API_KEY"
 
 STATUS_TRANSITORIOS = frozenset({429, 500, 502, 503, 504})
+# Retentados junto com os status acima: `httpx.TransportError` cobre timeout de leitura,
+# conexão recusada e leitura interrompida. São falha de transporte, não julgamento — e sem
+# elas no laço a bateria da T24 morre na primeira requisição pendurada.
 """Falha do serviço, não do julgamento. Os 5xx são o que o Google devolve sob carga — um 503
 apareceu na primeira chamada de smoke em 24/08 — e o 429 muda de sentido com o provedor:
 na free tier do AI Studio era quota estourada, no Vertex é capacidade compartilhada
@@ -387,19 +390,48 @@ class ClienteDoJudge:
         """
         ultima: httpx.Response | None = None
         for tentativa in range(len(ESPERAS_S) + 1):
-            # O cabeçalho é montado A CADA tentativa, e não no cliente: no Vertex o token
-            # vence em 1 h, e uma retentativa depois de uma espera longa pode ser a primeira
-            # chamada do outro lado do vencimento.
-            resposta = self._http.post(
-                CAMINHO_DE_COMPLETACAO,
-                json=corpo,
-                headers={"Authorization": f"Bearer {self._credencial()}"},
-            )
+            padrao = ESPERAS_S[tentativa] if tentativa < len(ESPERAS_S) else None
+            try:
+                # O cabeçalho é montado A CADA tentativa, e não no cliente: no Vertex o
+                # token vence em 1 h, e uma retentativa depois de uma espera longa pode ser
+                # a primeira chamada do outro lado do vencimento.
+                resposta = self._http.post(
+                    CAMINHO_DE_COMPLETACAO,
+                    json=corpo,
+                    headers={"Authorization": f"Bearer {self._credencial()}"},
+                )
+            except httpx.TransportError as erro:
+                # ENCONTRADO PELO CANÁRIO EM 25/08, e é falha de madrugada inteira.
+                #
+                # O laço só sabia retentar STATUS: um `ReadTimeout` subia direto e matava a
+                # rodada. Na free tier isso quase não aparecia porque o modo de falha de lá
+                # era 429 — que ESTÁ tratado. No Vertex a chamada simplesmente pendura, e a
+                # primeira comparação do canário morreu assim, depois de a gravação da
+                # linha de base ter passado com as mesmas três chamadas.
+                #
+                # Retentar é certo e alargar o timeout não seria: a chamada normal responde
+                # em ~6 s, então 120 s pendurados não são lentidão, são uma requisição
+                # perdida. O que se perde sem isto não é a chamada — são as runs, que ficam
+                # sem N3, que é o silêncio do X9.
+                self.eventos_de_limite.append(
+                    {
+                        "instante": time.time(),
+                        "status": None,
+                        "erro": type(erro).__name__,
+                        "tentativa": tentativa,
+                        "espera_s": padrao,
+                        "espera_pedida_s": None,
+                        "corpo": str(erro)[:600],
+                    }
+                )
+                if padrao is None:
+                    raise
+                time.sleep(padrao)
+                continue
             if resposta.status_code not in STATUS_TRANSITORIOS:
                 resposta.raise_for_status()
                 return resposta
             ultima = resposta
-            padrao = ESPERAS_S[tentativa] if tentativa < len(ESPERAS_S) else None
             # A espera que o serviço pede vence a nossa mesmo quando é MENOR: ela é a janela
             # real, e dormir mais que o necessário na free tier é tempo de bateria jogado
             # fora. Só o último passo não espera — ali a chamada já vai levantar.
@@ -409,6 +441,7 @@ class ClienteDoJudge:
                 {
                     "instante": time.time(),
                     "status": resposta.status_code,
+                    "erro": None,
                     "tentativa": tentativa,
                     "espera_s": espera,
                     "espera_pedida_s": pedida,

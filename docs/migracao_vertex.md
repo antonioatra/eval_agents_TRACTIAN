@@ -127,7 +127,54 @@ usasse a renovação. Por isso o cabeçalho é montado **a cada tentativa**, e h
 deixá-lo vazar para `model_id` tornaria os manifestos da piloto e da bateria incomparáveis campo
 a campo por uma diferença que não é do modelo.
 
-## 7 · O que isto ainda não estabelece
+## 7 · O canário, e o defeito que ele achou antes de ser usado
+
+`scripts/canario_do_judge.py` é a mitigação do §3: uma entrada FIXA (o trace com defeito
+plantado) que roda antes e depois de cada bateria. Duas chamadas por vez, não 1.400.
+
+Ele compara dois sinais de naturezas diferentes:
+
+1. **`tokens_in` sobre um prompt byte a byte idêntico** — impressão digital do tokenizador. É o
+   sinal mais afiado do conjunto, e ele não é hipotético: foi assim que a diferença de 6–8%
+   entre provedores do §5 apareceu.
+2. **Os campos do veredito** — o que a rubrica de fato decidiu.
+
+**A regra que impede o canário de mentir.** Cada rodada faz 3 repetições e classifica cada campo
+em estável ou instável; a comparação só olha os **estáveis**. Um campo que já variava sozinho
+testemunha contra a rubrica (INS.7), não contra o modelo.
+
+Isso se pagou antes da primeira comparação. Na linha de base, `afirmacoes_sem_suporte` veio
+instável — por um ponto final:
+
+```
+'Já reprocessei a análise'    ← 1ª repetição
+'Já reprocessei a análise.'   ← 2ª e 3ª
+```
+
+Um canário que comparasse texto exato teria dado alarme falso de cara. A contagem (3) ficou
+estável e o sinal grosso sobreviveu. Linha de base em `docs/canario_do_judge.json`: 7 campos
+estáveis, `tokens_in = 5993`.
+
+### O defeito
+
+A primeira comparação **morreu** — `httpx.ReadTimeout`, depois de a gravação da linha de base
+ter passado com as mesmas três chamadas.
+
+`_postar_com_retentativa` só sabia retentar **status HTTP**. Uma falha de transporte subia
+direto e matava a rodada. Na free tier isso quase não aparecia porque o modo de falha de lá era
+429, que está tratado desde o §3 do `limites_free_tier.md`; no Vertex a chamada simplesmente
+pendura.
+
+Alargar o timeout não seria conserto: a chamada normal responde em ~6 s, então 120 s pendurados
+não são lentidão, são requisição perdida. `httpx.TransportError` entrou no laço de retentativa,
+com registro em `eventos_de_limite` (`status: None`, `erro: "ReadTimeout"`) para que a
+distribuição no tempo continue legível.
+
+**O que isto quase custou.** A bateria da T24 roda de madrugada, sem ninguém olhando, e são
+~1.400 chamadas. Uma requisição pendurada matava a noite e deixava as runs afetadas sem N3 — o
+silêncio do X9. O canário encontrou isso com duas chamadas, antes de a bateria existir.
+
+## 8 · O que isto ainda não estabelece
 
 * **Onde fica o teto do DSQ.** "Sem RPD" não é "sem limite": sob pressão o Vertex devolve 429
   de sobrecarga. Não foi alcançado com a carga de smoke.
@@ -135,4 +182,14 @@ a campo por uma diferença que não é do modelo.
   backoff fixo (`ESPERAS_S`) passa a ser o plano inteiro — o oposto do que valia na free tier.
   Não foi exercitado contra um 429 real do Vertex.
 * **De onde vêm os 6–8% de diferença na contagem de tokens** do §5.
-* **Se o alias muda**, e com que frequência. O canário do §3 é detecção, não previsão.
+* **Se o alias muda**, e com que frequência. O canário do §7 é detecção, não previsão.
+* **A classificação estável/instável é ela mesma amostrada.** Na primeira comparação,
+  `afirmacoes_sem_suporte` veio ESTÁVEL — o inverso da linha de base. Como a base a marcou
+  instável, ela ficou fora da comparação e não houve alarme falso; mas o erro simétrico existe:
+  um campo estável na base por sorte vira alarme falso depois. Três repetições são o piso, não
+  uma garantia.
+* **Com que frequência o Vertex pendura uma requisição.** Uma em ~seis chamadas nas duas
+  primeiras rodadas do canário, que é amostra pequena demais para virar taxa. Se for
+  dessa ordem, a bateria da T24 verá ~230 timeouts em 1.400 chamadas, e o custo deles
+  passa a ser tempo de parede — três esperas de até 40 s cada, dentro de uma madrugada
+  que já está 1,11 h acima do orçamento (A16). Merece medição antes da bateria.
