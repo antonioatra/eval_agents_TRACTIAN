@@ -1,0 +1,77 @@
+# Bateria de calibração — as execuções de dev que a T21, a T22 e a T23 consomem.
+#
+# POR QUE ELA EXISTE, E POR QUE NÃO ESTAVA NO PLANO
+#   `PLANO` manda T22 (35 rotulagens) → T23 (κ e congelamento) → T24 (baterias). Mas a T22
+#   precisa de 35 execuções COM `final_answer`, e ninguém tinha contado quantas existiam: a
+#   taxa de conclusão do SUT é ~42% (10 de 24 na 4ª passada da piloto), e as quatro passadas
+#   somadas dão 31 julgáveis — de SUTs diferentes, porque cada passada mudou o agente.
+#
+#   Rotular 35 casos exige, a 42%, cerca de 84 execuções. Esta bateria as produz de uma vez,
+#   com o SUT ATUAL, e de quebra dá à T21 uma amostra de dev honesta no lugar da colcha de
+#   retalhos que ela teve de compor entre quatro passadas.
+#
+# É DEV, E ISSO É O PONTO
+#   `METRICAS §9.3` separa dev de test para que a rubrica possa ser reescrita olhando os dados
+#   sem contaminar o resultado. O κ da T23 valida o instrumento ANTES de ele ser usado nas
+#   baterias — calculá-lo sobre test seria validar o instrumento com os mesmos dados que ele
+#   vai medir, e congelar o judge depois disso não teria o que congelar.
+#
+# NÃO GASTA JUDGE
+#   Nenhuma chamada ao Gemini acontece aqui: isto produz traces. O N3 vem depois, quando o
+#   A23 estiver decidido. Rodar esta bateria é o trabalho que independe daquela decisão.
+#
+# O SERVIDOR TEM DE ESTAR EM `--parallel 1` (achado da piloto, e ele custou uma noite)
+#   Com os quatro slots padrão do LM Studio o KV cache de 8192 é dividido entre eles, e um
+#   prompt de ~2,6k tokens não cabe: a chamada não erra, ela PENDURA — 300 s de timeout com
+#   `n_llm_calls=0`.
+#
+#       lms load qwen3-14b-mlx --context-length 16384 --parallel 1 --gpu max -y
+#       lms load qwen3-8b-mlx  --context-length 16384 --parallel 1 --gpu max -y
+
+experiment_id: calibracao_2026-08-24
+
+cenarios:
+  split: dev
+
+modelos:
+  # `honra_seed: false` no 8B é achado reconfirmado hoje pela pré-checagem: o 14B devolve
+  # texto idêntico para a mesma seed, o 8B não. Com `false`, `ModelConfig.seed` vai a `None` —
+  # declarar uma seed que o servidor ignora seria declarar um determinismo que não existe.
+  qwen3-8b:
+    model_id: qwen3-8b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    honra_seed: false
+
+  qwen3-14b:
+    model_id: qwen3-14b-mlx
+    served_by: lmstudio
+    quantization: 4bit
+    temperature: 0.7
+    max_tokens: 1200
+    structured_output: json_schema
+    context_window: 16384
+    honra_seed: true
+
+# Só a base. Mutante aqui gastaria madrugada medindo degradação que a INS.9 lê na bateria de
+# mutantes, e o que se quer daqui é material de ROTULAGEM: execuções do agente como ele é.
+variantes: [base]
+
+# Sete seeds: 6 cenários × 2 modelos × 7 = 84 execuções, que a ~42% de conclusão dão os ~35
+# casos rotuláveis que a T22 exige. As quatro primeiras são as da T0b e da piloto, na mesma
+# ordem — manter a família faz esta bateria comparável com o que já foi medido. As três
+# últimas continuam a série fixada a priori nos manifestos das baterias, e não são
+# re-sorteáveis: re-sortear seed depois de ver resultado é escolher o resultado.
+sample_seeds: [11, 23, 42, 77, 101, 137, 199]
+
+approver: policy
+paralelismo: 1
+
+# Teto por run, igual ao da piloto. 8 iterações × ~28 s/passo no 14B dão ~4 min de caso comum;
+# 15 min é servidor pendurado, não modelo lento. Vale a ressalva do runner: o cancelamento só
+# chega no próximo `await` e `completar` é síncrona — o teto real é 15 min mais uma chamada.
+timeout_s: 900

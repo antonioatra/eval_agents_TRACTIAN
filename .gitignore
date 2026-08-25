@@ -23,3 +23,7 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# Sessões do Lavish (revisão visual). O `apresentacao-decisoes.html` é uma
+# renderização do DECISOES.md, que é pessoal e não sobe — mesmo motivo do graphify-out/.
+.lavish/
