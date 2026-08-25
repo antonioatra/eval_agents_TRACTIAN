@@ -1,10 +1,17 @@
-.PHONY: venv install test lint corpus api api-stop t0b piloto judge clean
+.PHONY: venv install test lint corpus api api-stop t0b piloto judge repro clean
 
 VENV    := .venv
 PY      := $(VENV)/bin/python
 PIP     := $(VENV)/bin/pip
 API_DIR := inteli-tractian-project
 API_PY  := $(API_DIR)/api/.venv/bin/python
+
+# As figuras que o repositório sabe regenerar hoje, e o notebook versionado que produz cada
+# uma. Uma linha por par; `make repro` executa os notebooks e depois confere que TODAS as
+# figuras da lista foram regravadas. É a lista que se estende quando a bateria oficial rodar
+# (curva custo × recall, matriz de concordância, pass^k) — ver o comentário de `repro`.
+FIG_NOTEBOOKS := notebooks/nb01_exploracao_api.ipynb notebooks/nb02_cobertura_corpus.ipynb
+FIG_ARQUIVOS  := figures/fig01_distribuicao_status.png figures/fig02_matriz_cobertura.png
 
 # `uv` não está disponível neste ambiente; o venv é criado com o venv da stdlib.
 $(VENV):
@@ -50,6 +57,55 @@ piloto: install
 # offline pela suíte; isto prova que o modelo do outro lado responde a rubrica.
 judge: install
 	$(PY) scripts/checar_judge.py
+
+# Reprodutibilidade ponta a ponta. É a demonstração da banca: de um clone limpo até
+# uma figura que saiu de trace real, sem passo manual no meio. Instruções em `docs/REPRODUZIR.md`.
+#
+#   1. install   venv + dependências;
+#   2. replay    pontua N1 e N2 dos 24 traces versionados de `runs/piloto_2026-08-24c/` DUAS
+#                vezes — a segunda num processo novo, com outra `PYTHONHASHSEED` — e exige
+#                score idêntico campo a campo (`tests/test_repro.py`);
+#   3. figuras   reexecuta os notebooks versionados que gravam as figuras.
+#
+# O PASSO 2 NÃO FALA COM A REDE e não sobe modelo nenhum: N1 e N2 são função pura de
+# (trace, gabarito), e o teste bloqueia `socket` para provar isso em vez de supor. É o que
+# permite rodá-lo em qualquer máquina. **N3 fica de fora dele de propósito** — é julgamento
+# por LLM e varia mesmo a temperatura 0; quem mede essa variação é o *flip rate* (INS.7), e
+# exigi-la estável aqui seria asseverar a sorte do endpoint. Não "conserte" isso.
+#
+# O PASSO 3 EXIGE A API DO PARCEIRO NO AR (`make api`, em outro terminal). Os dois notebooks
+# medem a API em vez de confiar na réplica de `resolve_mode`, e não existe fixture gravada,
+# de propósito — é a razão de eles existirem. São ~1 min 10 s, quase tudo na varredura de
+# seeds do nb01 (67 000 chamadas HTTP locais).
+#
+# A execução é para FORA da árvore (`--output-dir` num temporário): `--inplace` reescreveria
+# os notebooks versionados a cada `make repro` e sujaria o diff da banca com saída de célula.
+# As figuras não sofrem com isso — os notebooks as gravam por caminho absoluto em `figures/`.
+#
+# AS FIGURAS DE RESULTADO AINDA NÃO EXISTEM, e este alvo não as inventa. As três baterias de
+# `METRICAS §9.2` não rodaram, então a curva custo × recall, a matriz de concordância N1+N2 ×
+# N3 e o pass^k por modelo não têm dado de onde sair. Quando tiverem, estender é acrescentar
+# o par (notebook, figura) a FIG_NOTEBOOKS/FIG_ARQUIVOS lá em cima: a conferência final já
+# reprova, com o nome do arquivo, figura declarada que não apareceu no disco.
+repro: install
+	$(PY) -m pytest -q tests/test_repro.py
+	@$(PY) -c "import httpx; httpx.get('http://localhost:8000/openapi.json', timeout=5)" \
+	  || { echo "make repro: a API do parceiro não respondeu em localhost:8000." \
+	            "Rode \`make api\` em outro terminal e repita."; exit 1; }
+	@marca=$$(mktemp) && saida=$$(mktemp -d) && estado=0 && \
+	for nb in $(FIG_NOTEBOOKS); do \
+	  if [ ! -f "$$nb" ]; then echo "make repro: FALTOU o notebook $$nb"; estado=1; continue; fi; \
+	  echo "make repro: executando $$nb"; \
+	  $(PY) -m jupyter nbconvert --to notebook --execute --output-dir "$$saida" "$$nb" \
+	    || estado=1; \
+	done; \
+	for fig in $(FIG_ARQUIVOS); do \
+	  if [ ! -f "$$fig" ]; then echo "make repro: FALTOU $$fig — nenhum notebook a gravou"; estado=1; \
+	  elif [ ! "$$fig" -nt "$$marca" ]; then echo "make repro: FALTOU regravar $$fig — o notebook rodou mas não a escreveu"; estado=1; \
+	  else echo "make repro: regravada $$fig"; fi; \
+	done; \
+	rm -rf "$$saida" "$$marca"; \
+	exit $$estado
 
 # Sobe a API industrial do parceiro em localhost:8000 (necessária para `make corpus`).
 api:
