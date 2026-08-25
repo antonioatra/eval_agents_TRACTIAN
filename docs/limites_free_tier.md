@@ -62,14 +62,47 @@ dia são um limite de RPD, e as duas leituras pedem manifestos diferentes. `cali
 despeja tudo em `limites.json` num `finally` — ele é escrito **também quando a rodada morre**,
 que é justamente quando tem mais a dizer.
 
-## 5 · O que isto ainda não estabelece
+## 5 · O `limit: 20` é POR DIA, e isso muda o plano
 
-- **Se o `limit: 20` é por minuto ou por dia.** A mensagem nomeia a métrica
-  (`..._free_tier_requests`) sem o sufixo `PerMinute`/`PerDay` que o Google usa em outras
-  quotas, e os cinco eventos registrados caem todos numa janela de um minuto — compatível com
-  as duas leituras. A distinção **muda o cronograma por um fator de dias**: a 20/minuto a
-  calibração inteira leva minutos; a 20/dia, ela leva mais de uma semana e as três baterias
-  ficam inviáveis na free tier.
+A mensagem nomeia a métrica (`..._free_tier_requests`) **sem** o sufixo `PerMinute`/`PerDay`
+que o Google usa em outras quotas, então o número sozinho não distinguia as duas leituras. A
+carga distinguiu.
+
+O que decide é o padrão no tempo. Três tentativas espaçadas de **exatamente 60 s** (21:46:01,
+21:47:01, 21:48:01), todas recusadas, e todas pedindo **mais ~59,6 s**:
+
+| instante | espera pedida |
+|---|---|
+| 21:45:13 | 47,4 s |
+| 21:46:01 | 59,6 s |
+| 21:47:01 | 59,7 s |
+| 21:48:01 | 59,6 s |
+
+Uma chamada por minuto não esgota uma quota de 20 por minuto. Se a janela fosse de um minuto,
+a segunda tentativa teria passado. O serviço empurrando sempre para o minuto seguinte, sem
+nunca liberar, é quota **esgotada** — e o total de chamadas do dia bate com 20.
+
+**A ressalva, porque ela existe:** a confirmação final foi feita ~1 min depois da última
+tentativa da rodada anterior, e não com a janela perfeitamente limpa. O padrão de 60 em 60 s
+já é conclusivo sozinho, mas a leitura mais limpa custa só esperar o dia virar — a quota RPD
+reseta à meia-noite do Pacífico.
+
+**A consequência é de cronograma, não de código:**
+
+| | chamadas | dias a 20/dia |
+|---|---|---|
+| calibração da T21 (21 itens × 2 configs × 5) | 210 | **11** |
+| judge das três baterias (estimativa do A1) | ~1.400 | **70** |
+
+O judge na free tier **não sustenta o trabalho** com este modelo. As saídas são decisão de
+projeto, não ajuste técnico — e uma delas é barata: **a quota é por modelo** (a própria
+mensagem diz `model: gemini-3.6-flash`), e o catálogo da conta lista `gemini-3.7-flash`,
+`gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` e outros. Trocar de
+modelo compra quota nova — ao preço de mexer em `MODELO_PADRAO`, que a T23 congela, e de
+julgar com um modelo cuja qualidade não foi verificada contra a rubrica.
+
+## 6 · O que isto ainda não estabelece
+
 - **O TPM**, que nunca apareceu: nenhum 429 citou quota de tokens. Não é prova de que não
   exista — é prova de que a nossa carga não chegou lá.
 - **Se o limite é por projeto ou por chave.** A documentação diz que rate limits são por
