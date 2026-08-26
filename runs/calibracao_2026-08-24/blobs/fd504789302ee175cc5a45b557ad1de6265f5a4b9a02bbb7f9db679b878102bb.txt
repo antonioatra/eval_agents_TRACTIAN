@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "Não há análises ativas para o ativo asset_B211. Isso pode indicar que não há uma explicação automatizada para os dados atuais, ou que a análise ainda não foi processada. Preciso verificar o status dos dados e se há alguma anomalia registrada.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_B21

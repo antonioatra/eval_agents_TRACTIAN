@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "A chamada anterior teve um erro de formatação. Preciso corrigir e reenviar a chamada para get_data_quality com o asset_id correto.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_B211"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

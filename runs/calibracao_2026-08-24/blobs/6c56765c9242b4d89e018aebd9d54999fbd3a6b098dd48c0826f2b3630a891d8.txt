@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O baseline do martelete está estabelecido e não foi invalidado. A referência RMS é 2,6 mm/s com tolerância de 1,1. Preciso verificar a série temporal RMS para ver se há desvios recentes.", "acao": {"tool": "get_rms_series", "args": {"asset_id": "asset_H110"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

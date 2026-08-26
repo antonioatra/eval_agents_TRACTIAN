@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "motor_dc model compatibility", "type": "guidance"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

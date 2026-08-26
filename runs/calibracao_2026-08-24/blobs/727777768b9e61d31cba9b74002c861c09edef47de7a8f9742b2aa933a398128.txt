@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "get_model", "args": {"model_id": "default_motor_dc"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

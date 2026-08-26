@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "reprocessar analise de compressor de ar", "type": "procedure"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_C210"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

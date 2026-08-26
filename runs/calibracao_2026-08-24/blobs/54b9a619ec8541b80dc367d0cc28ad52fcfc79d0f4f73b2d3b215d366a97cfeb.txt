@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "Verifico se há análises recentes do ativo para identificar anomalias. Se não houver, chamo a tool de análise.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_H110", "status": "current"}}, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

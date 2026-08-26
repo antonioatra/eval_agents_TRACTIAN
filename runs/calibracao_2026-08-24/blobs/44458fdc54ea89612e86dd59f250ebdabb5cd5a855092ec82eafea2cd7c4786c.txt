@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O usuário está confuso entre dois diagnósticos: desalinhamento e base solta. Preciso investigar as evidências para ambas as possibilidades.", "acao": {"tool": "get_analysis", "args": {"analysis_id": "analysis_01"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "get_analysis", "args": {"analysis_id": "..."}},"resposta": null, "decisao": null, "prioridade_escalonamento": null}

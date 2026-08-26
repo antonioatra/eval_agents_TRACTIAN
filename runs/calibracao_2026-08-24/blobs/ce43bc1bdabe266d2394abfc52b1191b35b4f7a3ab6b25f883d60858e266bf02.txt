@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "Não há análises antigas do ativo. Verifico a qualidade dos dados para garantir que não haja problemas com os sensores ou amostragem.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_H110"}}, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "O usuário quer reprocessar a análise do compressor de ar (asset_C21

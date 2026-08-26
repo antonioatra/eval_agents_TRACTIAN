@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O usuário reportou um barulho diferente no ativo asset_H110, que está com criticidade alta. Preciso investigar se há alguma evidência nos dados para confirmar essa anomalia.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_H110", "status": "current"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

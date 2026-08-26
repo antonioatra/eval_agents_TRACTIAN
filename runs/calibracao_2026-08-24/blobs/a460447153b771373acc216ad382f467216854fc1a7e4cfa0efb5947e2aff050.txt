@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_M208"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

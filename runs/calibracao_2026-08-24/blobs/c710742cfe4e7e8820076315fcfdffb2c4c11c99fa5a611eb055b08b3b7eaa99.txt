@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "A análise solicitada não foi encontrada. Talvez eu precise olhar para outras análises ou relatórios disponíveis no sistema.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_M205", "status": "current"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

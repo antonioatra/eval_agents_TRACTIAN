@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O usuário relatou um som anormal no martelete (asset_H110) desde ontem. Preciso investigar se há evidências nos dados do ativo.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_H110"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O usuário está questionando se um pico detectado no ativo asset_B211 é realmente uma falha de rolamento, com base no baseline. Preciso verificar o estado do baseline e as análises recentes do ativo.", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_B211"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}
