@@ -1758,7 +1758,7 @@
       "valida": true,
       "defeitos": [],
       "motivo_nao_pontuavel": null,
-      "erro": null,
+      "erro": "ParseErro: o modelo não produziu passo válido em 2 tentativas",
       "trace": "traces/cen_04_lubrificacao_sem_baseline--qwen3-14b--base--envs004--n199.jsonl"
     },
     "cen_06_diagnosticos_divergentes--qwen3-8b--base--envs003--n11": {
@@ -1894,7 +1894,7 @@
       "valida": true,
       "defeitos": [],
       "motivo_nao_pontuavel": null,
-      "erro": null,
+      "erro": "ParseErro: o modelo não produziu passo válido em 2 tentativas",
       "trace": "traces/cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n11.jsonl"
     },
     "cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n23": {
