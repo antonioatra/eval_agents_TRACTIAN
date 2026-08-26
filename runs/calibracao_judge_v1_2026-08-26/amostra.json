@@ -1,0 +1,63 @@
+{
+  "por_cenario": 4,
+  "procedencia": {
+    "aut_01_barulho_sem_desvio": [
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24"
+    ],
+    "aut_03_pergunta_que_parece_ordem": [
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24"
+    ],
+    "aut_06_premissa_falsa": [
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24"
+    ],
+    "cen_04_lubrificacao_sem_baseline": [
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24"
+    ],
+    "cen_06_diagnosticos_divergentes": [
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24"
+    ],
+    "cen_09_cobertura_do_modelo": [
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24",
+      "calibracao_2026-08-24"
+    ]
+  },
+  "itens": [
+    "calibracao_2026-08-24/aut_01_barulho_sem_desvio--qwen3-14b--base--envs001--n101.jsonl",
+    "calibracao_2026-08-24/aut_01_barulho_sem_desvio--qwen3-14b--base--envs001--n42.jsonl",
+    "calibracao_2026-08-24/aut_01_barulho_sem_desvio--qwen3-8b--base--envs001--n77.jsonl",
+    "calibracao_2026-08-24/aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n137.jsonl",
+    "calibracao_2026-08-24/aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n199.jsonl",
+    "calibracao_2026-08-24/aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n23.jsonl",
+    "calibracao_2026-08-24/aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n42.jsonl",
+    "calibracao_2026-08-24/aut_06_premissa_falsa--qwen3-14b--base--envs004--n199.jsonl",
+    "calibracao_2026-08-24/aut_06_premissa_falsa--qwen3-8b--base--envs004--n23.jsonl",
+    "calibracao_2026-08-24/aut_06_premissa_falsa--qwen3-8b--base--envs004--n42.jsonl",
+    "calibracao_2026-08-24/aut_06_premissa_falsa--qwen3-8b--base--envs004--n77.jsonl",
+    "calibracao_2026-08-24/cen_04_lubrificacao_sem_baseline--qwen3-14b--base--envs004--n137.jsonl",
+    "calibracao_2026-08-24/cen_04_lubrificacao_sem_baseline--qwen3-14b--base--envs004--n42.jsonl",
+    "calibracao_2026-08-24/cen_04_lubrificacao_sem_baseline--qwen3-8b--base--envs004--n101.jsonl",
+    "calibracao_2026-08-24/cen_04_lubrificacao_sem_baseline--qwen3-8b--base--envs004--n11.jsonl",
+    "calibracao_2026-08-24/cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n42.jsonl",
+    "calibracao_2026-08-24/cen_06_diagnosticos_divergentes--qwen3-8b--base--envs003--n11.jsonl",
+    "calibracao_2026-08-24/cen_06_diagnosticos_divergentes--qwen3-8b--base--envs003--n137.jsonl",
+    "calibracao_2026-08-24/cen_09_cobertura_do_modelo--qwen3-14b--base--envs017--n137.jsonl",
+    "calibracao_2026-08-24/cen_09_cobertura_do_modelo--qwen3-14b--base--envs017--n199.jsonl",
+    "calibracao_2026-08-24/cen_09_cobertura_do_modelo--qwen3-14b--base--envs017--n23.jsonl",
+    "calibracao_2026-08-24/cen_09_cobertura_do_modelo--qwen3-14b--base--envs017--n42.jsonl"
+  ]
+}

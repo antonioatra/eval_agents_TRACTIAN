@@ -1,0 +1,17 @@
+{
+  "eventos": [
+    {
+      "instante": 1787758192.063998,
+      "status": 429,
+      "erro": null,
+      "tentativa": 0,
+      "espera_s": 2.0,
+      "espera_pedida_s": null,
+      "corpo": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.\",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]"
+    }
+  ],
+  "total": 1,
+  "por_status": {
+    "429": 1
+  }
+}
