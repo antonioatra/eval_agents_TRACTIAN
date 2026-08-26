@@ -77,8 +77,39 @@ def test_a_retomada_nao_da_por_feita_a_celula_julgada_pelo_outro_provedor(
     feitos = calibrar.ja_gravados(arquivo)
 
     item = linha()["trace"]
-    assert (item, "cego", 1, "gemini_api") in feitos
-    assert (item, "cego", 1, "vertex_ai") not in feitos
+    assert (item, "cego", 1, "gemini_api", "v1") in feitos
+    assert (item, "cego", 1, "vertex_ai", "v1") not in feitos
+
+
+def test_a_retomada_nao_da_por_feita_a_celula_julgada_pela_outra_rubrica(calibrar, tmp_path):
+    """A comparação v1 × v2 da T21 é o MESMO item julgado por dois prompts.
+
+    Sem a rubrica na chave, a rodada da v2 daria por feitas as células que a v1 já julgou: a
+    curva compararia a v1 contra ela mesma e sairia plana — que é exatamente o formato de
+    resultado que faria a reescrita da rubrica parecer inócua, sem nada quebrar. É o mesmo
+    erro do X9 e a mesma forma do que a migração de provedor quase causou.
+    """
+    arquivo = tmp_path / "julgamentos.jsonl"
+    arquivo.write_text(
+        json.dumps(linha(rubrica="v1"), ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+    feitos = calibrar.ja_gravados(arquivo)
+
+    item = linha()["trace"]
+    assert (item, "cego", 1, "vertex_ai", "v1") in feitos
+    assert (item, "cego", 1, "vertex_ai", "v2") not in feitos
+
+
+def test_linha_antiga_sem_rubrica_e_da_v1(calibrar):
+    """As 220 células de 26/08 foram gravadas antes do campo existir, e são todas v1.
+
+    Lê-las como rubrica desconhecida faria a próxima rodada da v1 regravá-las — gastando as
+    220 chamadas para produzir a linha que já está no disco.
+    """
+    antiga = linha()
+    antiga.pop("rubrica", None)
+    assert calibrar.chave(antiga)[4] == "v1"
 
 
 def test_linha_corrompida_continua_sendo_ignorada(calibrar, tmp_path):

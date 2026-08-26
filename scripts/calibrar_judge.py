@@ -63,6 +63,8 @@ from tapieval.scoring.gabarito import carregar_cenarios  # noqa: E402
 from tapieval.scoring.judge_llm import ClienteDoJudge, config_do_judge  # noqa: E402
 from tapieval.scoring.n3 import (  # noqa: E402
     CAMADA_POR_CONFIGURACAO,
+    RUBRICA_PADRAO,
+    TEMPLATE_POR_CONFIGURACAO,
     JustificativaComIdInventado,
     montar_insumo,
     pontuar_n3,
@@ -177,7 +179,7 @@ def traces_julgaveis(run: Path) -> list[Path]:
 # ---------------------------------------------------------------------------
 
 
-def chave(linha: Mapping[str, Any]) -> tuple[str, str, int, str]:
+def chave(linha: Mapping[str, Any]) -> tuple[str, str, int, str, str]:
     """A célula, e **por quem ela foi julgada**.
 
     O `served_by` entra na chave porque em 25/08 o judge trocou de provedor (A23), e a mesma
@@ -187,16 +189,23 @@ def chave(linha: Mapping[str, Any]) -> tuple[str, str, int, str]:
     compararia um julgamento do AI Studio contra quatro do Vertex — atribuindo à rubrica uma
     variação que é de infraestrutura. Linha antiga sem o campo é do AI Studio, que é o único
     provedor que existia quando ela foi escrita.
+
+    A `rubrica` entra pelo mesmo argumento, um degrau acima: a comparação v1 × v2 da T21 é o
+    MESMO item julgado por dois prompts, e sem ela na chave a rodada da v2 daria por feitas as
+    células que a v1 já julgou — a curva compararia a v1 contra ela mesma e sairia plana, que
+    é exatamente o formato de resultado que faria a reescrita parecer inócua. Linha antiga sem
+    o campo é da v1, a única rubrica que existia quando ela foi escrita.
     """
     return (
         linha["trace"],
         linha["configuracao"],
         int(linha["repeticao"]),
         str(linha.get("served_by", "gemini_api")),
+        str(linha.get("rubrica", "v1")),
     )
 
 
-def ja_gravados(arquivo: Path) -> set[tuple[str, str, int, str]]:
+def ja_gravados(arquivo: Path) -> set[tuple[str, str, int, str, str]]:
     """As células que já existem. Linha corrompida é ignorada e será refeita.
 
     Ignorar em vez de explodir é deliberado: a única forma de uma linha sair pela metade é o
@@ -205,7 +214,7 @@ def ja_gravados(arquivo: Path) -> set[tuple[str, str, int, str]]:
     """
     if not arquivo.exists():
         return set()
-    vistos: set[tuple[str, str, int, str]] = set()
+    vistos: set[tuple[str, str, int, str, str]] = set()
     for linha in arquivo.read_text(encoding="utf-8").splitlines():
         if not linha.strip():
             continue
@@ -334,6 +343,7 @@ def rodar(
     configuracoes: Sequence[str],
     limite: int | None,
     por_cenario: int,
+    rubrica: str = RUBRICA_PADRAO,
 ) -> int:
     saida.mkdir(parents=True, exist_ok=True)
     arquivo = saida / "julgamentos.jsonl"
@@ -357,11 +367,12 @@ def rodar(
         for caminho in caminhos
         for configuracao in configuracoes
         for repeticao in range(1, repeticoes + 1)
-        if (identificar(caminho), configuracao, repeticao, servido_por) not in feitos
+        if (identificar(caminho), configuracao, repeticao, servido_por, rubrica)
+        not in feitos
     ]
 
     total = len(caminhos) * len(configuracoes) * repeticoes
-    print(f"judge: {modelo.model_id} via {servido_por}")
+    print(f"judge: {modelo.model_id} via {servido_por} · rubrica {rubrica}")
     print(f"itens: {len(caminhos)} traces × {len(configuracoes)} configurações × {repeticoes}×")
     for cenario, origens in procedencia.items():
         print(f"  {cenario:<36} {len(origens):>2} · {', '.join(origens)}")
@@ -392,7 +403,9 @@ def rodar(
             rotulo = f"[{indice}/{len(celulas)}] {caminho.name[:44]} {configuracao} #{repeticao}"
 
             try:
-                julgamento = pontuar_n3(insumo, configuracao, cliente, medidor)
+                julgamento = pontuar_n3(
+                    insumo, configuracao, cliente, medidor, rubrica=rubrica
+                )
             except JustificativaComIdInventado as erro:
                 # Não é falha de transporte: o judge respondeu, e respondeu citando id que
                 # não existe, três vezes seguidas. É achado sobre a rubrica — o campo
@@ -408,6 +421,7 @@ def rodar(
                         "configuracao": configuracao,
                         "repeticao": repeticao,
                         "served_by": servido_por,
+                        "rubrica": rubrica,
                         "judge_model_id": modelo.model_id,
                         "erro": "id_inventado",
                         "detalhe": str(erro),
@@ -427,6 +441,7 @@ def rodar(
                     "configuracao": configuracao,
                     "repeticao": repeticao,
                     "served_by": servido_por,
+                    "rubrica": rubrica,
                     "judge_model_id": modelo.model_id,
                     "erro": None,
                     "julgamento": _serializar(julgamento),
@@ -530,6 +545,10 @@ def main(argv: Iterable[str] | None = None) -> int:
         "--limite", type=int, default=None,
         help="usar só os N primeiros traces — para uma passada curta antes de gastar a quota",
     )
+    parser.add_argument(
+        "--rubrica", default=RUBRICA_PADRAO, choices=sorted(TEMPLATE_POR_CONFIGURACAO),
+        help="qual versão da rubrica julga (default: a do projeto)",
+    )
     parser.add_argument("--somente-resumo", action="store_true")
     args = parser.parse_args(list(argv) if argv is not None else None)
 
@@ -548,6 +567,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         configuracoes=args.configuracoes,
         limite=args.limite,
         por_cenario=args.por_cenario,
+        rubrica=args.rubrica,
     )
     if codigo == 0:
         print()

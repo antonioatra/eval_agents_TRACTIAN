@@ -43,6 +43,7 @@ from tapieval.scoring.gabarito import Cenario, Regra, carregar_cenarios
 from tapieval.scoring.n3 import (
     CAMADA_POR_CONFIGURACAO,
     DIRETORIO_DE_FEWSHOTS,
+    RUBRICA_PADRAO,
     BlocoDeEvidencia,
     EvidenciaIncompleta,
     InsumoDoJudge,
@@ -690,3 +691,72 @@ def test_bloco_de_evidencia_renderiza_de_forma_estavel():
 
     assert texto.index("a=2") < texto.index("z=1")
     assert texto.index('"a"') < texto.index('"b"')
+
+
+# ---------------------------------------------------------------------------
+# A rubrica v2 — a reescrita da T21, e o que ela não pode ter quebrado
+# ---------------------------------------------------------------------------
+
+
+def test_a_v2_reescreve_so_os_dois_campos_acima_do_corte(insumo: InsumoDoJudge):
+    """A comparação v1 × v2 só isola a reescrita se o resto do prompt for igual.
+
+    A INS.7 de 26/08 mediu `mencionou_limitacao_relevante` em 29,5% e `causa_raiz_correta` em
+    18,2%, os dois acima do corte de 10% da T21. Se a v2 mexesse também nos campos estáveis, a
+    curva mediria "duas rubricas diferentes" em vez de "o efeito de reescrever estes dois", e
+    nenhum dos dois números resultantes teria a quem ser atribuído.
+    """
+    fewshots = carregar_fewshots()
+    for configuracao in ("cego", "com_trace"):
+        v1 = renderizar_prompt(insumo, configuracao, fewshots=fewshots, rubrica="v1")
+        v2 = renderizar_prompt(insumo, configuracao, fewshots=fewshots, rubrica="v2")
+
+        assert v1 != v2, f"{configuracao}: a v2 é idêntica à v1"
+        for trecho in ("responde_a_pergunta", "justificativa"):
+            secao_v1 = v1.split(f"**`{trecho}`**")[1].split("\n\n**`")[0]
+            assert secao_v1 in v2, f"{configuracao}: a v2 mexeu em `{trecho}`, que era estável"
+
+
+def test_a_v2_preenche_os_mesmos_marcadores_que_a_v1(insumo: InsumoDoJudge):
+    """Marcador esquecido na v2 chegaria ao modelo como literal `{evidencia}` e ele julgaria
+    sem ver nada, sem que nada quebrasse — o silêncio do X9. `renderizar_prompt` já explode
+    nesse caso; este teste é o que garante que ele seja EXERCIDO sobre a v2 antes das 220
+    células, e não durante."""
+    fewshots = carregar_fewshots()
+
+    cego = renderizar_prompt(insumo, "cego", fewshots=fewshots, rubrica="v2")
+    com_trace = renderizar_prompt(insumo, "com_trace", fewshots=fewshots, rubrica="v2")
+
+    assert insumo.solicitacao in cego and insumo.solicitacao in com_trace
+    assert insumo.criterio_sucesso in cego and insumo.criterio_sucesso in com_trace
+    assert "[tc_01] get_asset" in com_trace
+    assert "[tc_01]" not in cego, "a v2 do cego não pode ter ganhado a evidência"
+
+
+def test_a_v2_do_cego_continua_sem_pedir_os_campos_que_exigem_trace(insumo: InsumoDoJudge):
+    """A cegueira é estrutural e não pode ter vazado na reescrita: os três campos que exigem
+    evidência saem `None` na configuração cega por construção, e um prompt cego que os
+    perguntasse produziria `False` onde o contrato do `N3Judge` exige `None`."""
+    prompt = renderizar_prompt(insumo, "cego", fewshots=carregar_fewshots(), rubrica="v2")
+
+    for campo in ("afirmacoes_sem_suporte", "contradiz_evidencia", "recomendou_acao_sem_base"):
+        assert f"**`{campo}`**" not in prompt, f"o cego v2 pergunta `{campo}`"
+
+
+def test_rubrica_que_nao_existe_e_erro_e_nao_silencio(insumo: InsumoDoJudge):
+    """Uma tabela de scores que diz `v2` e foi julgada por outra coisa é indistinguível de uma
+    correta até alguém conferir o prompt à mão."""
+    with pytest.raises(ValueError, match="rubrica 'v3' não existe"):
+        renderizar_prompt(insumo, "cego", fewshots=carregar_fewshots(), rubrica="v3")
+
+
+def test_o_default_do_projeto_continua_sendo_a_v1(insumo: InsumoDoJudge):
+    """Trocar o default antes de a T21 fechar a comparação e a T23 congelar mudaria em
+    silêncio a rubrica do canário, do portão de viabilidade e dos notebooks — e o número que a
+    comparação existe para produzir sairia de dois instrumentos diferentes."""
+    fewshots = carregar_fewshots()
+
+    assert RUBRICA_PADRAO == "v1"
+    assert renderizar_prompt(insumo, "cego", fewshots=fewshots) == renderizar_prompt(
+        insumo, "cego", fewshots=fewshots, rubrica="v1"
+    )

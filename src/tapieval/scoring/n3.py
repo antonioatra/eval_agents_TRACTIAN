@@ -58,10 +58,27 @@ from tapieval.sut.llm import Inferencia, esquema_estrito
 DIRETORIO_DE_PROMPTS = Path(__file__).resolve().parents[3] / "prompts"
 DIRETORIO_DE_FEWSHOTS = DIRETORIO_DE_PROMPTS / "fewshot"
 
-TEMPLATE_POR_CONFIGURACAO: Mapping[ConfiguracaoDoJudge, str] = {
-    "cego": "judge_cego_v1.md",
-    "com_trace": "judge_trace_v1.md",
+RUBRICA_PADRAO = "v1"
+"""A rubrica que o projeto usa quando ninguém pede outra.
+
+Continua na v1 até a T21 fechar a comparação v1 × v2 e a T23 congelar uma delas. Trocar este
+default antes disso mudaria em silêncio a rubrica de todo mundo que chama `pontuar_n3` — o
+canário, o portão de viabilidade, os notebooks — e o número que a comparação existe para
+produzir sairia de dois instrumentos diferentes."""
+
+TEMPLATE_POR_CONFIGURACAO: Mapping[str, Mapping[ConfiguracaoDoJudge, str]] = {
+    "v1": {
+        "cego": "judge_cego_v1.md",
+        "com_trace": "judge_trace_v1.md",
+    },
+    "v2": {
+        "cego": "judge_cego_v2.md",
+        "com_trace": "judge_trace_v2.md",
+    },
 }
+"""A v2 muda SOMENTE `causa_raiz_correta` e `mencionou_limitacao_relevante` — os dois campos
+que a INS.7 mediu acima do corte de 10% em 26/08. O resto é byte a byte igual à v1, para que a
+comparação isole a reescrita em vez de medir duas rubricas inteiras uma contra a outra."""
 
 CAMADA_POR_CONFIGURACAO: Mapping[ConfiguracaoDoJudge, str] = {
     "cego": "N3_cego",
@@ -275,13 +292,14 @@ def renderizar_prompt(
     *,
     fewshots: Sequence[Mapping[str, Any]],
     template: str | None = None,
+    rubrica: str = RUBRICA_PADRAO,
 ) -> str:
     """O prompt completo de uma configuração. Puro: mesmo insumo, mesmo texto, sempre.
 
     A pureza é o que permite que a T23 congele o judge por sha256 do prompt renderizado —
     e é o que faz o flip rate da T21 medir variação do MODELO, não do template.
     """
-    texto = template if template is not None else _ler_template(configuracao)
+    texto = template if template is not None else _ler_template(configuracao, rubrica)
     substituicoes = {
         "{criterio_sucesso}": insumo.criterio_sucesso or "(o cenário não declara critério)",
         "{regra_exige}": insumo.regra_exige or "(a regra não declara exigência)",
@@ -304,10 +322,16 @@ def renderizar_prompt(
     return texto
 
 
-def _ler_template(configuracao: ConfiguracaoDoJudge) -> str:
-    return (DIRETORIO_DE_PROMPTS / TEMPLATE_POR_CONFIGURACAO[configuracao]).read_text(
-        encoding="utf-8"
-    )
+def _ler_template(configuracao: ConfiguracaoDoJudge, rubrica: str) -> str:
+    try:
+        arquivos = TEMPLATE_POR_CONFIGURACAO[rubrica]
+    except KeyError:
+        raise ValueError(
+            f"rubrica {rubrica!r} não existe (há {sorted(TEMPLATE_POR_CONFIGURACAO)}). "
+            "Rubrica errada em silêncio produziria uma tabela de scores que diz v2 e foi "
+            "julgada por outra coisa"
+        ) from None
+    return (DIRETORIO_DE_PROMPTS / arquivos[configuracao]).read_text(encoding="utf-8")
 
 
 def _renderizar_fewshots(
@@ -390,6 +414,7 @@ def pontuar_n3(
     *,
     fewshots: Sequence[Mapping[str, Any]] | None = None,
     tentativas: int = TENTATIVAS_PADRAO,
+    rubrica: str = RUBRICA_PADRAO,
 ) -> N3Judge:
     """Uma execução, uma configuração, um `N3Judge`.
 
@@ -409,7 +434,7 @@ def pontuar_n3(
         )
 
     exemplos = fewshots if fewshots is not None else carregar_fewshots()
-    prompt = renderizar_prompt(insumo, configuracao, fewshots=exemplos)
+    prompt = renderizar_prompt(insumo, configuracao, fewshots=exemplos, rubrica=rubrica)
     esquema = esquema_estrito(ESQUEMA_POR_CONFIGURACAO[configuracao])
     visiveis = insumo.ids_visiveis(configuracao)
 
