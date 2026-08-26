@@ -296,12 +296,7 @@ def amostrar(
 
     escolhidos = {candidato.run_id for candidato in estimativa}
     sobra = [candidato for candidato in unicos if candidato.run_id not in escolhidos]
-    # Embaralhar ANTES de ordenar por prioridade faz o empate ser desempatado por sorteio
-    # semeado, e não por ordem alfabética de `run_id` — que puxaria a fila para os primeiros
-    # cenários do corpus toda vez que muitos casos tivessem a mesma pontuação.
-    sorteio.shuffle(sobra)
-    sobra.sort(key=lambda candidato: -prioridade_revisao_humana(candidato.sinais))
-    melhoria = sobra[:n_melhoria]
+    melhoria = _fila_de_melhoria(sobra, n_melhoria, sorteio)
 
     return (
         *(
@@ -345,6 +340,63 @@ def _sortear_estratificado(
     estimativa significa que o κ não diz nada sobre aquele cenário. No rodízio a diferença
     entre o estrato mais e o menos representado nunca passa de um item, e QUAIS estratos
     ganham o item extra é decidido pela seed.
+    """
+    return _rodizio_por_estrato(candidatos, n, sorteio)
+
+
+def _fila_de_melhoria(
+    sobra: Sequence[Candidato], n: int, sorteio: random.Random
+) -> list[Candidato]:
+    """Por prioridade decrescente e, DENTRO de cada empate, rodízio por `(cenário, modelo)`.
+
+    O empate não é exceção aqui, é o caso comum (A25). Sobre as 84 runs da bateria de
+    calibração de 26/08, três dos cinco sinais de `prioridade_revisao_humana` dão **zero**: a
+    prioridade colapsa em quatro valores e **42 runs empatam no topo**, então o desempate
+    escolhe quinze dos quinze. Um `shuffle` puro num empate desse tamanho concentra — ele
+    devolvia 6 dos 15 num cenário só e 10 num modelo só, cobrindo 9 dos 12 estratos. A fila
+    existe para achar **ambiguidade da rubrica**, e rubrica ambígua se manifesta cenário a
+    cenário: quinze casos espalhados por doze estratos ensinam mais que quinze casos de dois.
+
+    O rodízio é o mesmo mecanismo de `_sortear_estratificado`, e pela mesma razão: a diferença
+    entre o estrato mais e o menos representado nunca passa de um item, e quais estratos ganham
+    o item extra continua decidido pela seed — o desempate segue semeado e reproduzível, só
+    deixou de ser cego para as margens.
+
+    A ORDEM DE PRIORIDADE CONTINUA MANDANDO. O rodízio só age dentro de uma faixa de prioridade;
+    nenhuma run de faixa menor passa à frente de uma de faixa maior.
+
+    O QUE ISTO NÃO CONSERTA, DECLARADO: os 42 do topo empatam porque **todos** têm
+    `sem_resposta_final`, então a fila continua saindo 15/15 sem `final_answer`. Isso é da
+    ORDENAÇÃO, não do desempate — alcançar uma run com resposta exigiria pular a faixa 3,0
+    inteira, que é abandonar a ordem de prioridade que a fila existe para seguir. Fica como
+    limitação declarada da T22.
+    """
+    por_prioridade: dict[float, list[Candidato]] = {}
+    for candidato in sobra:
+        por_prioridade.setdefault(
+            prioridade_revisao_humana(candidato.sinais), []
+        ).append(candidato)
+
+    escolhidos: list[Candidato] = []
+    for prioridade in sorted(por_prioridade, reverse=True):
+        if len(escolhidos) >= n:
+            break
+        escolhidos.extend(
+            _rodizio_por_estrato(
+                por_prioridade[prioridade], n - len(escolhidos), sorteio
+            )
+        )
+    return escolhidos
+
+
+def _rodizio_por_estrato(
+    candidatos: Sequence[Candidato], n: int, sorteio: random.Random
+) -> list[Candidato]:
+    """Até `n` candidatos, um estrato `(cenário, modelo)` de cada vez, em ordem semeada.
+
+    Devolve menos que `n` quando os candidatos acabam — quem chama decide se isso é erro
+    (a estimativa, que tem `AmostraInsuficiente` acima) ou continuação (a fila de melhoria,
+    que passa para a faixa de prioridade seguinte).
     """
     estratos: dict[tuple[str, str], list[Candidato]] = {}
     for candidato in candidatos:

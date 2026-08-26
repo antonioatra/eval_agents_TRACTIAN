@@ -561,6 +561,53 @@ def test_a_melhoria_pega_os_casos_de_maior_prioridade():
     assert len(melhoria & estimativa) == 0
 
 
+def test_empate_de_prioridade_espalha_a_melhoria_pelos_estratos():
+    """O A25: quando quase todo mundo empata, o desempate não pode concentrar.
+
+    Sobre as 84 runs da bateria de calibração, três dos cinco sinais dão zero e 42 runs
+    empatam no topo — o desempate escolhe a fila inteira. O `shuffle` puro que estava aqui
+    devolvia 6 dos 15 num cenário só e 10 num modelo só. Com 48 candidatos empatados em 12
+    estratos e uma fila de 12, o rodízio obriga **um de cada estrato**: é a asserção mais
+    forte possível sobre o espalhamento, e ela falha com qualquer sorteio sem rodízio.
+    """
+    candidatos = [
+        replace(candidato, sinais=SinaisDeIncerteza(sem_resposta_final=True))
+        for candidato in lote_de_candidatos()
+    ]
+
+    itens = amostrar(candidatos, n_estimativa=0, n_melhoria=12)
+    melhoria = [item for item in itens if item.amostra == "melhoria"]
+
+    assert len(melhoria) == 12
+    estratos = {item.candidato.estrato for item in melhoria}
+    assert len(estratos) == 12, "o desempate concentrou — algum estrato saiu duas vezes"
+
+
+def test_o_rodizio_nao_passa_a_frente_da_prioridade():
+    """O rodízio age DENTRO do empate. Faixa menor nunca ultrapassa faixa maior.
+
+    O risco que este teste fecha é o do conserto do A25 ter trocado uma degeneração por
+    outra: espalhar por estrato à custa da ordem de dificuldade transformaria a fila de
+    melhoria numa segunda amostra aleatória, e a fila existe justamente por não ser isso.
+    """
+    dificil = ("cen_00", "modelo-0")
+    candidatos = [
+        replace(candidato, sinais=SinaisDeIncerteza(sem_resposta_final=True))
+        if candidato.estrato == dificil
+        else candidato
+        for candidato in lote_de_candidatos()
+    ]
+
+    itens = amostrar(candidatos, n_estimativa=0, n_melhoria=4)
+    melhoria = [item for item in itens if item.amostra == "melhoria"]
+
+    assert len(melhoria) == 4
+    assert all(item.candidato.estrato == dificil for item in melhoria)
+    assert all(item.prioridade == prioridade_revisao_humana(
+        SinaisDeIncerteza(sem_resposta_final=True)
+    ) for item in melhoria)
+
+
 def test_sinais_saem_do_trace_e_de_mais_nada():
     """`sinais_de_incerteza` é pura sobre eventos — sem disco, sem judge, sem score."""
     completo = sinais_de_incerteza(
