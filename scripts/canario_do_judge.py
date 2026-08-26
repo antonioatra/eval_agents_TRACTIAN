@@ -50,6 +50,7 @@ import argparse
 import dataclasses
 import json
 import sys
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -99,7 +100,14 @@ como sinal grosso. Qual dos dois vale é a rodada que decide, não este arquivo.
 
 
 def _uma_passada(cliente: ClienteDoJudge, insumo: InsumoDoJudge) -> dict[str, Any]:
-    """Uma chamada ao judge sobre a entrada fixa, reduzida aos campos comparáveis."""
+    """Uma passada do judge sobre a entrada fixa, reduzida aos campos comparáveis.
+
+    `chamadas_llm` vem junto porque `pontuar_n3` **retenta** quando a saída não valida ou
+    cita id inventado, e a retentativa reenvia o prompt com a resposta anterior e a correção
+    coladas atrás (`n3.py:441`). O `tokens_in` da passada é a SOMA das chamadas, então uma
+    retentativa dobra o número sobre uma entrada byte a byte idêntica. Sem este campo o
+    canário não tem como distinguir as duas coisas — ver `classificar`.
+    """
     medidor = MedidorDeCusto("canario", CAMADA_POR_CONFIGURACAO[CONFIGURACAO])
     julgamento = pontuar_n3(insumo, CONFIGURACAO, cliente, medidor)
     custo = medidor.fechar()
@@ -107,6 +115,7 @@ def _uma_passada(cliente: ClienteDoJudge, insumo: InsumoDoJudge) -> dict[str, An
     afirmacoes = tuple(getattr(julgamento, "afirmacoes_sem_suporte", ()) or ())
     return {
         "tokens_in": custo.tokens_in,
+        "chamadas_llm": custo.chamadas_llm,
         "causa_raiz_correta": julgamento.causa_raiz_correta,
         "mencionou_limitacao_relevante": julgamento.mencionou_limitacao_relevante,
         "responde_a_pergunta": julgamento.responde_a_pergunta,
@@ -117,19 +126,59 @@ def _uma_passada(cliente: ClienteDoJudge, insumo: InsumoDoJudge) -> dict[str, An
     }
 
 
-def rodar(cliente: ClienteDoJudge, insumo: InsumoDoJudge, repeticoes: int) -> dict[str, Any]:
-    """N passadas, separando o que ficou estável do que variou sozinho."""
-    passadas = [_uma_passada(cliente, insumo) for _ in range(repeticoes)]
+def classificar(passadas: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Separa o que ficou ESTÁVEL, o que variou sozinho e o que não tem TESTEMUNHO.
 
+    A terceira gaveta nasceu de um falso alarme real (26/08). O canário rodado depois da
+    calibração da T21 acusou `DIVERGIU` com `tokens_in` variando entre 5993, 5993 e 12140 — e
+    12140 não é outro modelo, é a MESMA entrada enviada duas vezes: `pontuar_n3` retenta
+    reapresentando o prompt com a resposta anterior colada atrás, e o medidor soma as duas
+    chamadas. Na calibração isso aconteceu em **35 das 220 células** (25,5% do `com_trace`),
+    então não é raridade que dê para ignorar.
+
+    **Uma passada que retentou não pode testemunhar sobre `tokens_in`**, porque o número que
+    ela produz não é sobre a entrada fixa — é sobre a entrada fixa mais a correção. Ela não é
+    prova de instabilidade nem de estabilidade: é ausência de medição, e é isso que
+    `sem_testemunho` diz. Contá-la como instável faria o canário gritar por causa da rubrica,
+    que é exatamente o erro que o `estaveis`/`instaveis` já existia para não cometer — e um
+    canário que grita antes de toda bateria não trava nada, porque ninguém acredita nele.
+
+    Os campos do VEREDITO não passam por esse filtro: a retentativa devolve um julgamento
+    válido, e o que a rubrica decidiu é comparável tenha havido correção ou não.
+    """
     estaveis: dict[str, Any] = {}
     instaveis: dict[str, list[Any]] = {}
+    sem_testemunho: dict[str, str] = {}
+
+    limpas = [p for p in passadas if p.get("chamadas_llm", 1) == 1]
+    if len(limpas) < 2:
+        sem_testemunho["tokens_in"] = (
+            f"{len(passadas) - len(limpas)} de {len(passadas)} passadas retentaram — "
+            "sobrou menos de uma dupla sem retentativa para comparar"
+        )
+
     for campo in ("tokens_in", *CAMPOS_DO_VEREDITO):
-        valores = [passada[campo] for passada in passadas]
+        if campo in sem_testemunho:
+            continue
+        fonte = limpas if campo == "tokens_in" else passadas
+        valores = [passada[campo] for passada in fonte]
         primeiro = valores[0]
         if all(valor == primeiro for valor in valores):
             estaveis[campo] = primeiro
         else:
             instaveis[campo] = valores
+
+    return {
+        "estaveis": estaveis,
+        "instaveis": instaveis,
+        "sem_testemunho": sem_testemunho,
+        "chamadas_llm": [p.get("chamadas_llm") for p in passadas],
+    }
+
+
+def rodar(cliente: ClienteDoJudge, insumo: InsumoDoJudge, repeticoes: int) -> dict[str, Any]:
+    """N passadas, separando o que ficou estável do que variou sozinho."""
+    passadas = [_uma_passada(cliente, insumo) for _ in range(repeticoes)]
 
     modelo = cliente.modelo
     return {
@@ -140,8 +189,7 @@ def rodar(cliente: ClienteDoJudge, insumo: InsumoDoJudge, repeticoes: int) -> di
         "temperature": modelo.temperature,
         "trace": TRACE_PADRAO.name,
         "repeticoes": repeticoes,
-        "estaveis": estaveis,
-        "instaveis": instaveis,
+        **classificar(passadas),
     }
 
 
@@ -161,6 +209,11 @@ def comparar(base: dict[str, Any], agora: dict[str, Any]) -> list[str]:
         divergencias.append(f"model_id mudou: {base['model_id']} → {agora['model_id']}")
 
     for campo, esperado in base["estaveis"].items():
+        if campo in agora.get("sem_testemunho", {}):
+            # Não é concordância nem divergência: a rodada de agora não mediu este campo.
+            # Silenciar aqui e reportar em `main` — divergência é o que testemunha CONTRA o
+            # modelo, e ausência de medida não testemunha nada.
+            continue
         if campo in agora["instaveis"]:
             divergencias.append(
                 f"{campo}: era estável em {esperado!r}, agora varia entre "
@@ -210,6 +263,12 @@ def main() -> int:
         print(f"\ninstáveis ({len(agora['instaveis'])}) — não entram na comparação:")
         for campo, valores in agora["instaveis"].items():
             print(f"  {campo}: {valores!r}")
+    if agora.get("sem_testemunho"):
+        print(f"\nsem testemunho ({len(agora['sem_testemunho'])}) — não foram medidos:")
+        for campo, motivo in agora["sem_testemunho"].items():
+            print(f"  {campo}: {motivo}")
+    if any(chamadas and chamadas > 1 for chamadas in agora.get("chamadas_llm", [])):
+        print(f"  chamadas por passada: {agora['chamadas_llm']} (>1 é retentativa do judge)")
 
     if args.gravar:
         args.caminho.write_text(
