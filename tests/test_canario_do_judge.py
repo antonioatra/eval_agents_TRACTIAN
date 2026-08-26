@@ -209,3 +209,96 @@ def test_linha_de_base_antiga_sem_sem_testemunho_continua_comparavel(canario):
     }
 
     assert canario.comparar(base, agora) == []
+
+
+# ---------------------------------------------------------------------------
+# 3 · Quem pode testemunhar é a INS.7 que decide, não a sorte de três repetições
+# ---------------------------------------------------------------------------
+
+
+FLIP_RATE_V1 = {
+    "causa_raiz_correta": {"itens": 44, "flipados": 8, "flip_rate": 0.1818},
+    "mencionou_limitacao_relevante": {"itens": 44, "flipados": 13, "flip_rate": 0.2954},
+    "responde_a_pergunta": {"itens": 44, "flipados": 1, "flip_rate": 0.0227},
+    "afirmacoes_sem_suporte": {"itens": 22, "flipados": 2, "flip_rate": 0.0909},
+    "contradiz_evidencia": {"itens": 22, "flipados": 1, "flip_rate": 0.0454},
+    "recomendou_acao_sem_base": {"itens": 22, "flipados": 0, "flip_rate": 0.0},
+}
+"""O que a T21 mediu de fato em 26/08, com os números arredondados."""
+
+
+def test_campo_que_flipa_sozinho_nao_testemunha_mesmo_caindo_igual_nas_repeticoes(canario):
+    """O falso alarme de 26/08 na sua forma final, e a razão desta leva.
+
+    A linha de base de 25/08 viu `n_afirmacoes_sem_suporte = 3` três vezes seguidas e o
+    promoveu a testemunha. A INS.7 mediu 9,1% de flip naquele campo — três repetições não
+    separam ESTÁVEL de SORTUDO. Aqui as três repetições concordam de novo, e ele continua
+    fora: quem decide é o número da INS.7, não a rodada.
+    """
+    resultado = canario.classificar([passada(), passada(), passada()], FLIP_RATE_V1)
+
+    assert "n_afirmacoes_sem_suporte" not in resultado["estaveis"]
+    assert "9.1%" in resultado["sem_testemunho"]["n_afirmacoes_sem_suporte"]
+
+
+def test_so_o_campo_com_flip_zero_sobrevive_como_testemunha(canario):
+    """O preço da decisão, explícito: o canário fica FRACO em vez de forte e sortudo.
+
+    Da rubrica v1 sobra um campo de veredito — `recomendou_acao_sem_base`, 0/22 na INS.7 —
+    mais o `tokens_in`. É pouco, e é o que se pode afirmar. Se este teste começar a passar com
+    mais campos, é porque a rubrica ficou mais estável, e aí a mudança é bem-vinda e visível.
+    """
+    resultado = canario.classificar([passada(), passada(), passada()], FLIP_RATE_V1)
+
+    assert set(resultado["estaveis"]) == {"tokens_in", "recomendou_acao_sem_base"}
+
+
+def test_o_corte_da_testemunha_e_flip_zero_e_nao_os_10_por_cento_da_t21(canario):
+    """São perguntas diferentes sobre o mesmo número.
+
+    Os 10% da T21 decidem o que vale REESCREVER na rubrica — um campo com 4,5% de flip é bom
+    o bastante para pontuar. Testemunhar contra o modelo é outra exigência: qualquer flip
+    próprio é um alarme que dispara sozinho. `contradiz_evidencia` (4,5%) fica abaixo do corte
+    da T21 e mesmo assim não testemunha.
+    """
+    reprovados = canario.campos_que_podem_testemunhar(FLIP_RATE_V1)
+
+    assert "contradiz_evidencia" in reprovados
+    assert "recomendou_acao_sem_base" not in reprovados
+
+
+def test_texto_livre_das_afirmacoes_nunca_testemunha(canario):
+    """A INS.7 mede aquele campo pela CONTAGEM, então não existe número para o texto — e o
+    texto é, por construção, mais ruidoso que a contagem que o resume. Sem medida, ele fica
+    fora: promovê-lo por falta de número seria escolher o sinal mais frouxo exatamente onde
+    não há como conferir."""
+    reprovados = canario.campos_que_podem_testemunhar(FLIP_RATE_V1)
+
+    assert "afirmacoes_sem_suporte" in reprovados
+    assert "sem medida" in reprovados["afirmacoes_sem_suporte"]
+
+
+def test_sem_flip_rate_o_canario_volta_ao_criterio_local(canario):
+    """A primeira linha de base é gravada antes de existir calibração nenhuma. Nesse mundo o
+    critério local é o que há — pior, e é por isso que a CLI avisa em vez de seguir calada."""
+    assert canario.campos_que_podem_testemunhar(None) == {}
+    assert canario.campos_que_podem_testemunhar({}) == {}
+
+    resultado = canario.classificar([passada(), passada(), passada()])
+    assert "n_afirmacoes_sem_suporte" in resultado["estaveis"]
+
+
+def test_a_retentativa_continua_governando_o_tokens_in(canario):
+    """As duas gavetas são independentes: o flip rate não mede `tokens_in`, e a retentativa
+    não fala dos campos do veredito. Uma não pode desligar a outra."""
+    resultado = canario.classificar(
+        [
+            passada(),
+            passada(tokens_in=12140, chamadas_llm=2),
+            passada(tokens_in=12141, chamadas_llm=2),
+        ],
+        FLIP_RATE_V1,
+    )
+
+    assert "tokens_in" in resultado["sem_testemunho"]
+    assert "retentaram" in resultado["sem_testemunho"]["tokens_in"]

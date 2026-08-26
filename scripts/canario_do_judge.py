@@ -85,6 +85,37 @@ CONFIGURACAO = "com_trace"
 e tem de confrontá-la com a resposta. Um modelo trocado tem mais superfície para divergir aqui
 do que no cego, que só lê a resposta."""
 
+CAMINHO_FLIP_RATE_PADRAO = Path("docs/flip_rate_judge_v1.json")
+"""O flip rate da rubrica v1 (INS.7), medido em 26/08 sobre 22 itens × 5 repetições.
+
+Cópia congelada do que saiu de `runs/calibracao_judge_v1_2026-08-26/`, e não uma leitura do
+diretório da run: o canário roda antes e depois de cada bateria por meses, e um diretório de
+`runs/` é coisa que se renomeia, se poda e se regenera. A referência que decide quem pode
+testemunhar não pode depender disso — é o mesmo argumento do `judge_frozen.json`.
+
+Trocar de rubrica troca este arquivo. `judge_v2.md` vem com o `flip_rate_judge_v2.json` dele.
+"""
+
+FLIP_RATE_DO_CAMPO = {
+    "causa_raiz_correta": "causa_raiz_correta",
+    "mencionou_limitacao_relevante": "mencionou_limitacao_relevante",
+    "responde_a_pergunta": "responde_a_pergunta",
+    "contradiz_evidencia": "contradiz_evidencia",
+    "recomendou_acao_sem_base": "recomendou_acao_sem_base",
+    "n_afirmacoes_sem_suporte": "afirmacoes_sem_suporte",
+    "afirmacoes_sem_suporte": None,
+}
+"""Qual medida da INS.7 governa cada campo do canário.
+
+`n_afirmacoes_sem_suporte` aponta para `afirmacoes_sem_suporte` porque a INS.7 já compara
+aquele campo **pela contagem** (`calibrar_judge._valor_comparavel`): duas redações da mesma
+acusação não são um flip. É a mesma medida, com o mesmo nome dos dois lados.
+
+`afirmacoes_sem_suporte` em texto livre é `None` — **nunca testemunha**. Não existe medida da
+INS.7 para ele, e por construção ele é mais ruidoso que a contagem que o resume: se a contagem
+já flipa, o texto flipa pelo menos tanto. Promovê-lo a testemunha por falta de número seria
+escolher o sinal mais frouxo justamente onde não se tem como conferir."""
+
 CAMPOS_DO_VEREDITO = (
     "causa_raiz_correta",
     "mencionou_limitacao_relevante",
@@ -126,7 +157,58 @@ def _uma_passada(cliente: ClienteDoJudge, insumo: InsumoDoJudge) -> dict[str, An
     }
 
 
-def classificar(passadas: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def campos_que_podem_testemunhar(
+    flip_rate: Mapping[str, Mapping[str, Any]] | None,
+) -> dict[str, str]:
+    """Os campos que a INS.7 REPROVA como testemunha, com o motivo de cada um.
+
+    O docstring deste script sempre disse o princípio: "um campo que já variava sozinho não
+    pode testemunhar contra o modelo — ele testemunha contra a rubrica, e esse é outro
+    instrumento (a INS.7), com outro número". O que faltava era o número. Até 26/08 o critério
+    era local — se as três repetições da rodada caíssem no mesmo valor, o campo virava
+    testemunha — e três repetições não separam ESTÁVEL de SORTUDO: um campo que flipa 9% cai
+    todo no mesmo valor em ~75% das rodadas.
+
+    Foi o que aconteceu. A linha de base de 25/08 promoveu `n_afirmacoes_sem_suporte` a
+    testemunha por tê-lo visto em 3 três vezes; a INS.7 de 26/08 mediu **9,1% de flip** naquele
+    campo, e o canário seguinte acusou troca de modelo por causa dele.
+
+    O corte aqui é **flip zero**, e não os 10% da T21. São perguntas diferentes: os 10% decidem
+    o que vale reescrever na rubrica, e um campo com 5% de flip é bom o bastante para pontuar.
+    Testemunhar contra o modelo é outra exigência — qualquer flip próprio é um alarme que dispara
+    sozinho, e a única pergunta é com que frequência.
+
+    Sem arquivo de flip rate a função devolve `{}`: o canário volta ao critério local e avisa.
+    É pior, mas é o que dá para fazer antes de a primeira calibração existir, e a gravação da
+    primeira linha de base acontece nesse mundo.
+    """
+    if not flip_rate:
+        return {}
+
+    reprovados: dict[str, str] = {}
+    for campo, chave in FLIP_RATE_DO_CAMPO.items():
+        if chave is None:
+            reprovados[campo] = "sem medida da INS.7, e mais ruidoso que a contagem que o resume"
+            continue
+        medida = flip_rate.get(chave)
+        if medida is None:
+            reprovados[campo] = f"a INS.7 não mediu {chave!r}"
+            continue
+        taxa = medida.get("flip_rate")
+        if taxa is None:
+            reprovados[campo] = f"a INS.7 não pontuou {chave!r} (sem item com repetição)"
+        elif taxa > 0:
+            reprovados[campo] = (
+                f"flipa {taxa:.1%} sozinho na INS.7 "
+                f"({medida.get('flipados')}/{medida.get('itens')} itens)"
+            )
+    return reprovados
+
+
+def classificar(
+    passadas: Sequence[Mapping[str, Any]],
+    flip_rate: Mapping[str, Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Separa o que ficou ESTÁVEL, o que variou sozinho e o que não tem TESTEMUNHO.
 
     A terceira gaveta nasceu de um falso alarme real (26/08). O canário rodado depois da
@@ -148,7 +230,7 @@ def classificar(passadas: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     """
     estaveis: dict[str, Any] = {}
     instaveis: dict[str, list[Any]] = {}
-    sem_testemunho: dict[str, str] = {}
+    sem_testemunho: dict[str, str] = dict(campos_que_podem_testemunhar(flip_rate))
 
     limpas = [p for p in passadas if p.get("chamadas_llm", 1) == 1]
     if len(limpas) < 2:
@@ -176,7 +258,12 @@ def classificar(passadas: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     }
 
 
-def rodar(cliente: ClienteDoJudge, insumo: InsumoDoJudge, repeticoes: int) -> dict[str, Any]:
+def rodar(
+    cliente: ClienteDoJudge,
+    insumo: InsumoDoJudge,
+    repeticoes: int,
+    flip_rate: Mapping[str, Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     """N passadas, separando o que ficou estável do que variou sozinho."""
     passadas = [_uma_passada(cliente, insumo) for _ in range(repeticoes)]
 
@@ -189,7 +276,7 @@ def rodar(cliente: ClienteDoJudge, insumo: InsumoDoJudge, repeticoes: int) -> di
         "temperature": modelo.temperature,
         "trace": TRACE_PADRAO.name,
         "repeticoes": repeticoes,
-        **classificar(passadas),
+        **classificar(passadas, flip_rate),
     }
 
 
@@ -244,7 +331,21 @@ def main() -> int:
     parser.add_argument("--gravar", action="store_true", help="estabelece a linha de base")
     parser.add_argument("--repeticoes", type=int, default=REPETICOES_PADRAO)
     parser.add_argument("--caminho", type=Path, default=CAMINHO_PADRAO)
+    parser.add_argument(
+        "--flip-rate", type=Path, default=CAMINHO_FLIP_RATE_PADRAO,
+        help="a medida da INS.7 que decide quem pode testemunhar (default: a da rubrica v1)",
+    )
     args = parser.parse_args()
+
+    flip_rate = None
+    if args.flip_rate.exists():
+        flip_rate = json.loads(args.flip_rate.read_text(encoding="utf-8"))
+    else:
+        print(
+            f"⚠️  sem flip rate em {args.flip_rate} — o canário volta ao critério local (as\n"
+            "    repetições desta rodada). Três repetições não separam ESTÁVEL de SORTUDO:\n"
+            "    um campo que flipa 9% cai todo no mesmo valor em ~75% das rodadas.\n"
+        )
 
     if not TRACE_PADRAO.exists():
         print(f"trace não encontrado: {TRACE_PADRAO}")
@@ -254,7 +355,7 @@ def main() -> int:
     modelo = config_do_judge()
     with ClienteDoJudge(modelo) as cliente:
         print(f"canário: {modelo.model_id} · {cliente.provedor} · {args.repeticoes} repetições")
-        agora = rodar(cliente, insumo, args.repeticoes)
+        agora = rodar(cliente, insumo, args.repeticoes, flip_rate)
 
     print(f"\nestáveis ({len(agora['estaveis'])}):")
     for campo, valor in agora["estaveis"].items():
@@ -264,7 +365,7 @@ def main() -> int:
         for campo, valores in agora["instaveis"].items():
             print(f"  {campo}: {valores!r}")
     if agora.get("sem_testemunho"):
-        print(f"\nsem testemunho ({len(agora['sem_testemunho'])}) — não foram medidos:")
+        print(f"\nsem testemunho ({len(agora['sem_testemunho'])}) — não entram na comparação:")
         for campo, motivo in agora["sem_testemunho"].items():
             print(f"  {campo}: {motivo}")
     if any(chamadas and chamadas > 1 for chamadas in agora.get("chamadas_llm", [])):

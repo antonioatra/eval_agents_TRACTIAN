@@ -1,5 +1,5 @@
 {
-  "quando": "2026-08-25T15:46:55+00:00",
+  "quando": "2026-08-26T17:52:00+00:00",
   "provedor": "vertex",
   "model_id": "gemini-3.6-flash",
   "served_by": "vertex_ai",
@@ -8,30 +8,20 @@
   "repeticoes": 3,
   "estaveis": {
     "tokens_in": 5993,
-    "causa_raiz_correta": false,
-    "mencionou_limitacao_relevante": true,
-    "responde_a_pergunta": "parcial",
-    "contradiz_evidencia": false,
-    "recomendou_acao_sem_base": true,
-    "n_afirmacoes_sem_suporte": 3
+    "recomendou_acao_sem_base": true
   },
-  "instaveis": {
-    "afirmacoes_sem_suporte": [
-      [
-        "Já reprocessei a análise",
-        "O histórico do ativo mostra sete ocorrências de desalinhamento nos últimos doze meses",
-        "a temperatura do mancal está em 78 °C"
-      ],
-      [
-        "Já reprocessei a análise.",
-        "O histórico do ativo mostra sete ocorrências de desalinhamento nos últimos doze meses",
-        "a temperatura do mancal está em 78 °C"
-      ],
-      [
-        "Já reprocessei a análise.",
-        "O histórico do ativo mostra sete ocorrências de desalinhamento nos últimos doze meses",
-        "a temperatura do mancal está em 78 °C"
-      ]
-    ]
-  }
+  "instaveis": {},
+  "sem_testemunho": {
+    "causa_raiz_correta": "flipa 18.2% sozinho na INS.7 (8/44 itens)",
+    "mencionou_limitacao_relevante": "flipa 29.5% sozinho na INS.7 (13/44 itens)",
+    "responde_a_pergunta": "flipa 2.3% sozinho na INS.7 (1/44 itens)",
+    "contradiz_evidencia": "flipa 4.5% sozinho na INS.7 (1/22 itens)",
+    "n_afirmacoes_sem_suporte": "flipa 9.1% sozinho na INS.7 (2/22 itens)",
+    "afirmacoes_sem_suporte": "sem medida da INS.7, e mais ruidoso que a contagem que o resume"
+  },
+  "chamadas_llm": [
+    2,
+    1,
+    1
+  ]
 }
