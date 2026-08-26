@@ -529,6 +529,7 @@ def _fechar_run(
     """O registro da run, com o veredito do A7 sobre o trace **em disco**."""
     valida, defeitos, motivo = _validar_o_que_ficou_no_disco(caminho_do_trace)
     totais = _totais(resultado, eventos)
+    erro = erro or _erro_fatal_do_agente(eventos)
 
     return RegistroDeRun(
         run_id=run_id,
@@ -573,6 +574,34 @@ def _validar_o_que_ficou_no_disco(
         tuple(str(defeito) for defeito in defeitos),
         motivo_nao_pontuavel_de(defeitos),
     )
+
+
+def _erro_fatal_do_agente(eventos: Sequence[TraceEvent]) -> str | None:
+    """O motivo de um `status="error"` que veio do agente, e não de exceção no harness.
+
+    `erro` só era preenchido no `except` desta função — o caminho do
+    `falha_do_instrumento`. Quando quem falha é o **agente** (um `ParseErro` que esgota as
+    tentativas, por exemplo), a run volta pelo caminho normal com `resultado.status ==
+    "error"`, e o manifesto ficava com a célula marcada `error` e `erro: null`: a linha
+    dizia que houve falha e não dizia qual, com o motivo legível só abrindo o trace.
+
+    Isso importa porque `error` é **resultado do experimento**, não defeito nosso — ele entra
+    na taxonomia como medida, e uma medida sem causa não se agrega. Duas células assim
+    saíram da bateria de calibração; nas três baterias seriam linhas opacas em escala.
+
+    Só o último fatal, e só quando `erro` ainda está vazio: a exceção do harness é mais
+    específica que qualquer evento do trace, e evento não-fatal não é a causa da run ter
+    terminado.
+    """
+    fatais = [
+        evento
+        for evento in eventos
+        if isinstance(evento, RunError) and evento.fatal
+    ]
+    if not fatais:
+        return None
+    ultimo = fatais[-1]
+    return f"{ultimo.classe}: {ultimo.mensagem}"
 
 
 __all__ = [

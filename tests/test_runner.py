@@ -179,6 +179,35 @@ class ModeloDeRoteiro:
         )
 
 
+class ModeloIlegivel:
+    """Um modelo que nunca produz passo válido — o gatilho do `ParseErro` do agente.
+
+    Devolve texto que atravessa o parser real (`_validar`) e é recusado por ele, para que a
+    falha seja a mesma que a bateria encontrou, e não uma exceção fabricada no teste.
+    """
+
+    modelo = "ilegivel"
+
+    def completar(
+        self, mensagens: Sequence[Mapping[str, str]], esquema: Mapping[str, Any]
+    ) -> RespostaDoModelo:
+        texto = "não sou JSON nenhum"
+
+        from tapieval.sut.llm import _validar  # noqa: PLC0415 — é o parser real
+
+        conteudo, erro = _validar(texto, esquema)
+        return RespostaDoModelo(
+            texto=texto,
+            conteudo=conteudo,
+            parse_ok=erro is None,
+            parse_erro=erro,
+            prompt_tokens=100,
+            completion_tokens=20,
+            finish_reason="stop",
+            latencia_ms=1,
+        )
+
+
 def passo_de_acao(tool: str, args: dict[str, Any], modo: str = "investigar") -> dict[str, Any]:
     return {
         "modo": modo,
@@ -578,6 +607,60 @@ def test_falha_do_instrumento_deixa_o_motivo_no_trace_e_no_manifesto(
     assert fins[0].status == "error"
     assert registro.status == "falha_do_instrumento"
     assert validar_trace(eventos) == [], "trace de run quebrada continua estruturalmente são"
+
+
+def test_erro_do_agente_leva_o_motivo_para_o_manifesto(
+    tmp_path, corpus, variantes
+) -> None:
+    """`status="error"` vindo do agente chega ao manifesto **com a causa escrita**.
+
+    O contrário do teste acima: aqui o harness não levanta nada, quem falha é o modelo, que
+    não produz passo válido. A run volta pelo caminho normal e por isso escapava do único
+    ponto que preenchia `erro` — a célula ficava `error` com `erro: null`, dizendo que houve
+    falha sem dizer qual. `error` é resultado do experimento e entra na taxonomia como
+    medida; medida sem causa não se agrega.
+    """
+    bateria = montar(
+        tmp_path, corpus, variantes, cenarios={"ids": ["cen_a"]}, sample_seeds=[1]
+    )
+
+    manifesto = rodar(bateria, ApiContada(), fabrica=lambda _c: ModeloIlegivel())
+    (registro,) = manifesto.runs.values()
+
+    assert registro.status == "error", "é o agente que falha, não o instrumento"
+    assert registro.erro is not None, "a célula não pode dizer `error` e calar o motivo"
+    assert "ParseErro" in registro.erro
+    assert "passo válido" in registro.erro
+
+    eventos = read_trace(bateria.diretorio / registro.trace)
+    (fatal,) = [e for e in eventos if isinstance(e, RunError) and e.fatal]
+    assert registro.erro == f"{fatal.classe}: {fatal.mensagem}", (
+        "o manifesto repete o trace em vez de inventar uma segunda redação"
+    )
+
+
+def test_erro_do_harness_ganha_do_evento_do_trace(tmp_path, corpus, variantes) -> None:
+    """Exceção no harness é mais específica que qualquer `RunError` do trace, e prevalece.
+
+    Sem esta regra, a mensagem do `falha_do_instrumento` — a que aponta o defeito a
+    consertar — seria sobrescrita pelo evento genérico que o próprio harness acabou de
+    emitir ao capturar a exceção.
+    """
+    bateria = montar(
+        tmp_path, corpus, variantes, cenarios={"ids": ["cen_a"]}, sample_seeds=[1]
+    )
+
+    def fabrica(_celula: Any) -> ModeloDeRoteiro:
+        def explodir() -> None:
+            raise RuntimeError("o servidor de inferência caiu")
+
+        return ModeloDeRoteiro(list(ROTEIRO_PADRAO), antes=explodir)
+
+    manifesto = rodar(bateria, ApiContada(), fabrica=fabrica)
+    (registro,) = manifesto.runs.values()
+
+    assert registro.status == "falha_do_instrumento"
+    assert "o servidor de inferência caiu" in (registro.erro or "")
 
 
 def test_a_run_que_falhou_e_refeita_na_retomada(tmp_path, corpus, variantes) -> None:
