@@ -42,12 +42,16 @@ from tapieval.labeling.amostra import (
     N_ESTIMATIVA,
     N_MELHORIA,
     SEED_DA_AMOSTRAGEM,
+    AmostraCongeladaIncompativel,
     AmostraInsuficiente,
     Candidato,
     SinaisDeIncerteza,
     amostrar,
     candidato_de_trace,
+    congelar,
+    descongelar,
     env_seed_do_run_id,
+    impressao_do_universo,
     prioridade_revisao_humana,
     sinais_de_incerteza,
 )
@@ -1051,7 +1055,12 @@ def test_main_falha_com_mensagem_quando_o_corpus_e_pequeno(
     run_dir = _montar_run_dir(
         tmp_path, cenarios=("cen_00",), modelos=("modelo-0",), seeds=(11,)
     )
-    codigo = main(["--run-dir", str(run_dir), "--rotulador", "antonio", "--dry-run"])
+    # `--labels-dir` explícito: sem ele o default é o `labels/` do repositório, e um teste
+    # que escreve na árvore de verdade suja o diff de quem rodar a suíte.
+    codigo = main([
+        "--run-dir", str(run_dir), "--rotulador", "antonio", "--dry-run",
+        "--labels-dir", str(tmp_path / "labels"),
+    ])
 
     assert codigo == 2
     assert "amostra" in capsys.readouterr().err.lower()
@@ -1140,3 +1149,151 @@ def test_llm_call_no_trace_nao_atrapalha(tmp_path: Path):
         ),
     ]
     assert sinais_de_incerteza(eventos) == SinaisDeIncerteza()
+
+
+# ---------------------------------------------------------------------------
+# 6 · A amostra congelada (X27)
+# ---------------------------------------------------------------------------
+
+
+def test_a_amostra_congelada_sobrevive_a_mudanca_no_universo():
+    """O X27 na sua forma exata, e a razão de o congelamento existir.
+
+    `amostrar` é determinística sobre o MESMO conjunto — e o conjunto é `runs/<id>/traces/`,
+    que não é imutável: uma bateria retomada, um trace órfão refeito, uma execução
+    acrescentada em leva. Sem congelar, a mesma seed produz outra amostra e a sessão seguinte
+    continua num conjunto diferente do que começou — o κ sairia de 20 itens que nunca
+    estiveram juntos.
+    """
+    candidatos = lote_de_candidatos()
+    itens = amostrar(candidatos, n_estimativa=4, n_melhoria=4)
+    registro = congelar(itens, candidatos, n_estimativa=4, n_melhoria=4)
+
+    # Chega uma execução nova (o cenário de leva do X27) e o sorteio muda.
+    acrescentado = [*candidatos, replace(candidatos[0], run_id=run_id_de("cen_09", "modelo-9", 7))]
+    reamostrado = amostrar(acrescentado, n_estimativa=4, n_melhoria=4)
+    assert [i.candidato.run_id for i in reamostrado] != [i.candidato.run_id for i in itens], (
+        "o lote de teste não exercita o X27 — o universo mudou e a amostra não"
+    )
+
+    descongelada = descongelar(registro, acrescentado)
+
+    assert [i.candidato.run_id for i in descongelada] == [i.candidato.run_id for i in itens]
+    assert [i.amostra for i in descongelada] == [i.amostra for i in itens]
+    assert [i.prioridade for i in descongelada] == [i.prioridade for i in itens]
+
+
+def test_a_impressao_do_universo_denuncia_a_mudanca_sem_invalidar_a_amostra():
+    """A impressão não serve para recusar a amostra — serve para a mudança ser DITA.
+
+    Absorver em silêncio é o defeito; recusar seria trocá-lo por outro, porque a amostra
+    congelada é justamente o que tem de sobreviver.
+    """
+    candidatos = lote_de_candidatos()
+    registro = congelar(
+        amostrar(candidatos, n_estimativa=4, n_melhoria=4),
+        candidatos,
+        n_estimativa=4,
+        n_melhoria=4,
+    )
+    acrescentado = [*candidatos, replace(candidatos[0], run_id=run_id_de("cen_09", "modelo-9", 7))]
+
+    assert impressao_do_universo(candidatos) == registro["universo_sha256"]
+    assert impressao_do_universo(acrescentado) != registro["universo_sha256"]
+    assert descongelar(registro, acrescentado), "a amostra tem de sobreviver à mudança"
+
+
+def test_a_impressao_nao_depende_da_ordem_de_leitura_do_disco():
+    """`glob` não promete ordem. Uma impressão sensível a ela acusaria mudança toda vez."""
+    candidatos = lote_de_candidatos()
+    assert impressao_do_universo(candidatos) == impressao_do_universo(candidatos[::-1])
+
+
+def test_run_que_sumiu_do_disco_e_erro_e_nao_amostra_menor():
+    """Pular em silêncio encolheria o n do κ sem aviso — o formato do X12 — e o README
+    continuaria dizendo "κ sobre 20 itens"."""
+    candidatos = lote_de_candidatos()
+    registro = congelar(
+        amostrar(candidatos, n_estimativa=4, n_melhoria=4),
+        candidatos,
+        n_estimativa=4,
+        n_melhoria=4,
+    )
+    sorteados = {item["run_id"] for item in registro["itens"]}
+    sobreviventes = [c for c in candidatos if c.run_id not in sorteados]
+
+    with pytest.raises(AmostraCongeladaIncompativel, match="não existem mais"):
+        descongelar(registro, sobreviventes)
+
+
+def test_amostra_congelada_de_outra_versao_e_erro():
+    """Formato futuro lido como se fosse o de hoje produziria uma amostra plausível e errada."""
+    candidatos = lote_de_candidatos()
+    registro = congelar(
+        amostrar(candidatos, n_estimativa=4, n_melhoria=4),
+        candidatos,
+        n_estimativa=4,
+        n_melhoria=4,
+    )
+    registro["versao"] = 99
+
+    with pytest.raises(AmostraCongeladaIncompativel, match="versão"):
+        descongelar(registro, candidatos)
+
+
+def test_a_sessao_congela_na_primeira_vez_e_rele_nas_seguintes(tmp_path):
+    """O comportamento que a CLI de fato exerce, ponta a ponta sobre o disco."""
+    candidatos = lote_de_candidatos()
+    caminho = tmp_path / "amostra_bateria.json"
+    ditas: list[str] = []
+
+    primeira = mod_cli.amostra_da_sessao(
+        caminho, candidatos, n_estimativa=4, n_melhoria=4,
+        seed=SEED_DA_AMOSTRAGEM, reamostrar=False, escrever=ditas.append,
+    )
+    assert caminho.exists()
+    assert "congelada em" in " ".join(ditas)
+
+    acrescentado = [*candidatos, replace(candidatos[0], run_id=run_id_de("cen_09", "modelo-9", 7))]
+    ditas.clear()
+    segunda = mod_cli.amostra_da_sessao(
+        caminho, acrescentado, n_estimativa=4, n_melhoria=4,
+        seed=SEED_DA_AMOSTRAGEM, reamostrar=False, escrever=ditas.append,
+    )
+
+    assert [i.candidato.run_id for i in segunda] == [i.candidato.run_id for i in primeira]
+    assert "o universo mudou" in " ".join(ditas), "a mudança tem de ser dita em voz alta"
+
+
+def test_reamostrar_de_proposito_sobrescreve(tmp_path):
+    """A saída de emergência existe, e é explícita. A CLI ainda recusa usá-la depois que já
+    há rótulo — trocar o conjunto embaixo deles produziria um arquivo com metade de cada
+    amostra e nada nele diria isso."""
+    candidatos = lote_de_candidatos()
+    caminho = tmp_path / "amostra_bateria.json"
+
+    mod_cli.amostra_da_sessao(
+        caminho, candidatos, n_estimativa=4, n_melhoria=4,
+        seed=SEED_DA_AMOSTRAGEM, reamostrar=False, escrever=lambda _: None,
+    )
+    acrescentado = [*candidatos, replace(candidatos[0], run_id=run_id_de("cen_09", "modelo-9", 7))]
+    depois = mod_cli.amostra_da_sessao(
+        caminho, acrescentado, n_estimativa=4, n_melhoria=4,
+        seed=SEED_DA_AMOSTRAGEM, reamostrar=True, escrever=lambda _: None,
+    )
+
+    esperada = amostrar(acrescentado, n_estimativa=4, n_melhoria=4)
+    assert [i.candidato.run_id for i in depois] == [i.candidato.run_id for i in esperada]
+
+
+def test_dry_run_nao_congela(tmp_path):
+    """Quem explora `--n-melhoria` na mão fixaria sem querer a amostra da primeira tentativa,
+    e o congelamento viraria armadilha em vez da proteção que ele é."""
+    caminho = tmp_path / "amostra_bateria.json"
+
+    mod_cli.amostra_da_sessao(
+        caminho, lote_de_candidatos(), n_estimativa=4, n_melhoria=4,
+        seed=SEED_DA_AMOSTRAGEM, reamostrar=False, gravar=False, escrever=lambda _: None,
+    )
+
+    assert not caminho.exists()

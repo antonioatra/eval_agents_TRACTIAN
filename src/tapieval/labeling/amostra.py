@@ -33,11 +33,12 @@ A `env_seed` NÃO ESTÁ NO `RunStart`
 
 from __future__ import annotations
 
+import hashlib
 import random
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from tapieval.schema.trace import FinalAnswer, RunStart, ToolResult, TraceEvent
 
@@ -420,3 +421,102 @@ def _rodizio_por_estrato(
         if not avancou:
             break
     return escolhidos
+
+
+# ---------------------------------------------------------------------------
+# Congelamento da amostra (X27)
+# ---------------------------------------------------------------------------
+
+
+class AmostraCongeladaIncompativel(RuntimeError):
+    """A amostra congelada não pode ser reconstruída sobre os candidatos de agora.
+
+    Erro, e não recomputar em silêncio: recomputar é exatamente o que o X27 descreve, e o
+    sintoma dele é uma sessão de rotulagem que continua num conjunto diferente do que começou
+    sem ninguém perceber.
+    """
+
+
+VERSAO_DA_AMOSTRA_CONGELADA = 1
+
+
+def impressao_do_universo(candidatos: Sequence[Candidato]) -> str:
+    """sha256 dos `run_id` elegíveis, em ordem canônica.
+
+    É a impressão digital do CONJUNTO de onde a amostra saiu, e não da amostra: o que o X27
+    teme é o universo mudar por baixo — um trace acrescentado ou removido de `runs/<id>/traces/`
+    entre sessões. A amostra congelada sobrevive a isso por construção; a impressão existe para
+    que a mudança seja **vista** em vez de absorvida.
+    """
+    ids = "\n".join(sorted(candidato.run_id for candidato in candidatos))
+    return hashlib.sha256(ids.encode("utf-8")).hexdigest()
+
+
+def congelar(
+    itens: Sequence[ItemDaAmostra],
+    candidatos: Sequence[Candidato],
+    *,
+    n_estimativa: int,
+    n_melhoria: int,
+) -> dict[str, Any]:
+    """A amostra num registro serializável, com o universo que a produziu.
+
+    Guarda `run_id` e o rótulo da amostra, e **não** o candidato inteiro: o que precisa
+    sobreviver entre sessões é QUAIS runs foram sorteadas e em que fila cada uma caiu. Os
+    sinais e o caminho são relidos do trace, que é a fonte deles.
+    """
+    return {
+        "versao": VERSAO_DA_AMOSTRA_CONGELADA,
+        "seed": itens[0].seed if itens else None,
+        "n_estimativa": n_estimativa,
+        "n_melhoria": n_melhoria,
+        "universo_sha256": impressao_do_universo(candidatos),
+        "universo_n": len(candidatos),
+        "itens": [
+            {
+                "run_id": item.candidato.run_id,
+                "amostra": item.amostra,
+                "prioridade": item.prioridade,
+            }
+            for item in itens
+        ],
+    }
+
+
+def descongelar(
+    registro: Mapping[str, Any], candidatos: Sequence[Candidato]
+) -> tuple[ItemDaAmostra, ...]:
+    """A amostra congelada, reconstruída sobre os candidatos de agora.
+
+    A ordem é a do registro, não a do disco: ela é parte do que foi congelado, e uma sessão
+    retomada que apresentasse os casos noutra ordem confundiria quem rotula sem mudar nada
+    que apareça no arquivo de rótulos.
+
+    Run que sumiu do disco é **erro**. Pular em silêncio encolheria o n do κ sem aviso — o
+    formato do X12 —, e o README continuaria dizendo "κ sobre 20 itens".
+    """
+    versao = registro.get("versao")
+    if versao != VERSAO_DA_AMOSTRA_CONGELADA:
+        raise AmostraCongeladaIncompativel(
+            f"amostra congelada na versão {versao!r}, esperava "
+            f"{VERSAO_DA_AMOSTRA_CONGELADA!r}"
+        )
+
+    por_id = {candidato.run_id: candidato for candidato in candidatos}
+    sumidos = [
+        item["run_id"] for item in registro["itens"] if item["run_id"] not in por_id
+    ]
+    if sumidos:
+        raise AmostraCongeladaIncompativel(
+            f"{len(sumidos)} run(s) da amostra congelada não existem mais em `traces/`: "
+            f"{sumidos[:3]}{'…' if len(sumidos) > 3 else ''}. Rotular sem elas encolheria o "
+            "n do κ sem aviso — restaure os traces ou reamostre de propósito (--reamostrar)"
+        )
+
+    seed = registro["seed"]
+    return tuple(
+        ItemDaAmostra(
+            por_id[item["run_id"]], item["amostra"], item["prioridade"], seed
+        )
+        for item in registro["itens"]
+    )

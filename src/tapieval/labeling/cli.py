@@ -54,12 +54,16 @@ from tapieval.labeling.amostra import (
     N_ESTIMATIVA,
     N_MELHORIA,
     SEED_DA_AMOSTRAGEM,
+    AmostraCongeladaIncompativel,
     AmostraInsuficiente,
     Candidato,
     ItemDaAmostra,
     TipoDeAmostra,
     amostrar,
     candidato_de_trace,
+    congelar,
+    descongelar,
+    impressao_do_universo,
 )
 from tapieval.schema.reader import read_trace
 from tapieval.schema.trace import SCHEMA_VERSION, ConfiguracaoDoJudge, N4Humano
@@ -239,6 +243,76 @@ def montador_de_insumo(
         )
 
     return montar
+
+
+def caminho_da_amostra(diretorio: Path, run_dir: Path) -> Path:
+    """Onde a amostra congelada de uma bateria mora: junto dos rótulos, não da bateria.
+
+    Junto dos rótulos porque é com eles que ela precisa viajar — quem retoma uma sessão lê os
+    dois do mesmo lugar, e uma amostra que ficasse dentro de `runs/` seria apagada junto com
+    uma bateria reexecutada, que é exatamente quando ela mais importa.
+    """
+    return diretorio / f"amostra_{run_dir.resolve().name}.json"
+
+
+def amostra_da_sessao(
+    caminho: Path,
+    candidatos: Sequence[Candidato],
+    *,
+    n_estimativa: int,
+    n_melhoria: int,
+    seed: int,
+    reamostrar: bool,
+    gravar: bool = True,
+    escrever: Callable[[str], None] = print,
+) -> tuple[ItemDaAmostra, ...]:
+    """A amostra da sessão: congelada na primeira vez, relida nas seguintes (X27).
+
+    `amostrar` é determinística sobre o MESMO conjunto de candidatos — e o conjunto é
+    `runs/<id>/traces/`, que não é imutável. Uma bateria retomada, um trace órfão refeito, uma
+    execução acrescentada em leva: qualquer uma muda o universo, e a mesma seed passa a
+    produzir outra amostra. A sessão seguinte continuaria num conjunto diferente do que
+    começou, e o κ sairia de 20 itens que nunca foram 20 itens juntos.
+
+    Congelar na primeira invocação fecha isso. A impressão do universo é gravada junto **não**
+    para invalidar a amostra — ela sobrevive à mudança por construção —, mas para que a
+    mudança seja dita em voz alta em vez de absorvida em silêncio.
+    """
+    if caminho.exists() and not reamostrar:
+        registro = json.loads(caminho.read_text(encoding="utf-8"))
+        itens = descongelar(registro, candidatos)
+        escrever(f"amostra congelada: {caminho.name} (seed={registro['seed']})")
+        agora = impressao_do_universo(candidatos)
+        if agora != registro["universo_sha256"]:
+            escrever(
+                f"  ⚠️  o universo mudou desde o congelamento "
+                f"({registro['universo_n']} → {len(candidatos)} runs elegíveis). "
+                "A amostra NÃO mudou, que é o motivo de ela existir — mas alguém mexeu em "
+                "`traces/`, e isso merece uma linha no DECISOES."
+            )
+        return itens
+
+    itens = amostrar(
+        candidatos, n_estimativa=n_estimativa, n_melhoria=n_melhoria, seed=seed
+    )
+    if not gravar:
+        # `--dry-run` não congela: quem está explorando `--n-melhoria` na mão fixaria sem
+        # querer a amostra da primeira tentativa, e o congelamento passaria a ser uma
+        # armadilha em vez da proteção que ele é.
+        escrever("amostra sorteada (--dry-run não congela)")
+        return itens
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text(
+        json.dumps(
+            congelar(itens, candidatos, n_estimativa=n_estimativa, n_melhoria=n_melhoria),
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    escrever(f"amostra {'RE' if reamostrar else ''}sorteada e congelada em {caminho.name}")
+    return itens
 
 
 def run_ids_ja_rotulados(diretorio: Path) -> frozenset[str]:
@@ -585,6 +659,14 @@ def construir_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="imprime a amostra sorteada e sai, sem perguntar nada",
     )
+    parser.add_argument(
+        "--reamostrar",
+        action="store_true",
+        help=(
+            "descarta a amostra congelada e sorteia de novo (X27). Só faz sentido antes de "
+            "existir rótulo: reamostrar no meio troca o conjunto sob os rótulos já feitos"
+        ),
+    )
     return parser
 
 
@@ -597,14 +679,28 @@ def main(argv: list[str] | None = None) -> int:
         print(f"erro ao ler os traces: {erro}", file=sys.stderr)
         return 2
 
+    if args.reamostrar and run_ids_ja_rotulados(args.labels_dir):
+        # Trocar o conjunto embaixo de rótulos já feitos produziria um arquivo em que parte
+        # das linhas veio de uma amostra e parte de outra — e nada no arquivo diria isso.
+        print(
+            "erro: já existem rótulos em "
+            f"{args.labels_dir} — reamostrar agora trocaria o conjunto sob eles. "
+            "Mova os rótulos para fora antes, de propósito.",
+            file=sys.stderr,
+        )
+        return 2
+
     try:
-        itens = amostrar(
+        itens = amostra_da_sessao(
+            caminho_da_amostra(args.labels_dir, args.run_dir),
             candidatos,
             n_estimativa=args.n_estimativa,
             n_melhoria=args.n_melhoria,
             seed=args.seed,
+            reamostrar=args.reamostrar,
+            gravar=not args.dry_run,
         )
-    except (AmostraInsuficiente, ValueError) as erro:
+    except (AmostraInsuficiente, AmostraCongeladaIncompativel, ValueError) as erro:
         print(f"erro na amostra: {erro}", file=sys.stderr)
         return 2
 
