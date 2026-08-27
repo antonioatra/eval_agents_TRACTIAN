@@ -1,0 +1,38 @@
+{
+  "causa_raiz_correta": {
+    "itens": 44,
+    "flipados": 9,
+    "flip_rate": 0.20454545454545456,
+    "acima_do_corte": true
+  },
+  "mencionou_limitacao_relevante": {
+    "itens": 44,
+    "flipados": 5,
+    "flip_rate": 0.11363636363636363,
+    "acima_do_corte": true
+  },
+  "responde_a_pergunta": {
+    "itens": 44,
+    "flipados": 0,
+    "flip_rate": 0.0,
+    "acima_do_corte": false
+  },
+  "afirmacoes_sem_suporte": {
+    "itens": 22,
+    "flipados": 3,
+    "flip_rate": 0.13636363636363635,
+    "acima_do_corte": true
+  },
+  "contradiz_evidencia": {
+    "itens": 22,
+    "flipados": 1,
+    "flip_rate": 0.045454545454545456,
+    "acima_do_corte": false
+  },
+  "recomendou_acao_sem_base": {
+    "itens": 22,
+    "flipados": 3,
+    "flip_rate": 0.13636363636363635,
+    "acima_do_corte": true
+  }
+}
