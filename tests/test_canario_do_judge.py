@@ -302,3 +302,96 @@ def test_a_retentativa_continua_governando_o_tokens_in(canario):
 
     assert "tokens_in" in resultado["sem_testemunho"]
     assert "retentaram" in resultado["sem_testemunho"]["tokens_in"]
+
+
+# ---------------------------------------------------------------------------
+# 4 · A rubrica é parte da identidade da rodada, não pano de fundo
+# ---------------------------------------------------------------------------
+
+
+def test_a_linha_de_base_nao_vale_entre_rubricas(canario):
+    """A terceira fonte de grito que não é troca de modelo.
+
+    Todo número da rodada é da rubrica que a produziu: o veredito é o que ela decidiu, e o
+    `tokens_in` é o tamanho do prompt dela. Comparar a linha de base da v1 contra uma rodada
+    da v2 produziria divergência garantida e sem significado — a mesma forma do falso alarme
+    da retentativa, e a mesma do provedor.
+    """
+    base = {
+        "served_by": "vertex",
+        "model_id": "gemini-3.6-flash",
+        "rubrica": "v1",
+        "estaveis": {"tokens_in": 5993, "recomendou_acao_sem_base": True},
+        "instaveis": {},
+    }
+    agora = {
+        "served_by": "vertex",
+        "model_id": "gemini-3.6-flash",
+        "rubrica": "v2",
+        "estaveis": {"tokens_in": 6402, "recomendou_acao_sem_base": True},
+        "instaveis": {},
+        "sem_testemunho": {},
+    }
+
+    divergencias = canario.comparar(base, agora)
+    assert len(divergencias) == 1, "a rubrica trocada tem de parar a comparação, não somar a ela"
+    assert "rubrica mudou" in divergencias[0]
+    assert "flip_rate_judge_v2.json" in divergencias[0]
+
+
+def test_linha_de_base_sem_rubrica_e_lida_como_a_do_projeto(canario):
+    """As linhas de base de 25/08 e 26/08 não têm a chave — foram gravadas quando a v1 era a
+    única rubrica que existia. Explodir aqui obrigaria a regravar a referência por causa de um
+    campo novo, que é a coisa que não se regrava sem motivo."""
+    base = {
+        "served_by": "vertex",
+        "model_id": "gemini-3.6-flash",
+        "estaveis": {"recomendou_acao_sem_base": True},
+        "instaveis": {},
+    }
+    agora = {
+        "served_by": "vertex",
+        "model_id": "gemini-3.6-flash",
+        "rubrica": canario.RUBRICA_PADRAO,
+        "estaveis": {"recomendou_acao_sem_base": True},
+        "instaveis": {},
+        "sem_testemunho": {},
+    }
+
+    assert canario.comparar(base, agora) == []
+
+
+def test_o_flip_rate_default_segue_a_rubrica_da_rodada(canario):
+    """Um default fixo apontando para a v1 faria a rodada da v2 herdar por OMISSÃO a lista de
+    testemunhas de outra rubrica — e na direção perigosa, porque a v2 existe justamente para
+    mexer no flip dos dois campos que a v1 reprovou."""
+    assert canario.caminho_do_flip_rate("v1").name == "flip_rate_judge_v1.json"
+    assert canario.caminho_do_flip_rate("v2").name == "flip_rate_judge_v2.json"
+    assert canario.CAMINHO_FLIP_RATE_PADRAO == canario.caminho_do_flip_rate(
+        canario.RUBRICA_PADRAO
+    )
+
+
+def test_a_passada_julga_com_a_rubrica_pedida(canario, monkeypatch):
+    """O furo em si: `_uma_passada` chamava `pontuar_n3` sem `rubrica=`, então o canário
+    julgava com a v1 mesmo depois de o projeto adotar outra. A referência que decide quem
+    testemunha descreveria uma rubrica que o canário não exerce."""
+    pedidas: list[str] = []
+
+    class JulgamentoFalso:
+        causa_raiz_correta = False
+        mencionou_limitacao_relevante = True
+        responde_a_pergunta = "parcial"
+        contradiz_evidencia = False
+        recomendou_acao_sem_base = True
+        afirmacoes_sem_suporte = ()
+
+    def espiao(insumo, configuracao, inferencia, medidor, **kwargs):
+        pedidas.append(kwargs.get("rubrica"))
+        medidor.registrar_llm(1, 1)
+        return JulgamentoFalso()
+
+    monkeypatch.setattr(canario, "pontuar_n3", espiao)
+    canario._uma_passada(object(), object(), "v2")
+
+    assert pedidas == ["v2"]

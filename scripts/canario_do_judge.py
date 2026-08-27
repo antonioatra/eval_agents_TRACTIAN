@@ -67,6 +67,8 @@ from tapieval.scoring.gabarito import carregar_cenarios  # noqa: E402
 from tapieval.scoring.judge_llm import ClienteDoJudge, config_do_judge  # noqa: E402
 from tapieval.scoring.n3 import (  # noqa: E402
     CAMADA_POR_CONFIGURACAO,
+    RUBRICA_PADRAO,
+    TEMPLATE_POR_CONFIGURACAO,
     InsumoDoJudge,
     montar_insumo,
     pontuar_n3,
@@ -85,16 +87,25 @@ CONFIGURACAO = "com_trace"
 e tem de confrontá-la com a resposta. Um modelo trocado tem mais superfície para divergir aqui
 do que no cego, que só lê a resposta."""
 
-CAMINHO_FLIP_RATE_PADRAO = Path("docs/flip_rate_judge_v1.json")
-"""O flip rate da rubrica v1 (INS.7), medido em 26/08 sobre 22 itens × 5 repetições.
+def caminho_do_flip_rate(rubrica: str) -> Path:
+    """A medida da INS.7 da rubrica que ESTA rodada julga.
 
-Cópia congelada do que saiu de `runs/calibracao_judge_v1_2026-08-26/`, e não uma leitura do
-diretório da run: o canário roda antes e depois de cada bateria por meses, e um diretório de
-`runs/` é coisa que se renomeia, se poda e se regenera. A referência que decide quem pode
-testemunhar não pode depender disso — é o mesmo argumento do `judge_frozen.json`.
+    Cópia congelada do que saiu de `runs/calibracao_judge_<rubrica>_<data>/`, e não uma leitura
+    do diretório da run: o canário roda antes e depois de cada bateria por meses, e um diretório
+    de `runs/` é coisa que se renomeia, se poda e se regenera. A referência que decide quem pode
+    testemunhar não pode depender disso — é o mesmo argumento do `judge_frozen.json`.
 
-Trocar de rubrica troca este arquivo. `judge_v2.md` vem com o `flip_rate_judge_v2.json` dele.
-"""
+    **O caminho é derivado da rubrica, e não uma constante.** Trocar de rubrica troca o número
+    de todo campo, e um default fixo apontando para a v1 faria a rodada da v2 herdar, por
+    omissão, a lista de testemunhas de outra rubrica — na direção perigosa, porque a v2 existe
+    justamente para mexer no flip dos dois campos que a v1 reprovou.
+    """
+    return Path(f"docs/flip_rate_judge_{rubrica}.json")
+
+
+CAMINHO_FLIP_RATE_PADRAO = caminho_do_flip_rate(RUBRICA_PADRAO)
+"""O flip rate da rubrica do projeto — hoje a v1, medida em 26/08 sobre 22 itens × 5
+repetições."""
 
 FLIP_RATE_DO_CAMPO = {
     "causa_raiz_correta": "causa_raiz_correta",
@@ -130,7 +141,9 @@ texto se provar estável nas repetições, ele vira um sinal fino; se não, a co
 como sinal grosso. Qual dos dois vale é a rodada que decide, não este arquivo."""
 
 
-def _uma_passada(cliente: ClienteDoJudge, insumo: InsumoDoJudge) -> dict[str, Any]:
+def _uma_passada(
+    cliente: ClienteDoJudge, insumo: InsumoDoJudge, rubrica: str = RUBRICA_PADRAO
+) -> dict[str, Any]:
     """Uma passada do judge sobre a entrada fixa, reduzida aos campos comparáveis.
 
     `chamadas_llm` vem junto porque `pontuar_n3` **retenta** quando a saída não valida ou
@@ -140,7 +153,7 @@ def _uma_passada(cliente: ClienteDoJudge, insumo: InsumoDoJudge) -> dict[str, An
     canário não tem como distinguir as duas coisas — ver `classificar`.
     """
     medidor = MedidorDeCusto("canario", CAMADA_POR_CONFIGURACAO[CONFIGURACAO])
-    julgamento = pontuar_n3(insumo, CONFIGURACAO, cliente, medidor)
+    julgamento = pontuar_n3(insumo, CONFIGURACAO, cliente, medidor, rubrica=rubrica)
     custo = medidor.fechar()
 
     afirmacoes = tuple(getattr(julgamento, "afirmacoes_sem_suporte", ()) or ())
@@ -263,9 +276,15 @@ def rodar(
     insumo: InsumoDoJudge,
     repeticoes: int,
     flip_rate: Mapping[str, Mapping[str, Any]] | None = None,
+    rubrica: str = RUBRICA_PADRAO,
 ) -> dict[str, Any]:
-    """N passadas, separando o que ficou estável do que variou sozinho."""
-    passadas = [_uma_passada(cliente, insumo) for _ in range(repeticoes)]
+    """N passadas, separando o que ficou estável do que variou sozinho.
+
+    A `rubrica` fica gravada na rodada porque é ela que produziu todo número aqui dentro — o
+    veredito campo a campo e, por causa do tamanho do prompt, o próprio `tokens_in`. Uma linha
+    de base que não diz qual rubrica a produziu é comparável com qualquer outra por descuido.
+    """
+    passadas = [_uma_passada(cliente, insumo, rubrica) for _ in range(repeticoes)]
 
     modelo = cliente.modelo
     return {
@@ -274,6 +293,7 @@ def rodar(
         "model_id": modelo.model_id,
         "served_by": modelo.served_by,
         "temperature": modelo.temperature,
+        "rubrica": rubrica,
         "trace": TRACE_PADRAO.name,
         "repeticoes": repeticoes,
         **classificar(passadas, flip_rate),
@@ -289,6 +309,21 @@ def comparar(base: dict[str, Any], agora: dict[str, Any]) -> list[str]:
             f"provedor mudou: {base['served_by']} → {agora['served_by']}. "
             "A linha de base não vale entre provedores — os absolutos de token diferem em "
             "6–8% para o mesmo prompt (migracao_vertex §5). Regrave antes de comparar."
+        )
+        return divergencias
+
+    # A linha de base de 25/08 e a de 26/08 não têm a chave: foram gravadas quando a v1 era a
+    # única rubrica que existia. Lê-las como v1 é o que elas de fato são — e explodir aqui
+    # obrigaria a regravar a referência por causa de um campo novo, que é exatamente o que
+    # não se quer regravar sem motivo.
+    rubrica_base = base.get("rubrica", RUBRICA_PADRAO)
+    rubrica_agora = agora.get("rubrica", RUBRICA_PADRAO)
+    if rubrica_base != rubrica_agora:
+        divergencias.append(
+            f"rubrica mudou: {rubrica_base} → {rubrica_agora}. A linha de base não vale entre "
+            "rubricas — o veredito campo a campo é o que a rubrica decidiu, e o `tokens_in` é o "
+            "tamanho do prompt dela. Regrave antes de comparar, com o "
+            f"{caminho_do_flip_rate(rubrica_agora)} da rubrica nova."
         )
         return divergencias
 
@@ -332,10 +367,22 @@ def main() -> int:
     parser.add_argument("--repeticoes", type=int, default=REPETICOES_PADRAO)
     parser.add_argument("--caminho", type=Path, default=CAMINHO_PADRAO)
     parser.add_argument(
-        "--flip-rate", type=Path, default=CAMINHO_FLIP_RATE_PADRAO,
-        help="a medida da INS.7 que decide quem pode testemunhar (default: a da rubrica v1)",
+        "--rubrica", default=RUBRICA_PADRAO, choices=sorted(TEMPLATE_POR_CONFIGURACAO),
+        help=(
+            "qual versão da rubrica o canário exerce. A linha de base guarda a dela, e "
+            "comparar através da troca é recusado (default: a do projeto)"
+        ),
+    )
+    parser.add_argument(
+        "--flip-rate", type=Path, default=None,
+        help=(
+            "a medida da INS.7 que decide quem pode testemunhar "
+            "(default: a da rubrica desta rodada)"
+        ),
     )
     args = parser.parse_args()
+    if args.flip_rate is None:
+        args.flip_rate = caminho_do_flip_rate(args.rubrica)
 
     flip_rate = None
     if args.flip_rate.exists():
@@ -354,8 +401,11 @@ def main() -> int:
     insumo = _insumo_plantado()
     modelo = config_do_judge()
     with ClienteDoJudge(modelo) as cliente:
-        print(f"canário: {modelo.model_id} · {cliente.provedor} · {args.repeticoes} repetições")
-        agora = rodar(cliente, insumo, args.repeticoes, flip_rate)
+        print(
+            f"canário: {modelo.model_id} · {cliente.provedor} · rubrica {args.rubrica} · "
+            f"{args.repeticoes} repetições"
+        )
+        agora = rodar(cliente, insumo, args.repeticoes, flip_rate, args.rubrica)
 
     print(f"\nestáveis ({len(agora['estaveis'])}):")
     for campo, valor in agora["estaveis"].items():
