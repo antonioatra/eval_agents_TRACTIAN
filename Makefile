@@ -10,8 +10,10 @@ API_PY  := $(API_DIR)/api/.venv/bin/python
 # uma. Uma linha por par; `make repro` executa os notebooks e depois confere que TODAS as
 # figuras da lista foram regravadas. É a lista que se estende quando a bateria oficial rodar
 # (curva custo × recall, matriz de concordância, pass^k) — ver o comentário de `repro`.
-FIG_NOTEBOOKS := notebooks/nb01_exploracao_api.ipynb notebooks/nb02_cobertura_corpus.ipynb
-FIG_ARQUIVOS  := figures/fig01_distribuicao_status.png figures/fig02_matriz_cobertura.png
+FIG_NOTEBOOKS := notebooks/nb01_exploracao_api.ipynb notebooks/nb02_cobertura_corpus.ipynb \
+                 notebooks/nb03_calibracao_judge.ipynb
+FIG_ARQUIVOS  := figures/fig01_distribuicao_status.png figures/fig02_matriz_cobertura.png \
+                 figures/fig03_flip_rate.png figures/fig04_curva_rubrica.png
 
 # `uv` não está disponível neste ambiente; o venv é criado com o venv da stdlib.
 $(VENV):
@@ -90,7 +92,11 @@ judge: install
 # os notebooks versionados a cada `make repro` e sujaria o diff da banca com saída de célula.
 # As figuras não sofrem com isso — os notebooks as gravam por caminho absoluto em `figures/`.
 #
-# AS FIGURAS DE RESULTADO AINDA NÃO EXISTEM, e este alvo não as inventa. As três baterias de
+# O NB03 ENTROU EM 26/08 E NÃO PRECISA DA API. Ele lê `runs/*/julgamentos.jsonl` versionados
+# e regrava fig03/fig04 sem chamada de rede nenhuma — o judge não roda de novo aqui. O gate da
+# API acima continua valendo pelos outros dois, que a medem.
+#
+# AS FIGURAS DAS BATERIAS AINDA NÃO EXISTEM, e este alvo não as inventa. As três baterias de
 # `METRICAS §9.2` não rodaram, então a curva custo × recall, a matriz de concordância N1+N2 ×
 # N3 e o pass^k por modelo não têm dado de onde sair. Quando tiverem, estender é acrescentar
 # o par (notebook, figura) a FIG_NOTEBOOKS/FIG_ARQUIVOS lá em cima: a conferência final já
