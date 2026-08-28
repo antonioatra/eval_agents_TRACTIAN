@@ -42,10 +42,26 @@ from tapieval.schema.trace import SCHEMA_VERSION
 # cego e com trace são a MESMA rubrica com insumo diferente (METRICAS §4), e a
 # diferença de custo entre elas é um resultado do trabalho (H1), não um detalhe de
 # implementação — separá-las aqui é o que permite plotar os dois pontos.
-CamadaJulgamento = Literal["N1", "N2", "N3_cego", "N3_com_trace", "N4"]
+#
+# `SUT_referencia` (R5) é a exceção, e ela NÃO é uma camada de julgamento: é o custo do
+# SUJEITO, não do instrumento. Existe porque o SUT de referência é o único SUT que fala com
+# a nuvem (`sut/referencia.py`) e o único cujo custo de saída NÃO cabe no trace — `LLMCall`
+# tem `prompt_tokens` e `completion_tokens` e mais nada, e um modelo de fronteira com
+# raciocínio interno gasta ~35× mais tokens de raciocínio que de resposta
+# (`docs/migracao_vertex.md §4`). Sem esta camada esse custo não teria onde ser medido.
+#
+# **Quem agregar INS.4 tem de excluí-la.** Somar o custo do sujeito dentro do custo das
+# camadas de julgamento moveria o eixo x de H0 para o lado que favorece a conclusão que o
+# trabalho quer defender — o formato do X9.
+CamadaJulgamento = Literal[
+    "N1", "N2", "N3_cego", "N3_com_trace", "N4", "SUT_referencia"
+]
 
 # Camadas que não chamam LLM: N1 e N2 são determinísticas, N4 é humana.
 CAMADAS_SEM_LLM = frozenset({"N1", "N2", "N4"})
+
+# O que não é camada de julgamento e não pode entrar na curva custo × recall de H0.
+CAMADAS_FORA_DO_JULGAMENTO = frozenset({"SUT_referencia"})
 
 # Só o N4 tem humano no loop.
 CAMADAS_COM_HUMANO = frozenset({"N4"})
