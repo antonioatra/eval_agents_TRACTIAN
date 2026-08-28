@@ -289,9 +289,15 @@ def escrever_bateria(
         "modelos": {"m1": _campos_do_modelo()} if modelos is AUSENTE else modelos,
         "variantes": ["base"] if variantes is AUSENTE else variantes,
         "sample_seeds": [1] if sample_seeds is AUSENTE else sample_seeds,
+        # R4: `judge` é obrigatório em toda bateria. O default do helper é a dispensa escrita,
+        # porque estes testes são sobre a matriz e a retomada, não sobre o judge — quem testa o
+        # judge passa `judge=...` e os testes de recusa passam `judge=None` para removê-lo.
+        "judge": {"sem_congelamento": "suíte do runner; a matriz não depende de rubrica"},
         "paralelismo": 1,
     }
     corpo.update(extras)
+    if corpo.get("judge", ...) is None:
+        del corpo["judge"]
     tmp_path.mkdir(parents=True, exist_ok=True)
     caminho = tmp_path / "bateria.yaml"
     caminho.write_text(yaml.safe_dump(corpo, allow_unicode=True), encoding="utf-8")

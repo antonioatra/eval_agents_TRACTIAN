@@ -63,7 +63,8 @@
 #   `configs/judge_frozen.json` — ainda não existe. Aqui pesa em particular porque a relação
 #   metamórfica é lida em campos do N3 (`causa_raiz_correta`, `contradiz_evidencia`): um judge
 #   que mudar entre o original e o perturbado transforma deriva de rubrica em "quebra de
-#   invariância". Sem campo no carregador — ver `docs/dimensionamento.md §5`.
+#   invariância". Desde a R4 a declaração é o campo `judge:` abaixo, com o sha conferido ao
+#   carregar; esta linha fica pelo argumento.
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
 # RECOMENDAÇÃO DE CORTE: bateria nº 2 da fila (`docs/dimensionamento.md §3`). O motivo
@@ -72,6 +73,10 @@
 # carregador que a bateria de ambiente. Cortada, "robustez e invariâncias" vira trabalho futuro
 # declarado, com o desenho acima já escrito.
 experiment_id: metamorfica_2026_08_braco_referencia
+
+# O congelamento da T23, conferido pelo carregador (R4). Aqui ele é o que separa "quebra de
+# invariância" de deriva de rubrica.
+judge: configs/judge_frozen.json
 
 cenarios:
   split: dev

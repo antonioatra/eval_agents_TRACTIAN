@@ -50,7 +50,8 @@
 # ─────────────────────────────────────────────────────────────────────────────────────────
 # RODAR SEM O JUDGE CONGELADO É ERRO
 #   `configs/judge_frozen.json` — ainda não existe. Um teto pontuado por outra rubrica que a
-#   dos SUTs locais não é teto de coisa nenhuma. Sem campo no carregador; declaração aqui.
+#   dos SUTs locais não é teto de coisa nenhuma. Desde a R4 a declaração é o campo `judge:`
+#   abaixo, com o sha conferido ao carregar; esta linha fica pelo argumento.
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
 # CUSTO NA MADRUGADA: praticamente zero, e é por isso que ela NÃO entra na fila de cortes.
@@ -58,6 +59,10 @@
 # relógio ≈ 0,3 h, limitadas por RPD e não por hardware. Cortá-la não compraria madrugada
 # nenhuma — o que ela consome é cota, e cota não é o recurso escasso aqui.
 experiment_id: referencia_2026_08
+
+# O MESMO congelamento das outras quatro (R4). O teto só é teto se for medido com a mesma
+# régua: pontuar o SUT de referência por outra rubrica que a dos SUTs locais não compara nada.
+judge: configs/judge_frozen.json
 
 # `split: dev`, e não test. Duas razões, e a segunda é a que decide:
 #   (a) `ARQUITETURA §13` diz "só nos 6 cenários de dev", pelo volume — SUT é o papel de alto

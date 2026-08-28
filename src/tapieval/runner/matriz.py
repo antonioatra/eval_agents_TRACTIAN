@@ -31,6 +31,33 @@ A `env_seed` É DO CENÁRIO, E ENTRA NO `run_id`
     Ela entra no `run_id` mesmo sendo constante por cenário nesta bateria: o nome do trace
     passa a dizer em que mundo a run rodou, e a bateria de ambiente (T26b), que varia
     justamente este eixo, não precisará renomear célula nenhuma para caber.
+
+R4 · `judge:` É OBRIGATÓRIO EM TODA BATERIA, E A DISPENSA SE ESCREVE
+    `METRICAS §9.3` manda congelar o judge antes da bateria final, e até aqui essa exigência
+    morava num comentário de cabeçalho em caixa alta nos cinco manifestos — porque
+    `CAMPOS_DA_BATERIA` recusava a chave. Cabeçalho não é validação.
+
+    O campo existe agora, e a decisão de desenho é **de quem é o ônus**. A tentação era deixar
+    `judge` opcional e exigi-lo só nas cinco baterias finais, reconhecidas por nome de arquivo
+    ou por `experiment_id`. Isso teria posto a regra num lugar onde ela não se lê: o YAML da
+    principal continuaria sem dizer nada, e a diferença entre "esta bateria não precisa" e
+    "esqueci de declarar" voltaria a ser a ausência de uma linha — que é exatamente o defeito
+    que esta task veio consertar, e o mesmo formato do X12 e do A7.
+
+    Então o campo é **obrigatório em toda bateria**, e são duas as formas de satisfazê-lo:
+
+        judge: configs/judge_frozen.json     # o congelamento, com o sha CONFERIDO ao carregar
+        judge:
+          sem_congelamento: "por que esta bateria roda sem ele"
+
+    A piloto e a calibração usam a segunda: são anteriores ao congelamento da T23 e rodam sem
+    ele **de propósito** — e agora dizem isso, em vez de omitir. O motivo é obrigatório e não
+    vazio porque ninguém escreve uma frase sem querer, e ele vai para o `manifest.json` no
+    mesmo campo em que o sha das outras vai: quem ler o resultado vê que ali não havia sha.
+
+    O que este desenho **não** promete: nada impede alguém de escrever `sem_congelamento` na
+    bateria principal. Código não detecta mentira escrita; detecta silêncio. O que se ganha é
+    que a mentira precisa ser digitada, aparece no diff e fica gravada no manifesto da run.
 """
 
 from __future__ import annotations
@@ -42,6 +69,12 @@ from typing import Any
 
 import yaml
 
+from tapieval.runner.judge_congelado import (
+    CHAVE_DA_DISPENSA,
+    DeclaracaoDoJudge,
+    ErroDeJudgeCongelado,
+    interpretar_declaracao,
+)
 from tapieval.schema.trace import ModelConfig, VariantConfig
 from tapieval.sut.variants import CAMINHO_PADRAO as CAMINHO_DAS_VARIANTES
 from tapieval.sut.variants import carregar_variantes
@@ -65,6 +98,7 @@ CAMPOS_DA_BATERIA: frozenset[str] = frozenset(
         "modelos",
         "variantes",
         "sample_seeds",
+        "judge",
         "saida",
         "api_base_url",
         "inferencia_base_url",
@@ -227,6 +261,11 @@ class Bateria:
     modelos: tuple[ModeloDaBateria, ...]
     variantes: tuple[VariantConfig, ...]
     sample_seeds: tuple[int, ...]
+    judge: DeclaracaoDoJudge
+    """O judge contra o qual esta bateria será pontuada, ou a dispensa por escrito (R4).
+
+    Sem default, e o lugar na lista de campos obrigatórios é o ponto: não existe `Bateria`
+    construída sem responder a esta pergunta, nem no carregador nem em teste."""
 
     saida: Path = RAIZ_DO_REPO / "runs"
     api_base_url: str = API_BASE_URL_PADRAO
@@ -299,6 +338,7 @@ def carregar_bateria(
     modelos = _modelos(documento.get("modelos"), caminho)
     variantes = _variantes(documento.get("variantes"), variantes_disponiveis, caminho)
     sample_seeds = _sample_seeds(documento.get("sample_seeds"), caminho)
+    judge = _judge(documento, caminho)
 
     approver = documento.get("approver", "policy")
     if approver not in APROVADORES:
@@ -320,6 +360,7 @@ def carregar_bateria(
         modelos=modelos,
         variantes=variantes,
         sample_seeds=sample_seeds,
+        judge=judge,
         saida=Path(saida) if saida else RAIZ_DO_REPO / "runs",
         api_base_url=documento.get("api_base_url", API_BASE_URL_PADRAO),
         inferencia_base_url=documento.get(
@@ -466,6 +507,33 @@ def _variantes(
     return tuple(disponiveis[str(v)] for v in crus)
 
 
+def _judge(documento: Mapping[str, Any], caminho: Path) -> DeclaracaoDoJudge:
+    """O judge declarado, com o congelamento já conferido — ou a dispensa por escrito (R4).
+
+    A ausência é erro **em toda bateria**, e a mensagem diz as duas saídas. Deixar a ausência
+    passar em nome das baterias de dimensionamento faria "esqueci de declarar" e "esta bateria
+    não precisa" caírem no mesmo silêncio, e o cabeçalho em caixa alta dos cinco manifestos
+    continuaria sendo a única defesa contra rodar a bateria final com a rubrica solta.
+    """
+    if "judge" not in documento:
+        raise ErroDeBateria(
+            f"{caminho.name}: falta `judge:`. `METRICAS §9.3` congela prompt + rubrica + "
+            "few-shots + snapshot do modelo com sha256 ANTES da bateria final, e pontuar duas "
+            "noites contra rubricas diferentes torna a curva de H0 incomparável com ela mesma. "
+            "Declare o congelamento — `judge: configs/judge_frozen.json` — ou, se esta bateria "
+            f"roda sem ele de propósito, escreva o porquê: `judge: {{{CHAVE_DA_DISPENSA}: "
+            '"<motivo>"}}`. Omitir não é uma terceira opção'
+        )
+    try:
+        return interpretar_declaracao(
+            documento["judge"], raiz=RAIZ_DO_REPO, contexto=caminho.name
+        )
+    except ErroDeJudgeCongelado as erro:
+        # Reembrulhado para manter a promessa do carregador: erro é `ErroDeBateria`, e a CLI
+        # (que só captura essa) morre com mensagem em vez de stack trace.
+        raise ErroDeBateria(f"{caminho.name}: {erro}") from erro
+
+
 def _sample_seeds(crus: Any, caminho: Path) -> tuple[int, ...]:
     if not isinstance(crus, list) or not crus:
         raise ErroDeBateria(
@@ -488,6 +556,7 @@ __all__ = [
     "Celula",
     "CenarioExcluido",
     "CenarioExecutavel",
+    "DeclaracaoDoJudge",
     "ErroDeBateria",
     "ModeloDaBateria",
     "carregar_bateria",

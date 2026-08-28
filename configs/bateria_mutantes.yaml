@@ -15,8 +15,8 @@
 #   instrumento**, e um judge que muda entre a coluna `base` e a coluna mutante mede a mudança
 #   do judge, não a detecção da degradação. O arquivo ainda não existe.
 #
-#   DIVERGÊNCIA: `runner/matriz.py` recusa campo desconhecido no topo, então a declaração fica
-#   no cabeçalho e não em campo. Ver `docs/dimensionamento.md §5`.
+#   RESOLVIDO NA R4: a declaração agora é o campo `judge:` abaixo, e o carregador confere o
+#   sha256 do congelamento. O cabeçalho fica pelo argumento, não mais como única defesa.
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
 # ─────────────────────────────────────────────────────────────────────────────────────────
@@ -41,6 +41,11 @@
 # mutantes fora de test também protege a higiene do §9.3 — o judge calibrou em dev, e é em dev
 # que ele pode ver a mesma execução duas vezes sem custo.
 experiment_id: mutantes_2026_08
+
+# O mesmo congelamento da principal, e aqui isso é requisito duplo: a INS.9 lê a degradação
+# ENTRE colunas, e um judge que mudar entre a coluna `base` e a coluna mutante mede a mudança
+# do judge em vez da detecção.
+judge: configs/judge_frozen.json
 
 cenarios:
   split: dev

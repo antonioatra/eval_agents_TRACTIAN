@@ -42,6 +42,12 @@
 # o "antes" apagaria a única medida do problema que a mudança diz ter resolvido.
 experiment_id: piloto_2026-08-24b
 
+# R4 · a dispensa se escreve — ver `configs/bateria_piloto.yaml`.
+judge:
+  sem_congelamento: >-
+    bateria de dimensionamento (T19, 2ª passada), anterior ao congelamento do judge da T23. O
+    que ela mede é efeito de uma mudança no SUT sobre tempo e conclusão, não conteúdo.
+
 cenarios:
   split: dev
 
