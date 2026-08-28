@@ -41,7 +41,9 @@ from tapieval.runner.matriz import (
     carregar_corpus_executavel,
 )
 from tapieval.runner.runner import (
+    SERVIDO_POR_NA_NUVEM,
     ErroDeExecucao,
+    _fabrica_padrao,
     construir_approver,
     indexar_prompts,
     resolver_prompt,
@@ -61,7 +63,8 @@ from tapieval.schema.trace import (
     ToolCall,
 )
 from tapieval.schema.writer import TraceWriter
-from tapieval.sut.llm import RespostaDoModelo
+from tapieval.scoring.judge_llm import SERVIDO_POR_POR_PROVEDOR
+from tapieval.sut.llm import ClienteDeInferencia, RespostaDoModelo
 from tapieval.sut.variants import carregar_variantes
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -1308,3 +1311,63 @@ def test_o_manifesto_do_disco_e_o_caminho_que_a_cli_anuncia(
     rodar(bateria, ApiContada())
     assert caminho_do_manifesto(bateria.diretorio).exists()
     assert caminho_do_manifesto(bateria.diretorio).name == "manifest.json"
+
+
+# ---------------------------------------------------------------------------
+# R5 · a célula de nuvem vai para o cliente de referência, e a local não
+# ---------------------------------------------------------------------------
+
+
+def test_celula_de_nuvem_recebe_o_cliente_de_referencia(
+    tmp_path: Path, corpus: dict[str, Any], variantes: dict[str, Any], monkeypatch: Any
+) -> None:
+    """O despacho é pelo `served_by` da célula, não por flag da CLI.
+
+    Sem isto a bateria de referência (T26c) não tem caminho de linha de comando: o runner
+    montava sempre um `ClienteDeInferencia` apontado para `127.0.0.1`, e a costura injetável
+    só existe para quem chama `rodar_bateria` em Python.
+
+    O cliente é espionado em vez de construído porque construí-lo de verdade exigiria
+    credencial do Vertex — e o que está sob teste é a ESCOLHA, não a chamada.
+    """
+    construidos: list[tuple[str, str]] = []
+
+    class ReferenciaFalsa:
+        def __init__(self, run_id: str, modelo: Any) -> None:
+            construidos.append((run_id, modelo.served_by))
+
+    monkeypatch.setattr("tapieval.runner.runner.ClienteDeReferencia", ReferenciaFalsa)
+
+    bateria = montar(
+        tmp_path,
+        corpus,
+        variantes,
+        cenarios={"ids": ["cen_a"]},
+        modelos={"fronteira": _campos_do_modelo(served_by="vertex_ai", model_id="modelo-teto")},
+    )
+    celula = next(iter(bateria.expandir()))
+    cliente = _fabrica_padrao(bateria)(celula)
+
+    assert isinstance(cliente, ReferenciaFalsa)
+    assert construidos == [(celula.run_id, "vertex_ai")]
+
+
+def test_celula_local_continua_no_cliente_local(
+    tmp_path: Path, corpus: dict[str, Any], variantes: dict[str, Any]
+) -> None:
+    bateria = montar(tmp_path, corpus, variantes, cenarios={"ids": ["cen_a"]})
+    celula = next(iter(bateria.expandir()))
+
+    cliente = _fabrica_padrao(bateria)(celula)
+
+    assert isinstance(cliente, ClienteDeInferencia)
+
+
+def test_servido_por_na_nuvem_deriva_do_mapa_de_provedores() -> None:
+    """Provedor novo em `judge_llm` tem de bastar.
+
+    Uma lista literal aqui faria o provedor acrescentado lá cair no cliente local, que
+    tentaria falar `127.0.0.1:1234` com um modelo de fronteira e falharia longe da causa.
+    """
+    assert SERVIDO_POR_NA_NUVEM == frozenset(SERVIDO_POR_POR_PROVEDOR.values())
+    assert "lmstudio" not in SERVIDO_POR_NA_NUVEM

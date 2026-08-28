@@ -84,6 +84,7 @@ from tapieval.schema.trace import (
     VariantConfig,
 )
 from tapieval.schema.writer import TraceWriter
+from tapieval.scoring.judge_llm import SERVIDO_POR_POR_PROVEDOR
 from tapieval.sut.agent import (
     Agent,
     ResultadoDaRun,
@@ -93,9 +94,17 @@ from tapieval.sut.agent import (
     sha_do_prompt,
 )
 from tapieval.sut.llm import ClienteDeInferencia, Inferencia
+from tapieval.sut.referencia import ClienteDeReferencia
 from tapieval.sut.sessao import abrir_sessao
 
 DIRETORIO_DE_PROMPTS = RAIZ_DO_REPO / "prompts"
+
+SERVIDO_POR_NA_NUVEM: frozenset[str] = frozenset(SERVIDO_POR_POR_PROVEDOR.values())
+"""Os `ModelConfig.served_by` que exigem o cliente de referência em vez do local (R5).
+
+Derivado de `SERVIDO_POR_POR_PROVEDOR` e não redigitado: acrescentar um provedor lá tem de
+bastar. Uma lista literal aqui deixaria o provedor novo cair no cliente local, que tentaria
+falar `http://127.0.0.1:1234/v1` com um modelo de fronteira e falharia longe da causa."""
 
 FabricaDeInferencia = Callable[[Celula], Inferencia]
 """Como a célula vira um cliente de modelo. Injetável: é a única costura que o teste da
@@ -312,17 +321,37 @@ def _descricao_do_judge(judge: JudgeDoManifesto) -> str:
 
 
 def _fabrica_padrao(bateria: Bateria) -> FabricaDeInferencia:
-    """Um `ClienteDeInferencia` por célula, com a `ModelConfig` da célula.
+    """Um cliente por célula, com a `ModelConfig` da célula, escolhido pelo `served_by`.
 
     Por célula e não por bateria: a `sample_seed` mora na `ModelConfig` (`seed`), então um
     cliente compartilhado mandaria a seed da primeira célula em todas — e o eixo de
     repetição do `pass^k` viraria uma coluna constante.
+
+    R5 · POR QUE O DESPACHO MORA AQUI, E NÃO NUMA FLAG DA CLI
+        A bateria de referência (T26c, `ARQUITETURA §13`) roda contra um modelo de fronteira
+        na nuvem, e `sut/llm.py` promete não sair para a rede. `sut/referencia.py` é a porta
+        que falta, e satisfaz o mesmo Protocol — mas até aqui **nenhum caminho de linha de
+        comando a alcançava**: esta função montava sempre um `ClienteDeInferencia` apontado
+        para `inferencia_base_url`, e a costura injetável (`fabrica_de_inferencia`) só existe
+        para quem chama `executar_bateria` em Python. `docs/dimensionamento.md §7` manda
+        rodar esta bateria pela CLI.
+
+        Uma flag `--referencia` resolveria por fora e estaria errada: o que decide o cliente
+        é o **modelo da célula**, não a invocação. Uma bateria com um modelo local e um de
+        fronteira na mesma matriz é legal (não é a 26c, mas o carregador aceita), e uma flag
+        de bateria não teria como dizer "este sim, aquele não". `served_by` já viaja na
+        `ModelConfig`, já vai para o manifesto e já é o campo que o TAPI §9 exige para
+        declarar que o modelo roda em serviço externo — despachar por ele faz o manifesto e
+        o cliente concordarem por construção, em vez de por disciplina de quem digita.
     """
 
     def fabricar(celula: Celula) -> Inferencia:
-        return ClienteDeInferencia(
-            bateria.inferencia_base_url, celula.modelo.para(celula.sample_seed)
-        )
+        config = celula.modelo.para(celula.sample_seed)
+        if config.served_by in SERVIDO_POR_NA_NUVEM:
+            # O `run_id` é obrigatório no cliente de referência: custo sem execução a que
+            # pertencer não é custo. Aqui ele existe, e é o mesmo do trace.
+            return ClienteDeReferencia(celula.run_id, config)
+        return ClienteDeInferencia(bateria.inferencia_base_url, config)
 
     return fabricar
 
