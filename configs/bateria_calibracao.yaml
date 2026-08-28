@@ -30,6 +30,16 @@
 
 experiment_id: calibracao_2026-08-24
 
+# R4 · `judge:` é obrigatório em toda bateria, e a dispensa se escreve. Esta bateria é a que
+# PRODUZ o material do congelamento — exigir dela o `judge_frozen.json` seria exigir que a
+# régua existisse antes de ser fabricada. O motivo fica escrito para que a ausência de sha aqui
+# não se confunda com a ausência de sha que um esquecimento produziria na bateria final.
+judge:
+  sem_congelamento: >-
+    bateria de calibração (T21/T22/T23) — é ela que gera as execuções de dev a partir das quais
+    a rubrica é reescrita e o judge congelado. Exigir o congelamento aqui inverteria a ordem de
+    `METRICAS §9.3`, que congela DEPOIS da calibração e ANTES da bateria final.
+
 cenarios:
   split: dev
 

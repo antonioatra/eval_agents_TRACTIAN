@@ -27,6 +27,19 @@ A7 · POR QUE A VALIDADE DA RUN MORA AQUI
     — só é descoberto ao pontuar, e por isso **não** está aqui: o runner registra o que o
     runner sabe.
 
+R4 · O JUDGE DECLARADO ENTRA AQUI PORQUE A PONTUAÇÃO ACONTECE DEPOIS
+    O judge não roda na madrugada da bateria — ele lê traces já gravados, noutro dia
+    (`configs/bateria_referencia.yaml` explica por que, e é uma questão de RPD). Ou seja: entre
+    executar e pontuar existe uma janela em que a rubrica pode mudar sem que nenhum arquivo de
+    trace registre a diferença. `Manifesto.judge` fecha essa janela pelo lado do experimento:
+    grava, ao declarar a matriz, contra qual judge aquela bateria se comprometeu — o sha do
+    congelamento ou, quando não há congelamento, o motivo escrito.
+
+    Ele é o **compromisso**, não o comprovante: quem prova que um `ScoreRecord` saiu daquele
+    judge é o `ScorerVersion` dentro do próprio score. O manifesto é o que permite conferir os
+    dois contra o mesmo sha depois — e é o que faz a bateria sem congelamento aparecer como
+    "não congelada, por este motivo" em vez de não aparecer.
+
 AS COORDENADAS DA CÉLULA NÃO SE REPETEM NO REGISTRO
     `celulas` diz de quem é cada `run_id`; `runs` diz o que aconteceu. Escrever cenário,
     modelo, variante e seed nos dois lugares seria criar duas fontes para a mesma coisa, e a
@@ -44,6 +57,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from tapieval.runner.judge_congelado import (
+    DeclaracaoDoJudge,
+    DispensaDeCongelamento,
+    JudgeCongelado,
+)
 from tapieval.schema.reader import Defeito
 from tapieval.schema.trace import SCHEMA_VERSION, ModelConfig, VariantConfig
 
@@ -84,6 +102,77 @@ class CenarioExcluido(BaseModel):
 
     cenario_id: str
     motivo: str
+
+
+class JudgeDoManifesto(BaseModel):
+    """Contra qual judge esta bateria se comprometeu a ser pontuada (R4).
+
+    Um modelo só para os dois casos, e não dois modelos: quem for ler o manifesto para montar a
+    tabela de resultados olha um campo, e o campo responde. `congelado: false` com o motivo é
+    uma resposta; um campo ausente não é.
+    """
+
+    congelado: bool
+    caminho: str | None = None
+    """Relativo à raiz do repo quando foi assim que o YAML declarou. É referência, não fonte:
+    o que vale é o `sha256` abaixo, que foi recalculado sobre o conteúdo ao carregar."""
+
+    scorer_version: str | None = None
+    sha256: str | None = None
+    rubrica_sha: str | None = None
+    fewshot_ids: tuple[str, ...] = ()
+    fewshot_origem: str | None = None
+    congelado_em: datetime | None = None
+    judge_model: ModelConfig | None = None
+
+    motivo_da_dispensa: str | None = None
+    """Só quando `congelado` é `False`. É o que a bateria escreveu para explicar por que roda
+    sem congelamento — piloto e calibração são anteriores à T23, e isso é uma decisão."""
+
+    @model_validator(mode="after")
+    def _os_dois_casos_nao_se_misturam(self) -> JudgeDoManifesto:
+        if self.congelado:
+            if not (self.sha256 and self.scorer_version and self.congelado_em):
+                raise ValueError(
+                    "judge congelado exige `sha256`, `scorer_version` e `congelado_em` — sem "
+                    "eles não há como conferir depois contra qual instrumento a bateria foi "
+                    "pontuada, que é a única razão de o campo existir"
+                )
+            if self.motivo_da_dispensa:
+                raise ValueError(
+                    "`motivo_da_dispensa` num judge congelado: ou houve congelamento, ou houve "
+                    "dispensa"
+                )
+        else:
+            if not self.motivo_da_dispensa:
+                raise ValueError(
+                    "bateria sem judge congelado exige `motivo_da_dispensa` — é o que separa "
+                    "'não precisa' de 'esqueceram'"
+                )
+            if self.sha256 or self.scorer_version or self.congelado_em:
+                raise ValueError(
+                    "campos de congelamento preenchidos numa dispensa de congelamento"
+                )
+        return self
+
+
+def judge_do_manifesto(declaracao: DeclaracaoDoJudge) -> JudgeDoManifesto:
+    """Traduz o que o carregador leu para o que o `manifest.json` grava."""
+    if isinstance(declaracao, DispensaDeCongelamento):
+        return JudgeDoManifesto(congelado=False, motivo_da_dispensa=declaracao.motivo)
+    if not isinstance(declaracao, JudgeCongelado):  # pragma: no cover - defesa de tipo
+        raise TypeError(f"declaração de judge desconhecida: {declaracao!r}")
+    return JudgeDoManifesto(
+        congelado=True,
+        caminho=str(declaracao.caminho),
+        scorer_version=declaracao.scorer_version,
+        sha256=declaracao.sha256,
+        rubrica_sha=declaracao.rubrica_sha,
+        fewshot_ids=declaracao.fewshot_ids,
+        fewshot_origem=declaracao.fewshot_origem,
+        congelado_em=declaracao.congelado_em,
+        judge_model=declaracao.judge_model,
+    )
 
 
 class RegistroDeRun(BaseModel):
@@ -169,6 +258,14 @@ class Manifesto(BaseModel):
     da API é função pura de `(seed, recurso, categoria)` — reprodutibilidade do ambiente é um
     query param, não uma camada de software. O campo fica porque o `RunStart` o tem."""
 
+    judge: JudgeDoManifesto | None = None
+    """O judge declarado pela bateria (R4).
+
+    `None` só em manifesto gravado **antes** de o campo existir — os de `runs/piloto_*` e
+    `runs/calibracao_*`, que já estavam no disco. Manifesto novo sempre traz o campo, porque
+    `Bateria.judge` é obrigatório. `None` aqui significa "esta bateria é anterior à regra", e
+    não "não havia judge": distinguir as duas é o que o campo faz."""
+
     modelos: dict[str, ModelConfig]
     """A `ModelConfig` **sem** a `sample_seed` da célula: aqui é o modelo, lá é a repetição."""
     variantes: dict[str, VariantConfig]
@@ -252,11 +349,13 @@ __all__ = [
     "NOME_DO_MANIFESTO",
     "CenarioExcluido",
     "CoordenadaDaCelula",
+    "JudgeDoManifesto",
     "Manifesto",
     "RegistroDeRun",
     "StatusDaRun",
     "caminho_do_manifesto",
     "escrever_manifesto",
+    "judge_do_manifesto",
     "ler_manifesto",
     "motivo_nao_pontuavel_de",
 ]

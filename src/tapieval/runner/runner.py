@@ -63,10 +63,12 @@ from tapieval.mcp.server import RunContext
 from tapieval.runner.manifesto import (
     CenarioExcluido,
     CoordenadaDaCelula,
+    JudgeDoManifesto,
     Manifesto,
     RegistroDeRun,
     StatusDaRun,
     escrever_manifesto,
+    judge_do_manifesto,
     ler_manifesto,
     motivo_nao_pontuavel_de,
 )
@@ -242,6 +244,7 @@ def _manifesto_da_bateria(bateria: Bateria, diretorio: Path) -> Manifesto:
         for celula in bateria.expandir()
     )
     agora = datetime.now(UTC)
+    judge = judge_do_manifesto(bateria.judge)
     existente = ler_manifesto(diretorio)
 
     if existente is not None:
@@ -251,6 +254,8 @@ def _manifesto_da_bateria(bateria: Bateria, diretorio: Path) -> Manifesto:
                 f"{bateria.experiment_id!r}. Dois experimentos no mesmo diretório misturariam "
                 "traces de matrizes diferentes na mesma tabela"
             )
+        _conferir_judge_da_retomada(existente, judge, diretorio)
+        existente.judge = judge
         existente.celulas = celulas
         existente.cenarios_excluidos = tuple(
             CenarioExcluido(cenario_id=e.cenario_id, motivo=e.motivo)
@@ -268,6 +273,7 @@ def _manifesto_da_bateria(bateria: Bateria, diretorio: Path) -> Manifesto:
         approver=bateria.approver,
         paralelismo=bateria.paralelismo,
         timeout_s=bateria.timeout_s,
+        judge=judge,
         modelos={m.model_key: m.config for m in bateria.modelos},
         variantes={v.variant_id: v for v in bateria.variantes},
         celulas=celulas,
@@ -276,6 +282,33 @@ def _manifesto_da_bateria(bateria: Bateria, diretorio: Path) -> Manifesto:
             for e in bateria.excluidos
         ),
     )
+
+
+def _conferir_judge_da_retomada(
+    existente: Manifesto, judge: JudgeDoManifesto, diretorio: Path
+) -> None:
+    """Retomar sob outro judge congelado é erro, pelo mesmo motivo do `experiment_id`.
+
+    Metade das células declarando um sha e metade declarando outro deixa o manifesto sem
+    resposta para "contra qual judge esta bateria foi pontuada" — que é a única pergunta que o
+    campo existe para responder. Manifesto anterior ao campo (`judge is None`) é preenchido sem
+    reclamar: ali não há divergência, há um campo que ainda não existia.
+    """
+    anterior = existente.judge
+    if anterior is None or anterior == judge:
+        return
+    raise ErroDeExecucao(
+        f"{diretorio} tem manifesto declarando judge {_descricao_do_judge(anterior)} e a "
+        f"bateria diz {_descricao_do_judge(judge)}. Retomar trocaria o instrumento no meio da "
+        "matriz, e o resultado não seria comparável com ele mesmo. Rode `--do-zero` noutro "
+        "diretório, ou volte o judge declarado"
+    )
+
+
+def _descricao_do_judge(judge: JudgeDoManifesto) -> str:
+    if judge.congelado:
+        return f"congelado {judge.scorer_version} ({judge.sha256})"
+    return f"sem congelamento ({judge.motivo_da_dispensa})"
 
 
 def _fabrica_padrao(bateria: Bateria) -> FabricaDeInferencia:

@@ -17,6 +17,7 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
+from tapieval.runner.judge_congelado import JudgeCongelado
 from tapieval.runner.manifesto import (
     CoordenadaDaCelula,
     Manifesto,
@@ -115,6 +116,16 @@ def _descrever(bateria: Bateria) -> None:
         f"= {len(celulas)} células"
     )
     print(f"  approver={bateria.approver} paralelismo={bateria.paralelismo}")
+    # R4: o `--dry-run` é onde o judge congelado tem de ser conferido — ele já foi, no
+    # `carregar_bateria`, e aqui só se lê o veredito. Imprimir o sha é o que permite comparar
+    # duas noites sem abrir o manifesto.
+    if isinstance(bateria.judge, JudgeCongelado):
+        print(
+            f"  judge congelado {bateria.judge.scorer_version} "
+            f"sha={bateria.judge.sha256[:12]}… ({bateria.judge.caminho})"
+        )
+    else:
+        print(f"  judge SEM CONGELAMENTO: {bateria.judge.motivo}")
     for excluido in bateria.excluidos:
         # X12: mudança de denominador é fato do experimento, e aparece antes de a bateria
         # começar — não num rodapé que ninguém lê depois.

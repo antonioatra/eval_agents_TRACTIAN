@@ -67,8 +67,8 @@
 #
 # ─────────────────────────────────────────────────────────────────────────────────────────
 # RODAR SEM O JUDGE CONGELADO É ERRO
-#   `configs/judge_frozen.json` — ainda não existe. Sem campo no carregador (ver
-#   `docs/dimensionamento.md §5`), a declaração é esta linha.
+#   `configs/judge_frozen.json` — ainda não existe. Desde a R4 a declaração é o campo `judge:`
+#   abaixo, e o carregador confere o sha256; esta linha fica pelo argumento.
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
 # RECOMENDAÇÃO DE CORTE: esta é a bateria nº 1 da fila (`docs/dimensionamento.md §3`).
@@ -76,6 +76,9 @@
 # menos — H4 apoiada em 1 cenário de 6. Cortada, "sensibilidade a mundo" vira trabalho futuro
 # declarado, com esta matriz de 90 já escrita para quem retomar.
 experiment_id: ambiente_2026_08_braco_canonico
+
+# O congelamento da T23, conferido pelo carregador (R4).
+judge: configs/judge_frozen.json
 
 cenarios:
   split: dev

@@ -12,10 +12,11 @@
 #   com ela mesma entre duas noites, e o congelamento é o que impede que a rubrica se ajuste
 #   ao resultado depois de vê-lo.
 #
-#   DIVERGÊNCIA DECLARADA (ver `docs/dimensionamento.md §5`): `runner/matriz.py` recusa campo
-#   desconhecido no topo do YAML (`CAMPOS_DA_BATERIA`), então **não há como declarar
-#   `judge: configs/judge_frozen.json` em campo**. A declaração fica aqui, no cabeçalho, até
-#   que o carregador ganhe o campo. O caminho é fixo e não se negocia por bateria.
+#   RESOLVIDO NA R4 (a divergência que `docs/dimensionamento.md §6.2` declarou): o carregador
+#   ganhou o campo `judge:`, obrigatório em toda bateria, e ele **valida** — o arquivo tem de
+#   existir e o sha256 declarado tem de conferir com o conteúdo. O parágrafo acima continua
+#   aqui porque o argumento continua valendo; ele é que deixou de ser a única defesa. O caminho
+#   é fixo e não se negocia por bateria.
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
 # `split: test` e não `ids:` — o split é o que separa calibração de resultado (`METRICAS §9.3`),
@@ -31,6 +32,10 @@
 # do modelo (`METRICAS §9.1`) — e o `pass^k` é o resultado central. Quem varia `env_seed` é a
 # `bateria_ambiente.yaml`, e ela é outra pergunta.
 experiment_id: principal_2026_08
+
+# O congelamento da T23. O carregador confere o sha256 ao ler este arquivo, então a bateria
+# morre aqui — no `--dry-run`, em segundos — e não às 4 da manhã com 200 traces gravados.
+judge: configs/judge_frozen.json
 
 cenarios:
   split: test

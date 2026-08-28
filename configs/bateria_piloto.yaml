@@ -32,6 +32,16 @@
 # `--do-zero` no antigo: sobrescrever o "antes" apagaria a única medida do problema.
 experiment_id: piloto_2026-08-24
 
+# R4 · `judge:` é obrigatório em toda bateria, e a dispensa se escreve. Esta é de
+# dimensionamento e roda ANTES do congelamento da T23 — de propósito. A frase existe para que
+# a ausência de sha nesta bateria seja uma decisão registrada, e não a mesma ausência que um
+# esquecimento produziria na bateria principal.
+judge:
+  sem_congelamento: >-
+    bateria de dimensionamento (T19), anterior ao congelamento do judge da T23. O que ela mede
+    é tempo por run, taxa de parse_erro e overhead do MCP — nada que dependa da rubrica. Os
+    traces dela não entram em nenhum número de recall.
+
 cenarios:
   split: dev
 
