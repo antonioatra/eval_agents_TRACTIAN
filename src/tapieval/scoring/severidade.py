@@ -27,9 +27,9 @@ import hashlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Literal
+from typing import Literal, Protocol, runtime_checkable
 
-from tapieval.schema.trace import N1Deterministico, N2Programatico, N3Judge
+from tapieval.schema.trace import N1Deterministico, N2Programatico
 
 Severidade = Literal["S0", "S1", "S2", "S3"]
 ClasseDeFalha = Literal["P", "C", "D"]
@@ -197,6 +197,57 @@ def sha_da_taxonomia() -> str:
 
 
 # ---------------------------------------------------------------------------
+# Quem pode ocupar o slot do veredito (A27, 29/08)
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class VereditoDaRubrica(Protocol):
+    """Um veredito sobre os campos fechados da rubrica — venha ele do judge ou de uma pessoa.
+
+    POR QUE ISTO EXISTE
+        `METRICAS §5` define N4.1 como *"houve falha? qual código da taxonomia? qual
+        severidade S0–S3?"*, e o A27 leu isso como um buraco: nem `N4Humano` nem
+        `RotuloHumano` têm campo para código ou severidade, logo INS.1 não teria gold e a
+        INS.2 — o número que testa H0 — não teria denominador.
+
+        **O buraco não existe, e a leitura é que estava errada.** Ninguém digita código aqui.
+        `classificar_falhas` DERIVA código e severidade dos campos da rubrica mais N1/N2 —
+        essa é a razão de a taxonomia poder ser uma lista fechada e congelada por hash. Pedir
+        o código ao rotulador abriria as duas portas que `§6` fecha de propósito: um código
+        fora da lista, e um código incoerente com os campos que ele mesmo marcou.
+
+        O que faltava não era campo — era **tipo**. A anotação dizia `N3Judge`, então o
+        caminho pelo qual o gold existe era um erro de tipo que nenhum teste exercitava, e o
+        A27 tinha razão em chamá-lo de "coincidência estrutural": era isso que ele parecia,
+        porque nada o declarava.
+
+    O QUE O PROTOCOL EXIGE, E O QUE ELE DE PROPÓSITO NÃO EXIGE
+        Exatamente os cinco campos que `_falhas_de_conteudo` lê. `responde_a_pergunta` fica de
+        fora porque não vira falha (`DIAGNOSTICOS_NAO_PONTUADOS`) — exigi-lo aqui obrigaria
+        quem satisfaz o Protocol a carregar um campo que esta função nunca consulta, e um
+        Protocol que pede mais do que usa mente sobre a dependência.
+
+        `justificativa`, `configuracao` e `judge_latencia_ms` também ficam de fora: são do
+        judge, não da rubrica, e o rótulo humano não tem por que tê-los.
+
+    ⚠️ O QUE ESTE CAMINHO CUSTA, E ESTÁ DECLARADO EM `METRICAS §11`
+        O gold construído assim reusa o MESMO `n1` e `n2` que o detector produziu. Então na
+        metade P/D — e no C5 — `Recall(N1+N2)` é 100% por construção e INS.3 é zero por
+        construção: identidade, não medição. **A INS.2 não é afetada**, porque é uma diferença
+        e a parte idêntica cancela; sobra a fração do gold que só o judge alcança. Que o
+        número que testa H0 seja justamente o robusto a este defeito não é sorte — é o motivo
+        de `§7` marcar INS.2, e não INS.1, como "o número que testa H0".
+    """
+
+    causa_raiz_correta: bool
+    mencionou_limitacao_relevante: bool
+    afirmacoes_sem_suporte: list[str] | None
+    contradiz_evidencia: bool | None
+    recomendou_acao_sem_base: bool | None
+
+
+# ---------------------------------------------------------------------------
 # Classificação
 # ---------------------------------------------------------------------------
 
@@ -204,13 +255,17 @@ def sha_da_taxonomia() -> str:
 def classificar_falhas(
     n1: N1Deterministico,
     n2: N2Programatico,
-    n3: N3Judge | None = None,
+    n3: VereditoDaRubrica | None = None,
 ) -> list[Falha]:
     """Traduz as camadas de medição em códigos da taxonomia, ordenados por severidade.
 
     `n3=None` significa **não medido**, nunca "limpo": as falhas de conteúdo simplesmente
     não são avaliadas nessa configuração. É o que permite comparar a curva N1+N2 contra
     N1+N2+N3 sem que a ausência do judge vire ausência de falha (INS.2).
+
+    **O `n3` é `VereditoDaRubrica`, não `N3Judge` — ver A27.** Passar aqui o rótulo humano é
+    o caminho pelo qual o gold de INS.1 existe, e até 29/08 ele era um erro de tipo que
+    nenhum teste exercitava.
     """
     falhas = [*_falhas_de_processo(n1, n2), *_falhas_de_conteudo(n1, n3), *_falhas_de_decisao(n1)]
     return sorted(
@@ -272,7 +327,7 @@ def _falhas_de_processo(n1: N1Deterministico, n2: N2Programatico) -> list[Falha]
     return falhas
 
 
-def _falhas_de_conteudo(n1: N1Deterministico, n3: N3Judge | None) -> list[Falha]:
+def _falhas_de_conteudo(n1: N1Deterministico, n3: VereditoDaRubrica | None) -> list[Falha]:
     falhas: list[Falha] = []
 
     # C5 é a única de conteúdo que é determinística: verificação de existência e

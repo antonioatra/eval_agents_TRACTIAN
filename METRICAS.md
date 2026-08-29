@@ -293,6 +293,15 @@ pontos da curva de H0.
 
 Para cada execução da amostra: **houve falha? qual código da taxonomia? qual severidade S0–S3?**
 
+> **As três perguntas são o que o rótulo PRODUZ, não o que se pergunta ao rotulador (A27,
+> 29/08).** Ele responde os campos fechados da rubrica — os mesmos seis do N3, e nada além.
+> Código e severidade saem daí por `severidade.classificar_falhas`, exatamente como saem do
+> lado do judge. **É por isso que a taxonomia pode ser lista fechada congelada por hash:**
+> ninguém escolhe um balde enquanto lê o resultado. Pedir o código ao rotulador abriria as duas
+> portas que §6 fecha de propósito — um código fora da lista, e um código que contradiz os
+> campos que ele mesmo marcou. Lido como se as três perguntas fossem campos do formulário, este
+> parágrafo sugere que `N4Humano` está incompleto; ele não está. Ver a limitação em §11.
+
 Rotulado **às cegas**: sem ver a saída do judge antes — âncora destrói a independência de κ.
 
 Duas amostras com propósitos distintos, **nunca misturadas**:
@@ -527,7 +536,15 @@ O gargalo de INS.1 é o gold. Duas fontes com propriedades opostas, usadas junta
 | Fonte | n | Cobertura | Viés |
 |---|---|---|---|
 | **mutantes** (MUT1–4) | ~120 execuções | só 4 tipos de defeito, **sabidos por construção** | zero |
-| **humano** (N4.1) | 35 execuções | qualquer falha, inclusive as não previstas | anotador único, não cego |
+| **humano** (N4.1) | 35 rotuladas · **20 no estimador** | qualquer falha, inclusive as não previstas | anotador único, não cego |
+
+> **35 é o esforço de rotulagem; 20 é o n do estimador (A27, 29/08).** As 15 de *melhoria*
+> são escolhidas por desacordo entre camadas e ficam fora do κ (§5) — e ficam fora do recall
+> pelo mesmo motivo, porque concordância e acerto medidos sobre casos escolhidos por dificuldade
+> não estimam nem uma coisa nem outra na população. O A25 mediu que aqui é pior que viés
+> genérico: neste corpus as 15 saem **15/15 `sem_resposta_final`**, um modo de falha só. Até
+> 29/08 esta tabela dizia "35 execuções" e o §11 dizia "n=20 para κ e recall"; o §11 estava
+> certo.
 
 Se as duas curvas de recall tiverem o mesmo formato, a conclusão é sólida. Se divergirem, a
 divergência **é** o achado: *"meus mutantes não representam as falhas espontâneas"* é uma
@@ -750,6 +767,19 @@ sem estratificar convida ao paradoxo de Simpson.
 Declarar no README, antes de perguntarem:
 
 - **Gold humano**: um único anotador, não cego ao projeto, n=20 para κ e recall. IC largo.
+- **A metade determinística do gold é a saída do próprio detector** (A27, 29/08). O rotulador
+  responde os campos fechados da rubrica; código e severidade são **derivados** por
+  `severidade.classificar_falhas` a partir desses campos MAIS o `n1`/`n2` da run — que é o que
+  permite a taxonomia ser lista fechada congelada por hash, em vez de um balde que o rotulador
+  escolhe. A consequência é que os códigos P1–P5, D1–D6 e C5 entram no gold e na detecção
+  **iguais por construção**: ali `Recall(N1+N2)` é 100% e INS.3 é 0 — identidade, não medição.
+  Um gold independente nessa metade exigiria o humano refazer à mão a cobertura de tool call de
+  cada execução, o que não cabe nas 2h30 de rotulagem.
+  **A INS.2 não é afetada**, e é o ponto: `ΔRecall(N3 | N1+N2)` é uma diferença, a parte
+  idêntica cancela, e sobra a fração do gold que só o judge alcança. Que o número que testa H0
+  seja justamente o robusto a este defeito é o motivo de §7 marcar **INS.2** — e não INS.1 —
+  como o número da hipótese. **Ler INS.1 por camada como se fosse medida nas duas metades é o
+  erro que esta linha existe para impedir.**
 - **Mutantes**: cobrem 4 tipos de defeito injetado e podem não representar falha espontânea. A
   comparação entre as duas curvas de gold é a única checagem disso.
 - **Corpus**: 24 cenários, um domínio (manutenção industrial sintética), dados fictícios.
