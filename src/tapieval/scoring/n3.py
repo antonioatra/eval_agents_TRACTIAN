@@ -58,13 +58,24 @@ from tapieval.sut.llm import Inferencia, esquema_estrito
 DIRETORIO_DE_PROMPTS = Path(__file__).resolve().parents[3] / "prompts"
 DIRETORIO_DE_FEWSHOTS = DIRETORIO_DE_PROMPTS / "fewshot"
 
-RUBRICA_PADRAO = "v1"
+RUBRICA_PADRAO = "v2"
 """A rubrica que o projeto usa quando ninguém pede outra.
 
-Continua na v1 até a T21 fechar a comparação v1 × v2 e a T23 congelar uma delas. Trocar este
-default antes disso mudaria em silêncio a rubrica de todo mundo que chama `pontuar_n3` — o
-canário, o portão de viabilidade, os notebooks — e o número que a comparação existe para
-produzir sairia de dois instrumentos diferentes."""
+Era `v1` até 29/08. A T21 fechou a comparação (`8173c97`) e o **A26 adotou a v2**: pareado por
+item e agrupado pela hipótese que a v2 declarou ANTES de medir, ela conserta o alvo — nos
+cenários cuja conclusão correta é uma ausência, os dois campos reescritos caem de 15/28 para
+3/28 (p=0,004). Fora do alvo cobra 6/60 → 11/60, direção ruim e magnitude dentro do ruído
+(p=0,227).
+
+**O preço que o A26 supunha não existia.** O argumento contra a adoção era que
+`recomendou_acao_sem_base` — único campo de veredito com flip zero na v1 — mede 3/22 na v2, e
+o canário da T23 ficaria só com o `tokens_in`. Medido em 29/08 com a elegibilidade do próprio
+canário: sob a v2 quem tem flip zero é `responde_a_pergunta`, **0/44** contra os 0/22 que
+sustentavam a testemunha da v1. A testemunha troca de nome e melhora — o dobro de itens, e três
+categorias em vez de duas, então uma troca de modelo pode movê-la nos dois sentidos.
+
+**O que fica declarado como limitação:** `mencionou_limitacao_relevante` mede 11,4% na v2,
+ainda acima do corte de 10% da T21 — mas contra 29,5% na v1."""
 
 TEMPLATE_POR_CONFIGURACAO: Mapping[str, Mapping[ConfiguracaoDoJudge, str]] = {
     "v1": {

@@ -750,13 +750,20 @@ def test_rubrica_que_nao_existe_e_erro_e_nao_silencio(insumo: InsumoDoJudge):
         renderizar_prompt(insumo, "cego", fewshots=carregar_fewshots(), rubrica="v3")
 
 
-def test_o_default_do_projeto_continua_sendo_a_v1(insumo: InsumoDoJudge):
-    """Trocar o default antes de a T21 fechar a comparação e a T23 congelar mudaria em
-    silêncio a rubrica do canário, do portão de viabilidade e dos notebooks — e o número que a
-    comparação existe para produzir sairia de dois instrumentos diferentes."""
+def test_o_default_do_projeto_e_a_v2_adotada_pelo_a26(insumo: InsumoDoJudge):
+    """O A26 adotou a v2 em 29/08, e o default é onde essa decisão vive.
+
+    Quem chama `pontuar_n3` sem pedir rubrica é o canário, o portão de viabilidade e os
+    notebooks. Se o default voltasse para a v1 por descuido, nada quebraria e todo N3 do
+    projeto sairia da rubrica que o A26 recusou — a mesma classe de erro silencioso que o
+    congelamento por sha256 existe para impedir do outro lado.
+    """
     fewshots = carregar_fewshots()
 
-    assert RUBRICA_PADRAO == "v1"
+    assert RUBRICA_PADRAO == "v2"
     assert renderizar_prompt(insumo, "cego", fewshots=fewshots) == renderizar_prompt(
+        insumo, "cego", fewshots=fewshots, rubrica="v2"
+    )
+    assert renderizar_prompt(insumo, "cego", fewshots=fewshots) != renderizar_prompt(
         insumo, "cego", fewshots=fewshots, rubrica="v1"
     )

@@ -1,25 +1,28 @@
 {
-  "quando": "2026-08-26T17:52:00+00:00",
+  "quando": "2026-08-29T15:12:23+00:00",
   "provedor": "vertex",
   "model_id": "gemini-3.6-flash",
   "served_by": "vertex_ai",
   "temperature": 0.0,
+  "rubrica": "v2",
   "trace": "aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n23.jsonl",
-  "repeticoes": 3,
+  "repeticoes": 5,
   "estaveis": {
-    "tokens_in": 5993,
-    "recomendou_acao_sem_base": true
+    "tokens_in": 6928,
+    "responde_a_pergunta": "parcial"
   },
   "instaveis": {},
   "sem_testemunho": {
-    "causa_raiz_correta": "flipa 18.2% sozinho na INS.7 (8/44 itens)",
-    "mencionou_limitacao_relevante": "flipa 29.5% sozinho na INS.7 (13/44 itens)",
-    "responde_a_pergunta": "flipa 2.3% sozinho na INS.7 (1/44 itens)",
+    "causa_raiz_correta": "flipa 20.5% sozinho na INS.7 (9/44 itens)",
+    "mencionou_limitacao_relevante": "flipa 11.4% sozinho na INS.7 (5/44 itens)",
     "contradiz_evidencia": "flipa 4.5% sozinho na INS.7 (1/22 itens)",
-    "n_afirmacoes_sem_suporte": "flipa 9.1% sozinho na INS.7 (2/22 itens)",
+    "recomendou_acao_sem_base": "flipa 13.6% sozinho na INS.7 (3/22 itens)",
+    "n_afirmacoes_sem_suporte": "flipa 13.6% sozinho na INS.7 (3/22 itens)",
     "afirmacoes_sem_suporte": "sem medida da INS.7, e mais ruidoso que a contagem que o resume"
   },
   "chamadas_llm": [
+    2,
+    1,
     2,
     1,
     1
