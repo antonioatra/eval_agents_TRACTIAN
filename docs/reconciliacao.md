@@ -1,7 +1,27 @@
-# Reconciliação pendente — corpus × API real
+# Reconciliação corpus × API real
 
-Levantamento da T3 (item 3). **Só levanta e propõe; não altera cenário.** Toda decisão abaixo é
-de curadoria humana. Medido em 15/08 contra a API no ar, por `notebooks/nb01_exploracao_api.ipynb`.
+Levantamento da T3 (item 3), medido em **15/08** contra a API no ar por
+`notebooks/nb01_exploracao_api.ipynb`. **Só levanta e propõe; não altera cenário** — toda decisão
+aqui é de curadoria humana.
+
+> ✅ **A reconciliação fechou em 24/08** (tag `corpus-v2-reconciliado`). Este documento é o
+> **levantamento**, não uma lista de pendências: ele fica porque é a evidência de onde cada
+> correção do corpus saiu. O nome antigo do arquivo (`reconciliacao_pendente.md`) sobreviveu ao
+> próprio estado e dizia o contrário.
+>
+> **Onde foi parar o que está aqui:**
+>
+> | daqui | virou |
+> |---|---|
+> | §2 — `analyses[]` satisfeita por **olhar**, não por **achar** | a saída 1, adotada: `n2._evidencia_coberta` trata a coleção como coberta ao ser observada, com o raciocínio deste §2 no comentário. Exigir item não-vazio tornaria a evidência incobrível no ambiente canônico do próprio cenário |
+> | D1 — o corte de `partial` é do **endpoint**, não da categoria | risco **X17**, e `campos_ausentes` passou a ser calculado por endpoint |
+> | D2 — a base tem **5** documentos, não 4 | corrigido no corpus v2 (o `kb_guid_003` entrou, e `aut_03` passou a citar os 5) |
+> | D6 — duas grafias para a mesma evidência | padronizado em `knowledge.results[]` em 19/08; duas grafias davam dois critérios de cobertura, e o cenário que escrevesse a fraca era conferido mais frouxo sem aviso |
+> | D8 — `yaml.safe_load` perde o `getAsset` | risco **X10**; o catálogo de tools do MCP não sai de `safe_load` |
+>
+> **§1 continua sendo um resultado, e não um arquivo vazio:** 24/24 cenários com a `env_seed`
+> canônica satisfazendo os `modos_exigidos`, 152 seeds equivalentes conferidas, e 67 000
+> comparações entre a réplica de `resolve_mode` e a API real com **zero divergências**.
 
 ---
 

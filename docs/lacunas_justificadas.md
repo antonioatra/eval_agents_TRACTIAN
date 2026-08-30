@@ -243,7 +243,7 @@ CEN-01 e CEN-10 só têm degradação irrecuperável.
 `get_baseline`/`get_spectrum`/`get_data_quality` devolvem `INCONCLUSIVE` **antes** de consultar a
 seed, com um corpo próprio (`{"spectrum": null}`) e uma `notes` própria (*"Sem espectro
 disponível."*). No dataset isso atinge exatamente `asset_M102`/`spectrum`, em **100% das seeds** —
-e `reconciliacao_pendente.md` (D9) confirma que nenhum cenário depende do par.
+e `reconciliacao.md` (D9) confirma que nenhum cenário depende do par.
 
 A distinção importa ao técnico, não só ao classificador: *"não existe espectro para este ponto"*
 leva a **coletar** um espectro; *"o espectro está inconclusivo agora"* leva a tentar outra fonte ou
@@ -324,7 +324,7 @@ executa.
   do qual L4 é o espelho.
 
 ### L5 — `kb_guid_003`, o documento que nenhum cenário cita
-*Não é célula da matriz.* `reconciliacao_pendente.md` (D2) encaminhou o achado para cá.
+*Não é célula da matriz.* `reconciliacao.md` (D2) encaminhou o achado para cá.
 
 `CENARIOS §5.3` afirma quatro documentos na base de conhecimento; são **cinco**. O quinto,
 `kb_guid_003` — *"Falhas elétricas em motores"* — é o único que nenhum cenário do corpus cita

@@ -1,7 +1,18 @@
 # Dimensionamento das cinco baterias e a aritmética do corte
 
-**Decisão em aberto: A16.** Este documento não a fecha — prepara a conta e faz **uma**
-recomendação (§4). A decisão é do operador.
+> ✅ **O A16 foi decidido em 30/08, na direção que o §4 recomendava.** Cortou a bateria de
+> **ambiente** e a **metamórfica**; rodaram a principal (288), a de mutantes (150) e a de
+> referência (24). A margem liberada foi para a **coluna `base` dos mutantes** — sem controle, a
+> INS.9 mediria "fração distinguida do original" sem original. As duas cortadas viraram trabalho
+> futuro **declarado**, com a matriz por extenso no cabeçalho dos YAMLs e o bloqueio nomeado: o
+> que as exclui não é a madrugada, é não existirem eixos de `env_seed` e de perturbação em
+> `runner/matriz.py`.
+>
+> **O documento fica como está**, e é essa a utilidade dele: ele é a conta que sustentou a
+> decisão, não o registro dela. Quem quiser conferir o corte confere aqui.
+
+**A decisão que este documento preparava.** Ele não a fechava — preparava a conta e fazia **uma**
+recomendação (§4). A decisão era do operador, e está registrada no `DECISOES` como A16.
 
 **Fonte dos números:** `docs/piloto.json` (4ª passada, `runs/piloto_2026-08-24c`) e
 `docs/piloto.md §§1–7`. **Nada aqui foi executado**: os manifestos foram carregados com
