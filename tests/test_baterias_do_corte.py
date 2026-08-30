@@ -23,6 +23,7 @@ import json
 import yaml
 
 from tapieval.runner.matriz import RAIZ_DO_REPO
+from tapieval.runner.runner import SERVIDO_POR_NA_NUVEM
 from tapieval.scoring.judge_llm import MODELO_PADRAO as MODELO_DO_JUDGE
 
 
@@ -91,3 +92,31 @@ def test_o_sut_de_referencia_nao_e_o_modelo_do_judge() -> None:
         f"o SUT de referência e o judge são ambos `{declarado}`: o judge julgaria a si mesmo "
         "na única linha que serve de teto (ARQUITETURA §13)"
     )
+
+
+def test_todo_served_by_declarado_e_um_valor_que_o_despacho_reconhece() -> None:
+    """Um `served_by` órfão não quebra nada — ele manda a célula para o cliente errado.
+
+    `_fabrica_padrao` decide entre o cliente local e o de referência pelo `served_by` da
+    célula, e o `else` é o local. Então um valor que ninguém reconhece não levanta: ele cai no
+    ramo de baixo e a célula sai para `http://127.0.0.1:1234` com um id de modelo de nuvem.
+    Foi o que aconteceu em 30/08 — `gemini_free_tier`, nome anterior à migração de 25/08 e sem
+    provedor nenhum por trás, mandou as 24 células da referência para o LM Studio, que
+    devolveu 400 em todas.
+
+    O que torna isso caro é a distância entre a causa e o sintoma: o YAML carrega, o
+    `--dry-run` imprime 24 células e o erro só aparece como `falha_do_instrumento` depois de a
+    bateria rodar inteira. Este teste fecha essa distância — o valor é conferido contra os
+    mesmos conjuntos que o despacho consulta, sem rede.
+    """
+    locais = {"lmstudio"}
+    conhecidos = SERVIDO_POR_NA_NUVEM | locais
+    for nome in ("principal", "mutantes", "referencia", "metamorfica", "ambiente"):
+        for chave, modelo in _manifesto(nome)["modelos"].items():
+            declarado = modelo["served_by"]
+            assert declarado in conhecidos, (
+                f"bateria_{nome}.yaml · modelo `{chave}` declara served_by=`{declarado}`, que "
+                f"nenhum provedor tem. `_fabrica_padrao` cairia no cliente LOCAL com um modelo "
+                f"de nuvem, e a bateria só descobriria isso célula a célula. Conhecidos: "
+                f"{sorted(conhecidos)}"
+            )

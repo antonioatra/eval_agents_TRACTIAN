@@ -95,7 +95,12 @@ modelos:
   gemini-referencia:
     model_id: gemini-3.7-flash        # conferido 30/08: o Pro dá 404; este é o único aceito
                                       # que é ≠ do judge (bloqueio 2 acima, com as ressalvas)
-    served_by: gemini_free_tier
+    served_by: vertex_ai              # corrigido 30/08 — era `gemini_free_tier`, nome
+                                      # anterior à migração de 25/08 e órfão: NENHUM
+                                      # provedor tem esse `served_by`. `_fabrica_padrao`
+                                      # despacha para a nuvem por este campo, então o
+                                      # valor morto mandava as 24 células para o LM Studio
+                                      # local — 400 Bad Request nas 24, longe da causa.
     quantization: null                # servido, não quantizado por nós
     temperature: 0.7                  # a mesma dos SUTs locais: o teto tem de ser lido sob a
                                       # mesma condição de amostragem, senão a diferença medida
