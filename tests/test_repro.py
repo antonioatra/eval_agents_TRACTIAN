@@ -45,16 +45,14 @@ import os
 import socket
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from tapieval.schema.reader import read_trace
-from tapieval.scoring.gabarito import _regras_do_contrato, carregar_cenarios
-from tapieval.scoring.n1 import pontuar_n1
-from tapieval.scoring.n2 import pontuar_n2
-from tapieval.scoring.trajetoria import carregar_trajetorias
+from tapieval.scoring.bateria import pontuar_bateria
+from tapieval.scoring.gabarito import _regras_do_contrato
 
 RAIZ = Path(__file__).resolve().parents[1]
 
@@ -66,6 +64,9 @@ DIRETORIO_DA_PILOTO = RAIZ / "runs" / "piloto_2026-08-24c"
 varrer `runs/*`, é o que impede este teste de mudar de significado quando a bateria oficial
 gravar uma pasta nova ao lado.
 """
+
+CALCULADO_EM_FIXO = datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
+"""Fixo porque `ScoreRecord.calculado_em` é relógio, não derivação do trace."""
 
 TRACES_ESPERADOS = 24
 """6 cenários de dev × 2 modelos × 2 `sample_seed`. Declarado como número para que um
@@ -80,35 +81,38 @@ conjunto que encolheu reprove aqui: um teste de determinismo sobre zero trace pa
 def pontuar_replay(diretorio: Path = DIRETORIO_DA_PILOTO) -> dict[str, dict[str, Any]]:
     """Pontua N1 e N2 de todas as runs de uma bateria já gravada, do zero.
 
+    O laço mora em `scoring/bateria.py` desde 30/08 — este arquivo o consumiu por dez dias e
+    ele era, até então, o ÚNICO caminho para pontuar uma bateria inteira. Um laço de teste
+    não pode ser a implementação de produção: pontuar as 288 células da bateria principal
+    exigiria copiá-lo para um script na noite da execução, e a cópia divergiria da que este
+    teste prova ser determinística.
+
     "Do zero" é literal: o contrato de regras é relido do disco a cada chamada
     (`_regras_do_contrato` é `@cache`), porque um cache quente esconderia justamente o que
     este módulo quer medir — se a segunda passada depende de estado deixado pela primeira.
 
-    A coordenada de cada run (`scenario_id`) sai do **manifesto**, não do nome do arquivo.
-    O `run_id` é `<cenario>--<modelo>--<variante>--envs<seed>--n<seed>` e partir a string por
-    `--` funcionaria hoje e quebraria calado no dia em que um `scenario_id` tiver `--` no
-    nome. O manifesto é a fonte de verdade da matriz (`ARQUITETURA §5`).
+    `calculado_em` entra fixo. É a hora do relógio, muda entre as duas passadas por
+    construção, e não é derivada do trace: deixá-la variar faria toda comparação campo a
+    campo acusar diferença onde não há uma.
     """
     _regras_do_contrato.cache_clear()
 
-    manifesto = json.loads((diretorio / "manifest.json").read_text(encoding="utf-8"))
-    coordenadas = {celula["run_id"]: celula for celula in manifesto["celulas"]}
+    pontuacao = pontuar_bateria(diretorio, calculado_em=CALCULADO_EM_FIXO)
+    assert not pontuacao.nao_pontuadas, (
+        # `pontuar_bateria` engole a exceção de UMA run de propósito, para que a bateria da
+        # madrugada não morra na primeira run ruim. Aqui isso viraria um replay silenciosamente
+        # menor, e um teste de determinismo sobre 23 traces em vez de 24 passa sem dizer nada.
+        "runs não pontuadas no replay: "
+        + "; ".join(f"{r.run_id}: {r.motivo}" for r in pontuacao.nao_pontuadas)
+    )
 
-    cenarios = carregar_cenarios()
-    trajetorias = carregar_trajetorias()
-
-    pontuadas: dict[str, dict[str, Any]] = {}
-    for run_id in sorted(coordenadas):
-        scenario_id = coordenadas[run_id]["scenario_id"]
-        eventos = read_trace(diretorio / "traces" / f"{run_id}.jsonl")
-        cenario = cenarios[scenario_id]
-        pontuadas[run_id] = {
-            "n1": pontuar_n1(eventos, cenario).model_dump(mode="json"),
-            "n2": pontuar_n2(
-                eventos, cenario, trajetorias.get(scenario_id)
-            ).model_dump(mode="json"),
+    return {
+        score.run_id: {
+            "n1": score.n1.model_dump(mode="json"),
+            "n2": score.n2.model_dump(mode="json"),
         }
-    return pontuadas
+        for score in pontuacao.scores
+    }
 
 
 def divergencias(

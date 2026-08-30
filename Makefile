@@ -1,4 +1,4 @@
-.PHONY: venv install test lint corpus api api-stop t0b piloto judge repro clean
+.PHONY: venv install test lint corpus api api-stop t0b piloto judge pontuar repro clean
 
 VENV    := .venv
 PY      := $(VENV)/bin/python
@@ -67,6 +67,22 @@ piloto: install
 # offline pela suíte; isto prova que o modelo do outro lado responde a rubrica.
 judge: install
 	$(PY) scripts/checar_judge.py
+
+# Pontua N1 e N2 de uma bateria já executada e grava `runs/<dir>/scores.jsonl`.
+#
+#   make pontuar BATERIA=runs/principal_2026_08
+#
+# NÃO FALA COM A REDE e não sobe modelo nenhum: N1 e N2 são função pura de (trace, gabarito),
+# e `tests/test_repro.py` bloqueia `socket` para provar isso. **N3 é outra passagem** — o
+# judge roda noutro dia, sobre os traces já gravados, e é uma questão de RPD
+# (`configs/bateria_referencia.yaml`). Os registros saem daqui com `n3=None`, que a taxonomia
+# lê como NÃO MEDIDO e nunca como "limpo".
+#
+# Sai 1 quando a bateria está incompleta — e grava assim mesmo: bateria incompleta é
+# REPORTADA como incompleta (`PLANO` T24-26), não descartada.
+pontuar: install
+	@test -n "$(BATERIA)" || { echo "uso: make pontuar BATERIA=runs/<experiment_id>"; exit 2; }
+	$(PY) -m tapieval.scoring --bateria $(BATERIA)
 
 # Reprodutibilidade ponta a ponta. É a demonstração da banca: de um clone limpo até
 # uma figura que saiu de trace real, sem passo manual no meio. Instruções em `docs/REPRODUZIR.md`.
