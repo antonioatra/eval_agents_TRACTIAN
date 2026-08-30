@@ -1,0 +1,185 @@
+{
+  "versao": 1,
+  "seed": 42,
+  "n_estimativa": 20,
+  "n_melhoria": 15,
+  "universo_sha256": "677647038a50199cbbacbe8b17da518ec514a82e8395d2f32df1cd91a94ef6e1",
+  "universo_n": 84,
+  "itens": [
+    {
+      "run_id": "cen_04_lubrificacao_sem_baseline--qwen3-8b--base--envs004--n101",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_06_premissa_falsa--qwen3-8b--base--envs004--n23",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n23",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n137",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_06_diagnosticos_divergentes--qwen3-8b--base--envs003--n101",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_04_lubrificacao_sem_baseline--qwen3-14b--base--envs004--n77",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_09_cobertura_do_modelo--qwen3-8b--base--envs017--n23",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_03_pergunta_que_parece_ordem--qwen3-8b--base--envs002--n42",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_06_premissa_falsa--qwen3-14b--base--envs004--n77",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_01_barulho_sem_desvio--qwen3-14b--base--envs001--n42",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_01_barulho_sem_desvio--qwen3-8b--base--envs001--n42",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_09_cobertura_do_modelo--qwen3-14b--base--envs017--n11",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_04_lubrificacao_sem_baseline--qwen3-8b--base--envs004--n77",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_06_premissa_falsa--qwen3-8b--base--envs004--n11",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n137",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n77",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_06_diagnosticos_divergentes--qwen3-8b--base--envs003--n199",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_04_lubrificacao_sem_baseline--qwen3-14b--base--envs004--n101",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "cen_09_cobertura_do_modelo--qwen3-8b--base--envs017--n137",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_03_pergunta_que_parece_ordem--qwen3-8b--base--envs002--n101",
+      "amostra": "estimativa",
+      "prioridade": null
+    },
+    {
+      "run_id": "aut_06_premissa_falsa--qwen3-8b--base--envs004--n101",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "cen_09_cobertura_do_modelo--qwen3-14b--base--envs017--n101",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "aut_01_barulho_sem_desvio--qwen3-8b--base--envs001--n199",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n101",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n101",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "cen_06_diagnosticos_divergentes--qwen3-8b--base--envs003--n23",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "cen_04_lubrificacao_sem_baseline--qwen3-8b--base--envs004--n42",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "aut_06_premissa_falsa--qwen3-14b--base--envs004--n42",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "aut_01_barulho_sem_desvio--qwen3-14b--base--envs001--n199",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "cen_04_lubrificacao_sem_baseline--qwen3-14b--base--envs004--n11",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "cen_09_cobertura_do_modelo--qwen3-8b--base--envs017--n42",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "aut_06_premissa_falsa--qwen3-8b--base--envs004--n137",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "cen_09_cobertura_do_modelo--qwen3-14b--base--envs017--n77",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "aut_01_barulho_sem_desvio--qwen3-8b--base--envs001--n11",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    },
+    {
+      "run_id": "cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n199",
+      "amostra": "melhoria",
+      "prioridade": 4.5
+    }
+  ]
+}
