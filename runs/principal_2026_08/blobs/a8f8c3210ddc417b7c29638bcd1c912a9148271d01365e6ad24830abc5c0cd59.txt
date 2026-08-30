@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "Há uma análise atual para o misturador de cru. A evidência mostra RMS dentro da banda do baseline, indicando operação saudável. Devo verificar a qualidade dos dados para confirmar.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_X216"}}, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

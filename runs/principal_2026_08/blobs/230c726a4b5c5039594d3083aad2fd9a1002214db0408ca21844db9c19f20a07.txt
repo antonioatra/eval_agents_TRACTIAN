@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "folga torque rolamento motor forja", "type": "procedure"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo":"executar","pensamento":"","acao":{"tool":"get_knowledge_doc","args":{"doc_id":"doc_087"}},"resposta":null,"decisao":"agir","prioridade_escalonamento":null}

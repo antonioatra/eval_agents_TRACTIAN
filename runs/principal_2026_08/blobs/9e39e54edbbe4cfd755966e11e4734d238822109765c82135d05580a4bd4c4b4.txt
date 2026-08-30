@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "Como não há análises atuais, verificar se há uma baseline definida para o compressor. Isso pode explicar por que não há insights, caso a baseline esteja em aprendizado ou tenha sido invalidada.", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_C710"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "escalate_case", "args": {"case_id": "P-999", "justification": "Ativo P-999 não encontrado em nenhuma consulta, mas usuário relata vibração excessiva. Verificação manual necessária.", "params": {}}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

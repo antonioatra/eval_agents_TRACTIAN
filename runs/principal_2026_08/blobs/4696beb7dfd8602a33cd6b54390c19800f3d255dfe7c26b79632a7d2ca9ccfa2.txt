@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "", "acao": {"tool": "get_knowledge_doc", "args": {"doc_id": "permissao_ausente:escalate"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "Preciso entender o status do ativo e a análise associada antes de reprocessar. Vou listar as análises para ver quais estão disponíveis e o status delas.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_B204"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

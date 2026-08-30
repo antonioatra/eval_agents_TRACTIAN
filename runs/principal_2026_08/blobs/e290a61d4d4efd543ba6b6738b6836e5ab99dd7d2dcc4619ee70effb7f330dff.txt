@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "get_company", "args": {"company_id": "comp_mineracao_andes"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

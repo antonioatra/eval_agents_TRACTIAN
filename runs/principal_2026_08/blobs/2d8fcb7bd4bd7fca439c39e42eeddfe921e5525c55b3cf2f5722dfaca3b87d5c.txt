@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "get_rms_series", "args": {"asset_id": "asset_C710", "point_id": "pt_C710_de"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

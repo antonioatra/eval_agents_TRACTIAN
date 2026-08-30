@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O usuário relatou que a bomba P-999 está vibrando muito. Preciso investigar as causas possíveis com base nos dados disponíveis.", "acao": {"tool": "get_asset", "args": {"asset_id": "P-999"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_B204", "point_id": "pt_B204_de"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

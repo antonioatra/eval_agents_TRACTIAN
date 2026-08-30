@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "request_specialist_analysis", "args": {"analysis_id": null, "justification": "Comportamento estranho do compressor (asset_C710) e insatisfação com o insight atual. Solicitação de análise especializada para investigação detalhada.", "params": {}}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

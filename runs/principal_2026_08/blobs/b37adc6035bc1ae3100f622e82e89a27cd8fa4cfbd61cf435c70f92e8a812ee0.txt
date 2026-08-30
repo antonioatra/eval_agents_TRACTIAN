@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_B20 health check: 11/7/26, 13:58:48", "status": "current"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

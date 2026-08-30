@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "O sensor do ventilador está degradado, o que pode afetar a qualidade dos dados. Preciso verificar se há uma configuração de thresholds para RMS alarmes no ativo.", "acao": {"tool": "get_asset", "args": {"asset_id": "asset_V301"}}, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

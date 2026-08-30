@@ -1,0 +1,1 @@
+{"modo":"executar","pensamento":"","acao":{"tool":"request_retraining","args":{"model_id":"mdl_023"}},"resposta":null,"decisao":"agir","prioridade_escalonamento":null}

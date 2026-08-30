@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "Primeiro, preciso verificar a qualidade dos dados do sensor para o ventilador. A qualidade do sinal afeta diretamente a confiabilidade dos insights gerados pelo sistema.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_V301"}}, "resposta": null, "decisao": "agir", "prioridade_escalonamento": null}

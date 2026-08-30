@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "Não há análises atuais para o ativo asset_M605. Vou verificar a qualidade dos dados coletados para garantir que não há problemas com os sensores ou transmissão de dados.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_M605"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "procedimento rolamento motor forja", "type": "procedure"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

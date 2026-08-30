@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "Preciso entender o critério de alarme para RMS no ventilador asset_V301. A resposta deve incluir a tabela de thresholds, se houver, e como ela é aplicada.", "acao": {"tool": "get_asset", "args": {"asset_id": "asset_V301"}}, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

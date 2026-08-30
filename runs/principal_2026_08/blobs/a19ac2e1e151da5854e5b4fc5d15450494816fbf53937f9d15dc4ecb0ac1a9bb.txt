@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_S42

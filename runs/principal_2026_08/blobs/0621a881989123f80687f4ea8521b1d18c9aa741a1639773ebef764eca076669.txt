@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "escalate_case", "args": {"case_id": "case_tkt_ctx_01", "justification": "tc_01, tc_02, tc_03, tc_04, tc_05, tc_06", "params": {"procedimento_troca_rolamento": "não encontrado", "folga_e_torque": "não encontrado"}}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

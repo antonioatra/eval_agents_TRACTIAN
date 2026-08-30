@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "O usuário reporta que o RMS do compressor (asset_C710) tem aumentado há duas semanas, mas não recebeu nenhum insight. Preciso investigar por que isso está acontecendo.", "acao": {"tool": "get_rms_series", "args": {"asset_id": "asset_C710", "point_id": "vibration_01"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

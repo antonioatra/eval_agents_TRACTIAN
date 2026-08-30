@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "", "acao": null, "resposta": {"texto": "A criticidade do ativo asset_V301 foi alterada de high para medium.", "citacoes": ["tc_01"] ,"perguntar_de_volta": false}, "decisao": "agir" ,"prioridade_escalonamento": null}

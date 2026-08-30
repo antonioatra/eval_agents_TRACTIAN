@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "O usuário trocou o rolamento da bomba, então a ação é reprocessar a análise do ativo asset_B204. Preciso verificar se o sistema tem dados suficientes e se as permissões do usuário permitem a ação.", "acao": {"tool": "get_asset", "args": {"asset_id": "asset_B204"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

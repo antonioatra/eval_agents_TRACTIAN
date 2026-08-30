@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "A análise específica não foi encontrada. Posso tentar listar as análises do ativo para identificar qual insight está sendo referido.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_S42 laws", "status": "current"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

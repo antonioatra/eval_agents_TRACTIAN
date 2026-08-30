@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "sensor offline ativo crítico", "type": "guidance"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

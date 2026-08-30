@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "escalate_case", "args": {"case_id": "unknown", "justification": "Ativo P-999 não encontrado em nenhuma lista de ativos da empresa, o que pode indicar um erro no ID ou ausência do ativo no sistema. Necessário verificação manual.", "params": {}}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

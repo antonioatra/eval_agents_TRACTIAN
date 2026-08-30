@@ -1,0 +1,1 @@
+{"modo":"executar","pensamento":"","acao":{"tool":"get_model","args":{"model_id":"mdl_023"}},"resposta":null,"decisao":"agir","prioridade_escalonamento":null}

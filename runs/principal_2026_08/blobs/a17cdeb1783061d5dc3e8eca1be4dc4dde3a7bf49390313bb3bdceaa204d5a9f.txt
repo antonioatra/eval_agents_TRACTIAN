@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "list_analyses", "args": {"asset_id": "P-999"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

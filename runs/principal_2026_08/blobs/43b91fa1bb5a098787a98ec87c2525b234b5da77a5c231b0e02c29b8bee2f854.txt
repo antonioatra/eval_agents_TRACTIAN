@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "", "acao": {"tool": "get_analysis", "args": {"analysis_id": "an_01_B204_de_20260714"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

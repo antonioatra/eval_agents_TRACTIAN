@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_V301", "point_id": "pt_V301_de"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

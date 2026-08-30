@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "compressor vibration increase no insight", "type": "guidance"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

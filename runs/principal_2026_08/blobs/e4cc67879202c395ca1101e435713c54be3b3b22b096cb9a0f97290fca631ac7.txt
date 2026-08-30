@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "A tentativa de listar as análises atuais do ativo P-999 falhou. Vou verificar a qualidade dos dados para garantir que há dados suficientes disponíveis para análise.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_P712"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

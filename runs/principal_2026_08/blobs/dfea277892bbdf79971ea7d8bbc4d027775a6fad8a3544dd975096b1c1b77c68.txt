@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "Primeiro, preciso verificar a qualidade do sinal do sensor do ativo asset_V301. Se a qualidade for boa, posso confiar no insight. Caso contrário, o insight pode não ser confiável.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_V301"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

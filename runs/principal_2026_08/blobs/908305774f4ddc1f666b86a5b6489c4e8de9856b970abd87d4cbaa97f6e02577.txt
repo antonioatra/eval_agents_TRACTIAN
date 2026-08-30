@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_C71①", "point_id": "vib_01"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

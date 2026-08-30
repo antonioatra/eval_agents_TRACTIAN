@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "", "acao": null, "resposta": {"texto": "Aguarde enquanto encaminho o caso para análise humana.", "citacoes": ["tc_01", "tc_02"] ,"perguntar_de_volta": false}, "decisao": "escalar", "prioridade_escalonamento": null}

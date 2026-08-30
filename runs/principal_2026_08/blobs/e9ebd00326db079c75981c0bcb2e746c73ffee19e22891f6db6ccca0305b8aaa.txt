@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "A análise mencionada não foi encontrada, então preciso identificar quais análises estão associadas ao ativo em questão para encontrar o insight correto.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_S420"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

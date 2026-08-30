@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "", "acao": {"tool": "search_knowledge", "args": {"q": "permissao_ausente:action_high", "type": "guidance"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

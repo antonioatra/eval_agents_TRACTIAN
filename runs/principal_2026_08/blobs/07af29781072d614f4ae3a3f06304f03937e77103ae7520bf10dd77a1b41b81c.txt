@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "O usuário perguntou sobre BPFO no espectro. Preciso entender o que é BPFO e por que ele aparece. Vou usar as ferramentas para obter informações relevantes." , "acao": {"tool": "search_knowledge", "args": {"q": "BPFO", "type": "glossary"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}
