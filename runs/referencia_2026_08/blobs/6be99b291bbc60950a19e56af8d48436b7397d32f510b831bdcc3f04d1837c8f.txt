@@ -1,0 +1,12 @@
+{
+  "modo": "contextualizar",
+  "pensamento": "O usuário deseja entender o funcionamento do reprocessamento de análise antes de qualquer ação. Tenho os dados do ativo asset_C210 [tc_01] e do usuário usr_lucas [tc_02]. Trata-se de uma dúvida conceitual e de procedimento, permitindo orientar diretamente.",
+  "acao": null,
+  "resposta": {
+    "texto": "O reprocessamento de análise submete novamente os dados de vibração coletados aos algoritmos de diagnóstico e modelos analíticos da plataforma. Ele é indicado quando há alterações na configuração técnica do ativo (como rotação ou especificações de rolamento), ajustes nos parâmetros operacionais ou quando dados anteriores precisam ser recalculados com filtros atualizados.\n\nPara o compressor (asset_C210 [tc_01]), que possui criticidade alta [tc_01], o reprocessamento é considerado uma ação de impacto e exige a indicação da análise específica (`analysis_id`) acompanhada de uma justificativa técnica formal. No momento, como seu perfil é mecânico com permissões de leitura e ações de baixo impacto [tc_02], podemos primeiro consultar as análises existentes para verificar se há necessidade real de reprocessamento ou se os diagnósticos atuais já estão atualizados.",
+    "citacoes": ["tc_01", "tc_02"],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

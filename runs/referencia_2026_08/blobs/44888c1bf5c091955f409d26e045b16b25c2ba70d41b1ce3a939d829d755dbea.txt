@@ -1,0 +1,12 @@
+{
+  "modo": "investigar",
+  "pensamento": "Os dados de vibração e análises do martelete (asset_H110) foram verificados. As medições de RMS e o espectro mais recente mostram operação dentro dos limites normais, sem registro de anomalia grave no sistema de monitoramento.",
+  "acao": null,
+  "resposta": {
+    "texto": "Analisando os dados do martelete (asset_H110 [tc_01]), não há indicação de anomalia ou falha ativa registrada no sistema:\n\n1. **Análise Atual**: A análise mais recente (an_9912 [tc_03]) classifica a condição como sadia/sem severidade, com nível de confiança de 89%.\n2. **Vibração Global (RMS)**: A série temporal do ponto `pt_H110_de` [tc_04] registrou 2,842 mm/s em 15/07/2026, mantendo-se estável próximo à referência de baseline (2,60 mm/s) e bem abaixo do limite de alarme de 3,70 mm/s.\n3. **Espectro de Frequência**: A FFT coletada em 14/07/2026 [tc_05] apresenta componentes com amplitudes baixas (1x em 0,70 mm/s, 2x em 0,23 mm/s e BPFO em 0,46 mm/s).\n\nComo ruídos perceptíveis nem sempre provocam elevação imediata de vibração nos sensores instalados (podendo ser folgas mecânicas externas, atrito acústico ou fase muito inicial), recomenda-se inspeção visual/auditiva in loco e acompanhamento contínuo dos próximos ciclos de coleta.",
+    "citacoes": ["tc_01", "tc_03", "tc_04", "tc_05"],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "Vou listar as análises disponíveis para o compressor asset_C210 para identificar qual análise existe e verificar seu estado.",
+  "acao": {
+    "tool": "list_analyses",
+    "args": {
+      "asset_id": "asset_C210"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

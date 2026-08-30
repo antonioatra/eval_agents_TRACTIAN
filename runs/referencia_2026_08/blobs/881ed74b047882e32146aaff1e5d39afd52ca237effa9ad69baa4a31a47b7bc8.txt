@@ -1,0 +1,12 @@
+{
+  "modo": "contextualizar",
+  "pensamento": "Com base nas configurações suportadas pelo sistema e no cadastro do ativo [tc_01], o tipo motor_dc (motor de corrente contínua) é contemplado nas configurações técnicas e no monitoramento de vibração.",
+  "acao": null,
+  "resposta": {
+    "texto": "Sim, a plataforma atende motores de corrente contínua (configurados como motor_dc). O monitoramento por vibração acompanha os componentes mecânicos e dinâmicos (como rolamentos, desbalanceamento, desalinhamento e baseline de vibração) do ativo asset_M102 [tc_01]. Caso o ativo tenha passado por intervenção ou necessite de parametrização específica de rotação e componentes, esses dados podem ser configurados tecnicamente no sistema.",
+    "citacoes": ["tc_01", "tc_03"],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

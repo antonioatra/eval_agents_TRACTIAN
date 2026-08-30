@@ -1,0 +1,14 @@
+{
+  "modo": "investigar",
+  "pensamento": "A análise atual indica condição normal/sadia (RMS de 2.854 mm/s vs ref 2.6 mm/s), mas vamos verificar a série temporal de RMS e o espectro de vibração para checar se houve alguma variação sutil recente.",
+  "acao": {
+    "tool": "get_rms_series",
+    "args": {
+      "asset_id": "asset_H110",
+      "point_id": "pt_H110_de"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

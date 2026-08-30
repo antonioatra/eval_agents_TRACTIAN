@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "Vou consultar o espectro FFT (get_spectrum) para checar se há componentes espectrais ou picos anormais que expliquem a alteração acústica relatada, mesmo com o RMS global normal.",
+  "acao": {
+    "tool": "get_spectrum",
+    "args": {
+      "asset_id": "asset_H110"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

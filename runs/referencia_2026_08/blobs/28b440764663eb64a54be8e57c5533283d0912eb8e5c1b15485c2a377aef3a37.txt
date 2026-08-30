@@ -1,0 +1,16 @@
+{
+  "modo": "investigar",
+  "pensamento": "Temos um ativo de criticidade crítica (tc_01) e duas análises concorrentes com status current (tc_03): an_9907 (desalinhamento, modelo v3.2.1, confiança 0.69) baseada em pico 2x, e an_9908 (base solta/looseness, especialista_v1, confiança 0.71) baseada em sub-harmônicos/0.5x. O espectro FFT (tc_04) confirma a presença simultânea do pico 2x (1.3 mm/s) e do pico 0.5x (0.9 mm/s), o que significa que ambas as condições têm evidência espectral ou uma decorre da outra (folga mecânica excitando harmônicos/desalinhamento). Como a regra estabelece que conflitos entre fontes não devem ser arbitrados em silêncio e o ativo é crítico, a decisão adequada é escalar, expondo com clareza as duas versões e suas respectivas evidências.",
+  "acao": null,
+  "resposta": {
+    "texto": "Identificamos um conflito técnico ativo entre as duas fontes para o ativo [asset_M205](tc_01):\n\n1. **Modelo Automático (an_9907)**: Diagnosticou **desalinhamento** (confiança de 69%) fundamentado na dominância do harmônico 2x com amplitude de 1,3 mm/s (referência 0,5 mm/s) no ponto pt_M205_de [tc_03].\n2. **Análise Especialista (an_9908)**: Diagnosticou **base solta / folga mecânica (looseness)** (confiança de 71%) fundamentada na presença de sub-harmônicos (0,5x) com amplitude de 0,9 mm/s (referência 0,2 mm/s) [tc_03].\n\nNo espectro FFT [tc_04], ambos os padrões coexistem: foi registrado tanto o pico de 2x (1,3 mm/s em 4,0 Hz) quanto o sub-harmônico de 0,5x (0,9 mm/s em 2,0 Hz). Muitas vezes, folgas estruturais/base solta podem gerar ou amplificar componentes harmônicos similares a desalinhamento, e vice-versa.\n\nComo o ativo possui criticidade crítica [tc_01] e há evidência espectral para ambos os diagnósticos, o caso está sendo escalado para validação e inspeção presencial da equipe mecânica.",
+    "citacoes": [
+      "tc_01",
+      "tc_03",
+      "tc_04"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "escalar",
+  "prioridade_escalonamento": "alta"
+}

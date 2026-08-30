@@ -1,0 +1,14 @@
+{
+  "modo": "investigar",
+  "pensamento": "A série de RMS mostra valores estáveis em torno de 2.3 a 2.84 mm/s, bem abaixo do alarme de 3.7 mm/s. Vou consultar o espectro FFT para verificar se há picos espectrais anômalos que expliquem a percepção auditiva.",
+  "acao": {
+    "tool": "get_spectrum",
+    "args": {
+      "asset_id": "asset_H110",
+      "point_id": "pt_H110_de"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

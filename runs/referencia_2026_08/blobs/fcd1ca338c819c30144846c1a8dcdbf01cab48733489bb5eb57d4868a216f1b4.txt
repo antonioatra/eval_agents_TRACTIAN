@@ -1,0 +1,1 @@
+{"modo":"investigar","pensamento":"O usuário relata ruído anômalo no martelete asset_H110 desde ontem. Preciso consultar o histórico de análises recentes do ativo para verificar se foram detectadas anomalias ou falhas.","acao":{"tool":"list_analyses","args":{"asset_id":"asset_H110"}},"resposta":null,"decisao":null,"prioridade_escalonamento":null}

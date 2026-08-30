@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "O usuário quer entender como a falta de lubrificação foi detectada sem histórico/baseline prévio. Vou consultar o baseline do ativo asset_M208 para obter os parâmetros técnicos de detecção (ex.: detecção sintomática vs desvio de baseline).",
+  "acao": {
+    "tool": "get_baseline",
+    "args": {
+      "asset_id": "asset_M208"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

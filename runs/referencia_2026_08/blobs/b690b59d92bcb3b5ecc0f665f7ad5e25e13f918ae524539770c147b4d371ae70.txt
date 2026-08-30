@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "Para verificar se o modelo atende a motores de corrente contínua e a situação do ativo asset_M102, consultarei as análises e modelos associados ao ativo.",
+  "acao": {
+    "tool": "list_analyses",
+    "args": {
+      "asset_id": "asset_M102"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

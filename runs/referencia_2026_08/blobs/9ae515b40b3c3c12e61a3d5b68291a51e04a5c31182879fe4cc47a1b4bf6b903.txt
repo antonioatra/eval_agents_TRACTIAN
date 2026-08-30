@@ -1,0 +1,16 @@
+{
+  "modo": "investigar",
+  "pensamento": "O baseline da bomba (asset_B211) não está ok; encontra-se invalidado ('invalidated') por alteração de configuração (tc_03). Além disso, não há análises concluídas confirmando defeito (tc_04) e o status do sensor está degradado (tc_01). Logo, não é possível confirmar que o pico representa falha de rolamento.",
+  "acao": null,
+  "resposta": {
+    "texto": "O baseline da bomba asset_B211 não está OK. De acordo com os dados obtidos [tc_03], o estado atual do baseline é 'invalidated' (invalidado em 2026-07-13 devido a 'config_change'). Além disso, não existem análises registradas para o ativo [tc_04] e os sensores constam com status 'degraded' [tc_01]. Portanto, não é possível confirmar que o pico observado seja de fato uma falha de rolamento com base no desvio de baseline.",
+    "citacoes": [
+      "tc_01",
+      "tc_03",
+      "tc_04"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

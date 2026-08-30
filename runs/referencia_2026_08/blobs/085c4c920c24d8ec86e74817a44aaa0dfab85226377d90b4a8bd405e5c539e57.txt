@@ -1,0 +1,14 @@
+{
+  "modo": "investigar",
+  "pensamento": "Vou pesquisar na base de conhecimento sobre a cobertura/suporte a motores de corrente contínua (DC).",
+  "acao": {
+    "tool": "search_knowledge",
+    "args": {
+      "q": "motor corrente continua DC cobertura modelo",
+      "type": "guidance"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

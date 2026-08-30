@@ -1,0 +1,17 @@
+{
+  "modo": "investigar",
+  "pensamento": "Com base na análise atual, no histórico de RMS e no espectro de frequência coletados, temos evidências para responder ao usuário sobre a condição vibratória do ativo.",
+  "acao": null,
+  "resposta": {
+    "texto": "Nos dados de vibração do martelete (asset_H110) [tc_01], o comportamento global permanece estável: o valor RMS recente está em 2,84 mm/s [tc_04] (referência de baseline em 2,6 mm/s e limite de alarme em 3,7 mm/s [tc_04]), e a análise automática atual não indicou falha grave [tc_03]. No entanto, a análise do espectro FFT [tc_05] identifica picos de rotação em 3,67 Hz (1x) e 7,34 Hz (2x), além de uma componente em 38,2 Hz associada à frequência de defeito de pista externa (BPFO) com amplitude de 0,46 mm/s [tc_05]. Recomenda-se realizar uma inspeção local e acompanhar a evolução desse componente de rolamento nos próximos dias.",
+    "citacoes": [
+      "tc_01",
+      "tc_03",
+      "tc_04",
+      "tc_05"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

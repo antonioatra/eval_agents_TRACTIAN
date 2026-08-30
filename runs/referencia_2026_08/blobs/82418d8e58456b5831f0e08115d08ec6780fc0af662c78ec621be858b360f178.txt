@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "A análise atual (an_9912) não indica falhas (severidade none, RMS 2.85 mm/s dentro da banda). Vou verificar a série temporal recente de RMS para checar se houve alguma variação desde ontem.",
+  "acao": {
+    "tool": "get_rms_series",
+    "args": {
+      "asset_id": "asset_H110"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

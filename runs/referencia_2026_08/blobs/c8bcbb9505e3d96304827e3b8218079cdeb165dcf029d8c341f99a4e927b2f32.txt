@@ -1,0 +1,14 @@
+{
+  "modo": "investigar",
+  "pensamento": "A configuração técnica de diagnóstico do sistema suporta explicitamente a tipologia de motores de corrente contínua (motor_dc), juntamente com motores de indução, bombas, compressores, redutores, etc. O ativo asset_M102 está ativo e com sensor online (tc_01).",
+  "acao": null,
+  "resposta": {
+    "texto": "Sim, o sistema atende e suporta motores de corrente contínua (configuração técnica de tipo `motor_dc`). O ativo asset_M102 encontra-se com sensores online e cadastrado no sistema [tc_01]. Mesmo para motores mais antigos, o monitoramento por vibração pode acompanhar parâmetros como desbalanceamento, desalinhamento, folgas mecânicas e integridade de rolamentos, desde que os parâmetros operacionais e especificações mecânicas estejam configurados.",
+    "citacoes": [
+      "tc_01"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

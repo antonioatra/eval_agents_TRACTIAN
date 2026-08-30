@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "O usuário quer entender como foi detectada falta de lubrificação sem histórico/baseline. Vou consultar `get_baseline` para verificar o modo de detecção e status do baseline do ativo asset_M208.",
+  "acao": {
+    "tool": "get_baseline",
+    "args": {
+      "asset_id": "asset_M208"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

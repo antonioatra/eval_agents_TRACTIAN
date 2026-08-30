@@ -1,0 +1,15 @@
+{
+  "modo": "investigar",
+  "pensamento": "O baseline do ativo asset_B211 está no estado 'invalidated' (desde 2026-07-13 por 'config_change'), e o sensor está com status 'degraded'. Portanto, o baseline não está OK e não é possível confirmar que o pico observado seja falha de rolamento com base nesse baseline.",
+  "acao": null,
+  "resposta": {
+    "texto": "Não posso confirmar que o pico seja falha de rolamento. O baseline do ativo asset_B211 não está OK: ele se encontra com status 'invalidated' [tc_03] desde 2026-07-13 devido a uma alteração de configuração ('config_change') [tc_03]. Além disso, o sensor do ativo está atualmente com status degradado ('degraded') [tc_01]. Sem um baseline válido e com a qualidade do sensor comprometida, qualquer desvio ou pico não pode ser atribuído diretamente a defeito de rolamento sem nova coleta e revalidação do baseline.",
+    "citacoes": [
+      "tc_01",
+      "tc_03"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

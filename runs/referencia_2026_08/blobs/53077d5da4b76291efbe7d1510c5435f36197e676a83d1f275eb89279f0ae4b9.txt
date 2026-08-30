@@ -1,0 +1,6 @@
+{
+  "modo": "investigar",
+  "pensamento": "Identifiquei que ambas as fontes possuem respaldo físico no espectro de vibração, configurando um conflito de diagnóstico em um ativo de criticidade crítica. Conforme as diretrizes, não arbitro em silêncio: exponho ambas as evidências técnicas e escalo o caso.",
+  "acao": null,
+  "resposta": {
+    "texto": "Ambas as fontes possuem fundamento físico real nos dados de vibração coletados no ponto pt_M205_de [tc_03, tc_04]:\n\n1. **Hipótese de Desalinhamento (an_9907)** [tc_03]: A análise automatizada identificou desalinhamento (confiança de 69%) fundamentada na componente dominante de 2X em 4,0 Hz com amplitude de 1,3 mm/s (referência: 0,5 mm/s) [tc_03, tc_04].\n2. **Hipótese de Base Solta / Folga Mecânica (an_9908)** [tc_03]: O relatório do especialista apontou folga mecânica (confiança de 71%) sustentada pela presença de subharmônicos e componente de 0,5X em 2,0 Hz com amplitude de 0,9 mm/s (referência:

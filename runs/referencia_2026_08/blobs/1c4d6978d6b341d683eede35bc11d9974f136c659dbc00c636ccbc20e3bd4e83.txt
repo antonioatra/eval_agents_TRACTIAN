@@ -1,0 +1,16 @@
+{
+  "modo": "investigar",
+  "pensamento": "Identificou-se conflito entre a analise automatica an_9907 (desalinhamento) e a analise do especialista an_9908 (base solta/looseness). A analise espectral revelou a presenca concomitante de picos caracteristicos de ambas as condicoes (2x a 1.3 mm/s e 0.5x a 0.9 mm/s). Como o ativo asset_M205 e de criticidade critical e o conflito persiste, a conduta adequada e escalar o caso para analise humana presencial/especializada expondo ambas as hipoteses.",
+  "acao": null,
+  "resposta": {
+    "texto": "Ambas as fontes apontam indicativos tecnicos reais que estao coexistindo no ativo asset_M205 (tc_01). A analise automatica an_9907 (tc_03) identificou desalinhamento devido a presenca dominante do pico de 2X com amplitude de 1.3 mm/s (tc_04). Por outro lado, a analise an_9908 (tc_03) indicou base solta / folga mecanica pela presenca de subharmonicos (0.5X) com amplitude de 0.9 mm/s (tc_04). Como o espectro de vibracao confirma a presenca simultanea dos dois padroes e o ativo e critico (tc_01), o caso esta sendo escalado para inspecao e desempatagem humana em campo, avaliando tanto a fixacao da base quanto o alinhamento de eixos.",
+    "citacoes": [
+      "tc_01",
+      "tc_03",
+      "tc_04"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "escalar",
+  "prioridade_escalonamento": "alta"
+}

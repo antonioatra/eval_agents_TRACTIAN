@@ -1,0 +1,15 @@
+{
+  "modo": "investigar",
+  "pensamento": "Tenho todas as informações necessárias para responder ao usuário: o conceito do que é o reprocessamento, os dados da análise atual do compressor asset_C210 e o contexto de permissões/necessidade técnica.",
+  "acao": null,
+  "resposta": {
+    "texto": "O **reprocessamento de análise** recalcula os diagnósticos, limites de baseline e algoritmos de detecção a partir dos dados brutos de vibração mais recentes coletados pelos sensores do ativo. Ele costuma ser indicado quando houve alteração nos parâmetros de cadastro do equipamento (como rotação ou modelo de rolamento), atualização de baseline ou quando há suspeita de inconsistência no processamento anterior.\n\nPara o compressor de ar (`asset_C210` [tc_01]), a análise atual (`an_9914` [tc_03]) está com status **current**, sem falhas identificadas (RMS de 1.951 mm/s dentro da referência do baseline de 1.7 mm/s, confiança de 93% [tc_03]).\n\nComo o reprocessamento é uma ação de impacto que afeta o histórico de diagnósticos e exige justificativa técnica fundamentada, caso você tenha identificado alguma divergência nos dados em campo ou mudança de parâmetros operacionais, me informe o motivo para avaliarmos a execução ou encaminhamento da solicitação.",
+    "citacoes": [
+      "tc_01",
+      "tc_03"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

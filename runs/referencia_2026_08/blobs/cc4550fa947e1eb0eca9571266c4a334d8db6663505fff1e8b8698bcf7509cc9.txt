@@ -1,0 +1,14 @@
+{
+  "modo": "investigar",
+  "pensamento": "Com base nos dados retornados pelo get_baseline (tc_03), a detecção de problemas de lubrificação opera via 'detection_mode: symptom' com 'learnable: false', o que significa que o diagnóstico é feito por assinaturas sintomáticas diretas (como ruído de alta frequência/impactos característicos) em vez de exigir desvio de um baseline estatístico histórico, mesmo estando no estado 'learning'. Posso orientar o usuário diretamente.",
+  "acao": null,
+  "resposta": {
+    "texto": "A detecção de falta de lubrificação no motor asset_M208 ocorre mesmo sem histórico prévio porque o sistema utiliza um modelo de detecção sintomática direta (detection_mode = symptom, learnable = false) [tc_03].\n\nNesse modo de detecção, o algoritmo não depende de um baseline estatístico estabelecido ou de longo histórico de dados (o baseline atual consta em estado 'learning' [tc_03]). Em vez de comparar o comportamento com médias passadas, o sistema identifica assinaturas espectrais e sintomas característicos de deficiência de lubrificação (como aumento de energia em bandas de alta frequência e impactos) que se manifestam imediatamente no sinal de vibração [tc_03].",
+    "citacoes": [
+      "tc_03"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

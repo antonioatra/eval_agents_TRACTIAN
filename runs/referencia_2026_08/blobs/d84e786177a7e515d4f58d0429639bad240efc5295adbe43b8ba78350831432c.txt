@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "Para verificar se há anomalias ou alterações registradas no martelete (asset_H110) desde ontem, vou consultar as análises mais recentes do ativo.",
+  "acao": {
+    "tool": "list_analyses",
+    "args": {
+      "asset_id": "asset_H110"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

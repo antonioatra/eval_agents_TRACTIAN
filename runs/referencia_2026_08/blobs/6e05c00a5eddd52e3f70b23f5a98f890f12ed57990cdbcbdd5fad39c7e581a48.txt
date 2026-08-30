@@ -1,0 +1,15 @@
+{
+  "modo": "contextualizar",
+  "pensamento": "O usuário solicitou uma explicação sobre o funcionamento do reprocessamento de análise e perguntou sobre a possibilidade de reprocessar a análise do compressor de ar asset_C210. Vou orientá-lo detalhando o que o reprocessamento faz e apresentando a situação atual da análise an_9914.",
+  "acao": null,
+  "resposta": {
+    "texto": "### O que é o reprocessamento de análise?\nO reprocessamento de análise executa novamente os algoritmos de diagnóstico e inferência sobre os dados de vibração coletados, aplicando os modelos vigentes, parâmetros de configuração técnica do ativo (como rotação e especificações de rolamento) e regras de baseline atualizadas. É indicado principalmente quando:\n1. Houve correção ou atualização cadastral na configuração do ativo;\n2. Um novo baseline foi recalculado ou ajustado;\n3. Uma análise anterior ficou desatualizada (*stale*) ou inconclusiva.\n\n### Situação do Compressor de Ar (asset_C210)\nDe acordo com os dados coletados (tc_01):\n- **Ativo:** Compressor de ar (asset_C210, criticidade alta);\n- **Análise atual:** an_9914 (tc_04), gerada com modelo v3.2.1, status `current`, severidade normal/sadia (`severity: none`) e confiança de 0,93 (93%).\n\nTecnicamente, é possível disparar o reprocessamento caso haja alguma inconsistência conhecida ou alteração de parâmetros. No entanto, a análise atual já se encontra atualizada e válida. Se você tiver realizado alguma mudança de configuração ou suspeitar de divergência nos parâmetros, confirme se deseja prosseguir com a solicitação.",
+    "citacoes": [
+      "tc_01",
+      "tc_04"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

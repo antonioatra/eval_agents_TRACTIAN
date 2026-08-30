@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "Para entender a divergência entre o diagnóstico de desalinhamento do sistema e a indicação de base solta pelo especialista no ativo asset_M205, preciso consultar as análises existentes para este ativo.",
+  "acao": {
+    "tool": "list_analyses",
+    "args": {
+      "asset_id": "asset_M205"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

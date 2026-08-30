@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "A análise atual (an_9912) indica estado sadio, mas como o usuário relatou ruído anormal desde ontem, vamos verificar a série temporal de RMS e o espectro para conferir se houve variações recentes.",
+  "acao": {
+    "tool": "get_rms_series",
+    "args": {
+      "asset_id": "asset_H110"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

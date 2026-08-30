@@ -1,0 +1,14 @@
+{
+  "modo": "investigar",
+  "pensamento": "Há um conflito entre o modelo automático (an_9907 apontando desalinhamento com 2x dominante) e a análise especializada (an_9908 apontando base solta/folga com sub-harmônicos). Vou consultar o espectro FFT do ativo para tentar verificar os picos e desempatar.",
+  "acao": {
+    "tool": "get_spectrum",
+    "args": {
+      "asset_id": "asset_M205",
+      "point_id": "pt_M205_de"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

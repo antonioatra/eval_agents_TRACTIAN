@@ -1,0 +1,4 @@
+{
+  "modo": "investigar",
+  "pensamento": "A tentativa de desempate via espectro revelou que ambos os padrões coexistem no ativo crítico asset_M205. Há componentes característicos de desalinhamento (2X) e de folga/base solta (0.5X/subharmônicos). Como o conflito persiste entre as fontes e o ativo é crítico, a decisão correta é escalar para avaliação humana detalhada, expondo ambas as evidências.",
+  "

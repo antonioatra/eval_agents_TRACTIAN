@@ -1,0 +1,1 @@
+{"modo":"investigar","pensamento":"A busca específica não retornou resultados. Vou buscar por termos mais amplos como 'motor' ou 'modelos' na base de conhecimento para identificar as diretrizes e cobertura de tipos de máquinas.","acao":{"tool":"search_knowledge","args":{"q":"motor"}},"resposta":null,"decisao":null,"prioridade_escalonamento":null}

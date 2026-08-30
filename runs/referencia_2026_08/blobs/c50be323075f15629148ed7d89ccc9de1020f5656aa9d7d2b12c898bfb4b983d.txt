@@ -1,0 +1,1 @@
+{"modo":"investigar","pensamento":"A busca específica não retornou resultados. Vou buscar por tipos de ativos e cobertura de modelos na base de conhecimento.","acao":{"tool":"search_knowledge","args":{"q":"cobertura modelos motor"}},"resposta":null,"decisao":null,"prioridade_escalonamento":null}

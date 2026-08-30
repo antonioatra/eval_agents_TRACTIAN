@@ -1,0 +1,14 @@
+{
+  "modo": "investigar",
+  "pensamento": "Há um conflito direto entre as análises an_9907 (desalinhamento por 2X dominante) e an_9908 (base solta por subharmônicos). Vou consultar o espectro FFT no ponto pt_M205_de para tentar verificar o padrão vibratório e desempatar.",
+  "acao": {
+    "tool": "get_spectrum",
+    "args": {
+      "asset_id": "asset_M205",
+      "point_id": "pt_M205_de"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

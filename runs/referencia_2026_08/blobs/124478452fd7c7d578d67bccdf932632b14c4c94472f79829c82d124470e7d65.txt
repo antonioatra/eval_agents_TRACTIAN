@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "O usuário quer saber o que significa reprocessar a análise e se é possível realizá-la para o compressor de ar (asset_C210). Vou consultar as análises existentes do ativo para verificar o status e o contexto técnico antes de responder e orientar.",
+  "acao": {
+    "tool": "list_analyses",
+    "args": {
+      "asset_id": "asset_C210"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

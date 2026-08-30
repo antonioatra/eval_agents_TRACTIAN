@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "Vou consultar o espectro de vibração do martelete para verificar se há picos espectrais anômalos que expliquem a percepção auditiva relatada.",
+  "acao": {
+    "tool": "get_spectrum",
+    "args": {
+      "asset_id": "asset_H110"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

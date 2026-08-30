@@ -1,0 +1,12 @@
+{
+  "modo": "investigar",
+  "pensamento": "A consulta ao baseline confirmou que o ativo asset_M208 está com estado de baseline 'learning', porém a detecção de problemas de lubrificação opera via 'detection_mode': 'symptom' com 'learnable': false. Isso significa que a detecção é sintomática direta (características espectrais e de vibração típicas de atrito/falta de filme lubrificante) e independe de histórico prévio ou de baseline estabelecida.",
+  "acao": null,
+  "resposta": {
+    "texto": "A detecção de falta de lubrificação no motor asset_M208 (tc_01) independe de histórico prévio porque o sistema opera no modo sintomático (`detection_mode: symptom`, `learnable: false`) para esse tipo de falha (tc_03).\n\nMesmo com a linha de base ainda em fase de aprendizado (`state: learning`, tc_03), falhas de lubrificação geram padrões e sintomas característicos imediatos de vibração (como fricção e excitação em altas frequências). O modelo reconhece essas assinaturas diretamente, sem necessitar de um desvio estatístico em relação a um histórico normal aprendido.",
+    "citacoes": ["tc_01", "tc_03"],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}

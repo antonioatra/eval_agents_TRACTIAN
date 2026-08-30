@@ -1,0 +1,13 @@
+{
+  "modo": "investigar",
+  "pensamento": "O usuário está perguntando sobre o estado do baseline do ativo asset_B211 e tentando correlacionar com uma possível falha de rolamento. Preciso primeiro consultar o baseline para verificar seu status e características.",
+  "acao": {
+    "tool": "get_baseline",
+    "args": {
+      "asset_id": "asset_B211"
+    }
+  },
+  "resposta": null,
+  "decisao": null,
+  "prioridade_escalonamento": null
+}

@@ -1,0 +1,1 @@
+{"modo":"investigar","pensamento":"Vou buscar de forma mais ampla por 'model' ou 'configuração' na base de conhecimento ou verificar a documentação geral.","acao":{"tool":"search_knowledge","args":{"q":"modelos diagnóstico"}},"resposta":null,"decisao":null,"prioridade_escalonamento":null}

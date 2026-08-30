@@ -1,0 +1,12 @@
+{
+  "modo": "investigar",
+  "pensamento": "Identificado conflito entre o modelo automático (an_9907 indicando desalinhamento com 2x em 1.3 mm/s) e a análise do especialista (an_9908 apontando base solta/looseness com subharmônicos em 0.9 mm/s). A consulta ao espectro FFT em pt_M205_de (tc_04) confirma a presença simultânea de picos em 2x e 0.5x/subharmônicos, indicando que ambos os fenômenos podem estar coexistindo ou interagindo. Como o ativo asset_M205 é crítico (tc_01) e o conflito persiste após a tentativa de desempate, o caso deve ser escalado expondo ambas as versões.",
+  "acao": null,
+  "resposta": {
+    "texto": "Há evidências espectrais para ambos os diagnósticos no ativo crítico asset_M205 [tc_01]:\n\n1. **Desalinhamento (an_9907)**: O modelo automatizado identificou pico dominante em 2x com amplitude de 1.3 mm/s [tc_03, tc_04].\n2. **Base Solta / Folga Mecânica (an_9908)**: O laudo especializado identificou subharmônicos e componente de 0.5x com amplitude de 0.9 mm/s [tc_03, tc_04].\n\nO espectro de vibração mais recente [tc_04] confirma a coexistência tanto da componente 2x (4.0 Hz, 1.3 mm/s) quanto dos subharmônicos em 0.5x (2.0 Hz, 0.9 mm/s). É comum que folgas mecânicas amplifiquem sintomas de desalinhamento ou vice-versa. Por se tratar de um ativo crítico com conflito não desempatável automaticamente, o caso está sendo escalado para validação em campo e inspeção conjunta.",
+    "citacoes": ["tc_01", "tc_03", "tc_04"],
+    "perguntar_de_volta": false
+  },
+  "decisao": "escalar",
+  "prioridade_escalonamento": "alta"
+}

@@ -1,0 +1,17 @@
+{
+  "modo": "investigar",
+  "pensamento": "Reuni dados suficientes para responder ao usuário com base na análise atual, série temporal de RMS e espectro de vibração do martelete.",
+  "acao": null,
+  "resposta": {
+    "texto": "Analisando os dados do martelete (asset_H110) [tc_01]:\n\n1. **Análise e Diagnóstico**: A análise mais recente (an_9912) [tc_03] classifica o ativo como sadio (severidade 'none', confiança 0.89), sem indicação de defeitos ativos.\n2. **Vibração Global (RMS)**: A série temporal [tc_04] mostra leituras recentes de 2.31 mm/s (14/07) e 2.84 mm/s (15/07), ambas em linha com o baseline de referência (2.6 mm/s) e bem abaixo do limite de alarme de 3.7 mm/s.\n3. **Espectro de Frequência**: A coleta espectral mais recente [tc_05] apresenta picos em 1x (3.67 Hz / 0.70 mm/s), 2x (7.34 Hz / 0.23 mm/s) e uma componente de rolamento BPFO (38.2 Hz / 0.46 mm/s), porém com amplitudes baixas e sem elevação crítica.\n\nEm resumo, os sensores de vibração não registram alterações expressivas ou acima dos limites normais de operação. Se o ruído for proveniente de folgas mecânicas externas, fixação ou acústica localizada, recomenda-se uma inspeção visual/auditiva em campo.",
+    "citacoes": [
+      "tc_01",
+      "tc_03",
+      "tc_04",
+      "tc_05"
+    ],
+    "perguntar_de_volta": false
+  },
+  "decisao": "orientar",
+  "prioridade_escalonamento": null
+}
