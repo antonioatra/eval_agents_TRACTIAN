@@ -275,5 +275,4 @@ Na ordem de quanto afetam a conclusão.
 | `configs/` | as cinco baterias e o congelamento do judge |
 | `runs/` | traces, manifestos e scores — **versionados**, é o dado |
 | `notebooks/` | nb01–nb04 · `figures/INDEX.md` mapeia figura → afirmação |
-| `docs/APRESENTACAO.md` | roteiro, decisões com o porquê, banco de perguntas |
 | `docs/ARQUITETURA.md` · `METRICAS.md` · `CENARIOS.md` | as decisões de desenho, com o porquê |

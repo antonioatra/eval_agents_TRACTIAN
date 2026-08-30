@@ -1,6 +1,10 @@
 # Documentos de trabalho pessoal — não sobem.
 PLANO.md
 DECISOES.md
+# O roteiro e o banco de perguntas são material de ENSAIO, não entregável: o que a banca
+# recebe é o PDF dos slides e o `docs/ARQUITETURA.md`. Publicar o roteiro entregaria as
+# respostas preparadas junto com a pergunta.
+APRESENTACAO.md
 
 # Configuração local de ferramenta.
 .claude/
