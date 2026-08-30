@@ -369,8 +369,10 @@ def _fila_de_melhoria(
     O QUE ISTO NÃO CONSERTA, DECLARADO: os 42 do topo empatam porque **todos** têm
     `sem_resposta_final`, então a fila continua saindo 15/15 sem `final_answer`. Isso é da
     ORDENAÇÃO, não do desempate — alcançar uma run com resposta exigiria pular a faixa 3,0
-    inteira, que é abandonar a ordem de prioridade que a fila existe para seguir. Fica como
-    limitação declarada da T22.
+    inteira, que é abandonar a ordem de prioridade que a fila existe para seguir. **Aceito e
+    declarado no fecho do A25 (29/08)**, e não consertado: compor a fila por cota depois de ver o
+    corpus seria a mesma curadoria retroativa que recusou o repeso dos sinais. Está em
+    `METRICAS §7.1` e vai para as limitações da T32.
     """
     por_prioridade: dict[float, list[Candidato]] = {}
     for candidato in sobra:
