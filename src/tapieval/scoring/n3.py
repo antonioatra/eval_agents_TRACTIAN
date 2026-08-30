@@ -333,6 +333,52 @@ def renderizar_prompt(
     return texto
 
 
+ABERTURA_DA_RUBRICA = "## As perguntas"
+FIM_DA_RUBRICA = "## Exemplos"
+
+
+class RubricaSemSecao(ValueError):
+    """O template não tem a seção `## As perguntas`, ou ela saiu vazia."""
+
+
+def recortar_rubrica(texto: str, configuracao: str) -> str:
+    """A seção `## As perguntas` de um template, sem o enquadramento em volta.
+
+    ESTE RECORTE TEM DOIS CONSUMIDORES, E É DE PROPÓSITO
+        O `rubrica_sha` do congelamento (T23) assina exatamente estes bytes, e a CLI de
+        rotulagem (T22) os IMPRIME para o rotulador humano. Os dois lendo a mesma função é o
+        que garante que o humano e o judge respondam à mesma pergunta — enquanto a CLI
+        resumia a rubrica com as próprias palavras, ela perguntava *"mencionou a limitação
+        relevante?"* onde a rubrica manda um procedimento de dois passos cujo caso (iii) é
+        `true`. O κ da INS.6 mediria essa diferença de enunciado e a reportaria como
+        discordância entre humano e máquina.
+
+    O recorte é conferido dos dois lados. Um template sem a seção, ou com ela vazia, faria o
+    `rubrica_sha` assinar o nada — e um sha do nada confere sempre, contra qualquer rubrica.
+    """
+    inicio = texto.find(ABERTURA_DA_RUBRICA)
+    if inicio < 0:
+        raise RubricaSemSecao(
+            f"o template {configuracao!r} não tem a seção {ABERTURA_DA_RUBRICA!r}. O recorte "
+            "da rubrica é por cabeçalho; sem ele o `rubrica_sha` assinaria texto vazio"
+        )
+    fim = texto.find(FIM_DA_RUBRICA, inicio)
+    if fim < 0:
+        raise RubricaSemSecao(
+            f"o template {configuracao!r} tem {ABERTURA_DA_RUBRICA!r} mas não "
+            f"{FIM_DA_RUBRICA!r} depois dela — não dá para saber onde a rubrica termina"
+        )
+    recorte = texto[inicio:fim].strip()
+    if not recorte:
+        raise RubricaSemSecao(f"a rubrica do template {configuracao!r} saiu vazia")
+    return recorte
+
+
+def perguntas_da_rubrica(configuracao: ConfiguracaoDoJudge, rubrica: str) -> str:
+    """O recorte da rubrica adotada, lido do template que o judge de fato usa."""
+    return recortar_rubrica(_ler_template(configuracao, rubrica), configuracao)
+
+
 def _ler_template(configuracao: ConfiguracaoDoJudge, rubrica: str) -> str:
     try:
         arquivos = TEMPLATE_POR_CONFIGURACAO[rubrica]

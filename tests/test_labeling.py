@@ -1297,3 +1297,62 @@ def test_dry_run_nao_congela(tmp_path):
     )
 
     assert not caminho.exists()
+
+
+# ---------------------------------------------------------------------------
+# 9 · O protocolo — o conserto de 30/08
+# ---------------------------------------------------------------------------
+
+
+def test_o_protocolo_e_a_rubrica_que_o_judge_recebe_byte_a_byte():
+    """A CLI não pode resumir a rubrica com as próprias palavras.
+
+    Foi o que ela fez até 30/08: perguntava *"mencionou a limitação relevante?"* onde a
+    rubrica manda um procedimento de dois passos cujo caso (iii) — o critério não exige
+    declaração nenhuma — responde `true`. O humano lia a pergunta curta e respondia `false`;
+    o judge seguia o procedimento e respondia `true`. O κ da INS.6 contava a diferença de
+    ENUNCIADO como discordância entre duas leituras, e reportava como desacordo humano ×
+    máquina o que era desacordo entre a CLI e a rubrica.
+
+    Este teste fixa a única forma de isso não voltar: o texto é derivado, não copiado.
+    """
+    from tapieval.scoring.n3 import RUBRICA_PADRAO, perguntas_da_rubrica
+
+    for configuracao in ("cego", "com_trace"):
+        recorte = perguntas_da_rubrica(configuracao, RUBRICA_PADRAO)
+        assert recorte in mod_cli.protocolo_de_rotulagem(configuracao, RUBRICA_PADRAO)
+
+
+def test_o_protocolo_e_impresso_antes_da_primeira_pergunta(tmp_path: Path, cenario: Cenario):
+    """Rubrica impressa depois do primeiro caso é rubrica que ninguém leu a tempo."""
+    run_dir = _montar_run_dir(tmp_path, cenarios=("cen_00",), modelos=("modelo-0",), seeds=(11,))
+    itens = amostrar(carregar_candidatos(run_dir), n_estimativa=1, n_melhoria=0)
+    linhas, escrever = escrita()
+
+    class RoteiroQueMarca(Roteiro):
+        def __init__(self, *respostas: str):
+            super().__init__(*respostas)
+            self.escrito_antes: list[int] = []
+
+        def __call__(self, pergunta: str) -> str:
+            self.escrito_antes.append(len(linhas))
+            return super().__call__(pergunta)
+
+    roteiro = RoteiroQueMarca(*rotulo_cego())
+    rodar_sessao(
+        itens,
+        insumo_de=_insumo_fixo(run_dir, {"cen_00": cenario}),
+        configuracao="cego",
+        rotulador="antonio",
+        destino=tmp_path / "labels" / "humano_2026-08-30.jsonl",
+        ja_rotulados=frozenset(),
+        ler=roteiro,
+        escrever=escrever,
+        agora=lambda: AGORA,
+    )
+
+    antes_da_primeira = "\n".join(linhas[: roteiro.escrito_antes[0]])
+    assert "As perguntas" in antes_da_primeira
+    assert "não se aplica" in antes_da_primeira, (
+        "o protocolo saiu sem a regra que causou o defeito: 'não se aplica' é `true`"
+    )

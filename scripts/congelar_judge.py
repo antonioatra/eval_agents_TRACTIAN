@@ -60,18 +60,16 @@ from tapieval.scoring.n3 import (  # noqa: E402
     DIRETORIO_DE_PROMPTS,
     RUBRICA_PADRAO,
     TEMPLATE_POR_CONFIGURACAO,
+    RubricaSemSecao,  # noqa: E402
     carregar_fewshots,
 )
+from tapieval.scoring.n3 import recortar_rubrica as _recortar_rubrica  # noqa: E402
 
 CAMINHO_PADRAO = RAIZ / "configs" / "judge_frozen.json"
 
 CONFIGURACOES: tuple[str, ...] = ("cego", "com_trace")
 """Ordem fixa. É parte da serialização assinada — trocar a ordem mudaria o sha sem que uma
 palavra do judge tivesse mudado."""
-
-ABERTURA_DA_RUBRICA = "## As perguntas"
-FIM_DA_RUBRICA = "## Exemplos"
-
 
 def _texto_dos_templates(rubrica: str) -> dict[str, str]:
     """Os dois templates da rubrica adotada, lidos do disco, byte a byte."""
@@ -97,27 +95,16 @@ def serializar(partes: dict[str, str]) -> str:
 
 
 def recortar_rubrica(texto: str, configuracao: str) -> str:
-    """A seção `## As perguntas` de um template, sem o enquadramento em volta.
+    """O recorte de `scoring.n3`, com a falha convertida em saída de script.
 
-    O recorte é conferido dos dois lados. Um template sem a seção, ou com ela vazia, faria o
-    `rubrica_sha` assinar o nada — e um sha do nada confere sempre, contra qualquer rubrica.
+    A função mora em `n3` porque ela tem DOIS consumidores — este congelamento e a CLI de
+    rotulagem, que imprime a rubrica para o humano. Duas cópias divergiriam, e a divergência
+    apareceria como discordância no κ da INS.6, não como bug.
     """
-    inicio = texto.find(ABERTURA_DA_RUBRICA)
-    if inicio < 0:
-        raise SystemExit(
-            f"o template {configuracao!r} não tem a seção {ABERTURA_DA_RUBRICA!r}. O recorte "
-            "da rubrica é por cabeçalho; sem ele o `rubrica_sha` assinaria texto vazio"
-        )
-    fim = texto.find(FIM_DA_RUBRICA, inicio)
-    if fim < 0:
-        raise SystemExit(
-            f"o template {configuracao!r} tem {ABERTURA_DA_RUBRICA!r} mas não "
-            f"{FIM_DA_RUBRICA!r} depois dela — não dá para saber onde a rubrica termina"
-        )
-    recorte = texto[inicio:fim].strip()
-    if not recorte:
-        raise SystemExit(f"a rubrica do template {configuracao!r} saiu vazia")
-    return recorte
+    try:
+        return _recortar_rubrica(texto, configuracao)
+    except RubricaSemSecao as erro:
+        raise SystemExit(str(erro)) from erro
 
 
 def montar(rubrica: str, *, quando: datetime) -> dict[str, Any]:

@@ -68,7 +68,13 @@ from tapieval.labeling.amostra import (
 from tapieval.schema.reader import read_trace
 from tapieval.schema.trace import SCHEMA_VERSION, ConfiguracaoDoJudge, N4Humano
 from tapieval.scoring.gabarito import Cenario, carregar_cenarios
-from tapieval.scoring.n3 import EvidenciaIncompleta, InsumoDoJudge, montar_insumo
+from tapieval.scoring.n3 import (
+    RUBRICA_PADRAO,
+    EvidenciaIncompleta,
+    InsumoDoJudge,
+    montar_insumo,
+    perguntas_da_rubrica,
+)
 
 RAIZ_DO_REPO = Path(__file__).resolve().parents[3]
 DIRETORIO_DE_ROTULOS = RAIZ_DO_REPO / "labels"
@@ -337,6 +343,42 @@ def caminho_do_dia(diretorio: Path, dia: date | None = None) -> Path:
 # ---------------------------------------------------------------------------
 
 
+def protocolo_de_rotulagem(configuracao: ConfiguracaoDoJudge, rubrica: str) -> str:
+    """A rubrica que o judge recebe, byte a byte, impressa para o rotulador humano.
+
+    POR QUE O TEXTO INTEIRO, E NÃO UM RESUMO
+        Até 30/08 esta CLI perguntava *"N3.2 mencionou a limitação relevante do caso?"* e
+        parava aí. A rubrica do judge não pergunta isso: ela manda um procedimento de dois
+        passos, e nele o caso em que **o critério não exige declaração nenhuma** responde
+        `true` — "não se aplica" é `true`, porque `false` diria que a resposta errou algo que
+        não lhe foi pedido. O mesmo vale para `causa_raiz_correta` quando o critério pede
+        conduta em vez de causa.
+
+        Lendo a pergunta curta, o humano responde `false` onde o judge responde `true`, e o κ
+        da INS.6 conta isso como discordância entre duas leituras — quando o que houve foi
+        duas PERGUNTAS diferentes. A concordância deixaria de medir o judge e passaria a medir
+        o resumo que esta CLI fazia dele.
+
+    POR QUE DERIVADO, E NÃO COPIADO PARA CÁ
+        `perguntas_da_rubrica` é a mesma função cujo recorte o `rubrica_sha` do congelamento
+        assina (T23). Um texto copiado para dentro deste módulo envelheceria na primeira
+        reescrita da rubrica — em silêncio, e na direção perigosa: o humano seguiria a v2
+        enquanto o judge já estaria na v3. Aqui não há o que envelhecer.
+    """
+    return (
+        "\n"
+        + REGUA
+        + f"\nO PROTOCOLO — a rubrica {rubrica}, a MESMA que o judge recebe\n"
+        + REGUA
+        + "\n\nLeia antes do primeiro caso. Onde a rubrica manda responder por procedimento,\n"
+        "é o procedimento que vale, não a leitura literal da pergunta curta.\n\n"
+        + perguntas_da_rubrica(configuracao, rubrica)
+        + "\n"
+        + REGUA
+        + "\n"
+    )
+
+
 def apresentar_caso(
     insumo: InsumoDoJudge,
     configuracao: ConfiguracaoDoJudge,
@@ -402,6 +444,7 @@ def rodar_sessao(
     ja_rotulados: Container[str],
     ler: Callable[[str], str],
     escrever: Callable[[str], None],
+    rubrica: str = RUBRICA_PADRAO,
     agora: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> int:
     """A fila de rotulagem. Devolve quantos rótulos foram gravados nesta sessão.
@@ -423,6 +466,7 @@ def rodar_sessao(
         f"· gravando em {destino}"
     )
     escrever("em cada caso: [r]otular · [p]ular (volta ao fim da fila) · [q] encerrar")
+    escrever(protocolo_de_rotulagem(configuracao, rubrica))
 
     fila = list(pendentes)
     gravados = 0
@@ -660,6 +704,11 @@ def construir_parser() -> argparse.ArgumentParser:
         help="imprime a amostra sorteada e sai, sem perguntar nada",
     )
     parser.add_argument(
+        "--rubrica",
+        default=RUBRICA_PADRAO,
+        help="a rubrica cujo protocolo é impresso — a mesma que o judge recebe",
+    )
+    parser.add_argument(
         "--reamostrar",
         action="store_true",
         help=(
@@ -719,6 +768,7 @@ def main(argv: list[str] | None = None) -> int:
         ja_rotulados=run_ids_ja_rotulados(args.labels_dir),
         ler=input,
         escrever=print,
+        rubrica=args.rubrica,
     )
     return 0
 

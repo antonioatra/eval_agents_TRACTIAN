@@ -62,10 +62,12 @@ from tapieval.labeling.cli import (  # noqa: E402
     caminho_do_dia,
     carregar_candidatos,
     montador_de_insumo,
+    protocolo_de_rotulagem,
     rodar_sessao,
     run_ids_ja_rotulados,
 )
 from tapieval.scoring.gabarito import carregar_cenarios  # noqa: E402
+from tapieval.scoring.n3 import RUBRICA_PADRAO  # noqa: E402
 
 CONFIGURACAO = "cego"
 
@@ -310,6 +312,13 @@ def construir_parser() -> argparse.ArgumentParser:
     parser.add_argument("--respostas", type=Path, help="arquivo de blocos `caso N`")
     parser.add_argument("--fila", help="a impressão da fila que o `mostrar` imprimiu")
     parser.add_argument("--rotulador")
+    parser.add_argument("--rubrica", default=RUBRICA_PADRAO)
+    parser.add_argument(
+        "--sem-protocolo",
+        dest="protocolo",
+        action="store_false",
+        help="não reimprime a rubrica no `mostrar` (para quem já a leu nesta sessão)",
+    )
     parser.add_argument("--seed", type=int, default=SEED_DA_AMOSTRAGEM)
     parser.add_argument("--n-estimativa", type=int, default=N_ESTIMATIVA)
     parser.add_argument("--n-melhoria", type=int, default=N_MELHORIA)
@@ -339,6 +348,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.acao == "mostrar":
         print(f"fila: {impressao_da_fila(itens)}  ·  {len(itens)} caso(s) pendente(s)")
+        if args.protocolo:
+            # O protocolo é o conserto de 30/08: quem rotula fora do terminal tem de ler a
+            # mesma rubrica que o judge recebe, senão responde à pergunta curta e o κ mede a
+            # diferença de enunciado. Sai por padrão; `--sem-protocolo` é para quem já leu.
+            print(protocolo_de_rotulagem(CONFIGURACAO, args.rubrica))
         print(renderizar(itens, insumo_de=insumo_de, quantos=args.quantos))
         return 0
 

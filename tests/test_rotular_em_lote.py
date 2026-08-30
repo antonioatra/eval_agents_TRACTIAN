@@ -297,3 +297,31 @@ def test_o_run_id_da_fila_nao_aparece_no_que_o_mostrar_imprime(
     for item in itens:
         assert item.candidato.run_id not in saida
         assert item.candidato.model_key not in saida
+
+
+def test_o_mostrar_imprime_a_rubrica_antes_dos_casos(
+    tmp_path: Path,
+    cenario: Cenario,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """O conserto de 30/08 vale para quem rotula fora do terminal, que é o ponto do driver."""
+    run_dir, labels, _, _ = montar(tmp_path, cenario)
+    monkeypatch.setattr(mod, "carregar_cenarios", lambda: {"cen_00": cenario})
+
+    mod.main(
+        [
+            "mostrar",
+            "--run-dir", str(run_dir),
+            "--labels-dir", str(labels),
+            "--n-estimativa", "2",
+            "--n-melhoria", "0",
+        ]
+    )
+
+    saida = capsys.readouterr().out
+    protocolo = mod.protocolo_de_rotulagem(mod.CONFIGURACAO, mod.RUBRICA_PADRAO)
+    assert protocolo in saida
+    assert saida.index(protocolo) < saida.index("caso 1"), (
+        "a rubrica saiu depois do primeiro caso — quem lê de cima para baixo já julgou"
+    )
