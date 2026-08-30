@@ -1,0 +1,41 @@
+{
+  "n_execucoes": 20,
+  "n_falhas_no_gold": 108,
+  "recall": {
+    "n1n2": 0.7593,
+    "n1n2n3_cego": 0.9537,
+    "n1n2n3_com_trace": 0.9537
+  },
+  "falso_alarme": {
+    "n1n2": 0.0,
+    "n1n2n3_cego": 0.0096,
+    "n1n2n3_com_trace": 0.0374
+  },
+  "tokens_por_execucao": {
+    "n1n2": 0.0,
+    "n1n2n3_cego": 5015.0,
+    "n1n2n3_com_trace": 8459.5
+  },
+  "ins2_delta": 0.1944,
+  "ins2_ic95": [
+    0.1346,
+    0.2478
+  ],
+  "recall_por_classe": {
+    "n1n2": {
+      "P": 1.0,
+      "C": 0.0,
+      "D": 1.0
+    },
+    "n1n2n3_cego": {
+      "P": 1.0,
+      "C": 0.8077,
+      "D": 1.0
+    },
+    "n1n2n3_com_trace": {
+      "P": 1.0,
+      "C": 0.8077,
+      "D": 1.0
+    }
+  }
+}

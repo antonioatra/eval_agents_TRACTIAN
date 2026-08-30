@@ -11,9 +11,10 @@ API_PY  := $(API_DIR)/api/.venv/bin/python
 # figuras da lista foram regravadas. É a lista que se estende quando a bateria oficial rodar
 # (curva custo × recall, matriz de concordância, pass^k) — ver o comentário de `repro`.
 FIG_NOTEBOOKS := notebooks/nb01_exploracao_api.ipynb notebooks/nb02_cobertura_corpus.ipynb \
-                 notebooks/nb03_calibracao_judge.ipynb
+                 notebooks/nb03_calibracao_judge.ipynb notebooks/nb04_resultados_principais.ipynb
 FIG_ARQUIVOS  := figures/fig01_distribuicao_status.png figures/fig02_matriz_cobertura.png \
-                 figures/fig03_flip_rate.png figures/fig04_curva_rubrica.png
+                 figures/fig03_flip_rate.png figures/fig04_curva_rubrica.png \
+                 figures/fig05_custo_recall_h0.png figures/fig06_recall_por_classe_h0.png
 
 # `uv` não está disponível neste ambiente; o venv é criado com o venv da stdlib.
 $(VENV):
@@ -112,11 +113,16 @@ pontuar: install
 # e regrava fig03/fig04 sem chamada de rede nenhuma — o judge não roda de novo aqui. O gate da
 # API acima continua valendo pelos outros dois, que a medem.
 #
-# AS FIGURAS DAS BATERIAS AINDA NÃO EXISTEM, e este alvo não as inventa. As três baterias de
-# `METRICAS §9.2` não rodaram, então a curva custo × recall, a matriz de concordância N1+N2 ×
-# N3 e o pass^k por modelo não têm dado de onde sair. Quando tiverem, estender é acrescentar
-# o par (notebook, figura) a FIG_NOTEBOOKS/FIG_ARQUIVOS lá em cima: a conferência final já
-# reprova, com o nome do arquivo, figura declarada que não apareceu no disco.
+# O NB04 ENTROU EM 30/08 E TAMBÉM NÃO PRECISA DA API. Ele lê o gold humano da T22, os
+# julgamentos do judge congelado e os traces da calibração — tudo versionado — e regrava a
+# curva custo × recall (H0) e o recall por classe. Zero chamada de rede: `scoring/ins.py` é
+# função pura de (trace, gabarito, rótulo).
+#
+# O QUE AINDA NÃO TEM FIGURA são as baterias principal e de mutantes, que só fecharam em
+# 31/08: o pass^k por modelo, a H2 e a detecção de mutantes entram quando os notebooks delas
+# existirem. Estender é acrescentar o par (notebook, figura) a FIG_NOTEBOOKS/FIG_ARQUIVOS lá
+# em cima: a conferência final já reprova, com o nome do arquivo, figura declarada que não
+# apareceu no disco.
 repro: install
 	$(PY) -m pytest -q tests/test_repro.py
 	@$(PY) -c "import httpx; httpx.get('http://localhost:8000/openapi.json', timeout=5)" \
