@@ -1,6 +1,6 @@
 # Corpus de cenários
 
-**Case Inteli × TRACTIAN** · o desenho geral está em `ARQUITETURA.md`, as métricas e o protocolo
+**Case Inteli × TRACTIAN** · o desenho geral está em `docs/ARQUITETURA.md`, as métricas e o protocolo
 em `METRICAS.md`. Os arquivos executáveis são os 24 YAMLs em `scenarios/`; o schema de campo a
 campo está em `scenarios/README.md`.
 

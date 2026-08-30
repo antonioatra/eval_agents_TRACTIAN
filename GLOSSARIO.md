@@ -5,7 +5,7 @@ Escrito em 17/08 porque metade das decisões do projeto travavam em ambiguidade 
 funções chamadas `sucesso_binario`, dois sentidos de "conflito", `seq` confundido com ordem de
 linha.
 
-Quem lê o case começa por aqui. Os documentos de fundo são `ARQUITETURA.md` (como o sistema é
+Quem lê o case começa por aqui. Os documentos de fundo são `docs/ARQUITETURA.md` (como o sistema é
 feito), `CENARIOS.md` (o corpus) e `METRICAS.md` (a régua).
 
 ---

@@ -1,6 +1,6 @@
 # Catálogo de métricas e protocolo de medição
 
-**Case Inteli × TRACTIAN** · o desenho geral está em `ARQUITETURA.md`, o corpus em `CENARIOS.md`.
+**Case Inteli × TRACTIAN** · o desenho geral está em `docs/ARQUITETURA.md`, o corpus em `CENARIOS.md`.
 
 Este documento define **o que é medido, como é calculado, de onde veio e por que assim**. É a
 peça que sustenta o entregável 2 (framework de avaliação) e a hipótese **H0**, enunciada em
@@ -11,7 +11,7 @@ peça que sustenta o entregável 2 (framework de avaliação) e a hipótese **H0
 > estrutural, conteúdo não. A métrica que a testa é `ΔRecall(N3 | N1+N2)` (INS.2, §7).
 
 **Fonte de verdade:** tudo que é métrica, camada de julgamento, severidade ou protocolo de
-execução mora aqui. `ARQUITETURA.md` referencia, não duplica.
+execução mora aqui. `docs/ARQUITETURA.md` referencia, não duplica.
 
 ---
 

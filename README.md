@@ -76,7 +76,7 @@ executar. O gate **reserva** o número de sequência antes de emitir o `tool_cal
 ingênua daria ao gate um `seq` maior que o da chamada que ele autoriza — e o scorer marcaria
 "ação sem permissão" (S0) em toda ação corretamente aprovada.
 
-Detalhes em `ARQUITETURA.md`.
+Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 
 ## 4. Instalação e execução
 
@@ -276,4 +276,4 @@ Na ordem de quanto afetam a conclusão.
 | `runs/` | traces, manifestos e scores — **versionados**, é o dado |
 | `notebooks/` | nb01–nb04 · `figures/INDEX.md` mapeia figura → afirmação |
 | `docs/APRESENTACAO.md` | roteiro, decisões com o porquê, banco de perguntas |
-| `ARQUITETURA.md` · `METRICAS.md` · `CENARIOS.md` | as decisões de desenho, com o porquê |
+| `docs/ARQUITETURA.md` · `METRICAS.md` · `CENARIOS.md` | as decisões de desenho, com o porquê |

@@ -1,6 +1,12 @@
 # Engenharia e avaliação de agentes industriais — arquitetura
 
-**Case Inteli × TRACTIAN** · onboarding 13/08/2026 · entrega 08/09/2026
+**Case Inteli × TRACTIAN** · onboarding 13/08/2026 · entrega 08/09/2026 · **estado em 31/08/2026**
+
+> **Este é o documento de arquitetura do case.** Ele mora em `docs/` e é fonte única — a versão
+> anterior tinha uma cópia publicada em HTML que divergiu do Markdown, e o que ficou desta lição
+> é que **arquitetura tem um lugar só**. A numeração das seções é citada em dezenas de docstrings
+> do código (`ARQUITETURA §5`, `§12`, `§13`), então ela **não se renumera**: seção que perde
+> conteúdo fica com o registro do porquê no lugar.
 
 **A ideia central e as decisões de desenho.** Cobre os dois entregáveis do TAPI §2 — o agente e o
 framework que o mede — como uma pilha só, e aponta para os documentos que detalham cada parte.
@@ -722,6 +728,12 @@ projeto.
 
 ## 16. Cronograma
 
+> **Registro histórico — este era o plano de 13/08.** Ele está aqui porque o desvio entre o
+> planejado e o executado é informação: a S3 previa quatro baterias e o A16 cortou duas por
+> aritmética de GPU (ambiente e metamórfica viraram trabalho futuro declarado, com a matriz por
+> extenso no cabeçalho dos YAMLs); e a rotulagem humana, que a S3 tratava como uma linha,
+> consumiu duas sessões e produziu o A25.
+
 | Semana | Foco | LLM? |
 |---|---|---|
 | **S1** 13–19/08 | Teste de tool calling do modelo maior (dias 1–2, **antes de tudo**). Cenários v1 sem ver a API → reconciliação → catálogo → cobertura. Cliente + modelos do Swagger. Proxy record/replay. Schema de trace. Scorers N1/N2. **Agente falso** para calibrar o instrumento. `nb01`, `nb02` | ❌ |
@@ -775,12 +787,20 @@ Descobertas que **não** estavam na lista e mudaram o desenho:
   simultaneamente.
 - **`unavailable` não é transitório** — ver §3.4 revisto.
 
-Em aberto:
+**As duas que ficaram em aberto fecharam:**
 
-4. ✅ **Par de modelos** — **resolvido 15/08** (`DECISOES A1`): Qwen3-8B + Qwen3-14B locais como
-   SUTs, judge e SUT de referência na free tier do Gemini. A formulação anterior desta pendência
-   assumia 22 GB efetivos e cogitava MoE 30B-A3B como SUT B; com os ~16 GB reais isso não cabe.
-   Falta só confirmar o par contra o T0b — se o 14B errar seleção de função sistematicamente, a
-   troca é dentro da mesma família.
-5. ⚪ **Checklists de suficiência** só fecham depois do Swagger real; preencher contra o mock na
-   S1 e revisar quando o contrato chegar.
+4. ✅ **Par de modelos** — **resolvido 15/08** (`DECISOES A1`) e **confirmado pela T0b**:
+   Qwen3-8B + Qwen3-14B locais como SUTs. A formulação anterior assumia 22 GB efetivos e cogitava
+   MoE 30B-A3B como SUT B; com os ~16 GB reais isso não cabe. O par sobreviveu à conferência — o
+   14B não erra seleção de função sistematicamente; **erra formato**, e a 15× mais que o 8B
+   (`X31`), o que virou limitação declarada em vez de troca de modelo.
+5. ✅ **Checklists de suficiência** — preenchidos contra o mock na S1 e **revisados contra o
+   Swagger real** na reconciliação de 14/08 (`CENARIOS §5`), que é de onde saíram o X5, o X10 e o
+   X17.
+
+**O que o judge e o SUT de referência viraram, e não estava aqui:** a free tier do Gemini dá 20
+chamadas por dia (medido em 24/08), o que poria as ~1.400 chamadas do judge a 70 dias. O A23
+migrou os dois para o **Vertex AI**, que serve o mesmo modelo por *dynamic shared quota* — o
+limite diário não ficou maior, deixou de ser o regime. Custo declarado: os valores absolutos de
+token subiram 6–8% para o mesmo prompt, então o judge de uma bateria roda **inteiro num provedor
+só**. Detalhes em `docs/migracao_vertex.md`.
