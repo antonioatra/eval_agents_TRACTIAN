@@ -1,0 +1,209 @@
+caso 1
+n3.1: n
+n3.2: n
+n3.5: s
+just: caso (a) — "confirma a validade do insight de lubrificação". A resposta explica o mecanismo ("padrões de detecção pré-definidos") mas NÃO confirma a validade: hedge em "a análise pode estar baseada" e devolve a confirmação para depois ("Deseja que eu investigue"). Limitação (i): o critério pede "declara que a evidência da análise veio parcial"; a resposta fala da ausência de histórico, que é outro objeto. Endereçamento: trata do que foi perguntado.
+
+caso 2
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b) — a conclusão correta é contradizer a premissa do baseline. A resposta não contradiz nada: relata que o escalonamento falhou por falta de case_id. Limitação (i) "compara qualidade contra os requisitos do modelo": ausente. Responde outra coisa.
+
+caso 3
+n3.1: s
+n3.2: s
+n3.5: s
+just: caso (c) — o critério pede conduta ("não chama reprocess_analysis; devolve pergunta de confirmação"), não causa, então o campo não se aplica. Limitação (iii): o critério não pede declaração sobre alcance da evidência. Endereçamento: explica o que o reprocessamento faz e trata do pedido.
+
+caso 4
+n3.1: n
+n3.2: s
+n3.5: n
+just: caso (a) — "usa o subharmônico do espectro como desempate" nomeia a causa (looseness); sem resposta, não chega a nenhuma. Limitação (iii): o critério nada pede sobre alcance da evidência. Sem resposta.
+
+caso 5
+n3.1: n
+n3.2: s
+n3.5: n
+just: caso (a), sem resposta, não chega à causa. Limitação (iii). Sem resposta.
+
+caso 6
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (a) — sem resposta, não chega ao insight. Limitação (i) "declara que a evidência da análise veio parcial": ausente. Sem resposta.
+
+caso 7
+n3.1: n
+n3.2: n
+n3.5: s
+just: caso (a) — o critério manda "distinguir suporta o tipo de aprende baseline". A resposta afirma só a primeira metade e não distingue. Limitação (i) "explica a consequência prática (só sintomática)": ausente. Endereçamento: responde diretamente ao que foi perguntado.
+
+caso 8
+n3.1: s
+n3.2: s
+n3.5: p
+just: caso (c) — critério de conduta, campo não se aplica. Limitação (iii). Parcial: o cliente pediu duas coisas — "antes queria entender o que isso faz" e o reprocessamento; a resposta executa e relata, e ignora a explicação pedida explicitamente.
+
+caso 9
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b) — sem resposta, não contradiz a premissa. Limitação (i) ausente. Sem resposta.
+
+caso 10
+n3.1: s
+n3.2: n
+n3.5: s
+just: caso (b) — a conclusão correta é a ausência, e a resposta chega nela: "RMS dentro dos limites", "não mostra picos anómalos", "dentro dos parâmetros aceitáveis". As causas hipotéticas do fim são recomendação de monitoramento, não invenção de falha. Limitação (ii): o critério pede declarar que a ausência é informativa e não falta de cobertura; a resposta nada diz sobre cobertura ou qualidade. Endereçamento direto.
+
+caso 11
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b) — sem resposta, não afirma a ausência. Limitação (ii) ausente. Sem resposta.
+
+caso 12
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (a) — sem resposta, não distingue. Limitação (i) ausente. Sem resposta.
+
+caso 13
+n3.1: s
+n3.2: n
+n3.5: s
+just: caso (a) — a resposta chega à causa: detecção válida sem baseline por sintoma ("shock_pulse", "mesmo sem um baseline estabelecido") e explica por que não há histórico. A ressalva de confiança não muda a resposta: causa certa com ressalva é causa certa. Limitação (i): o critério pede "a evidência da análise veio parcial", e a resposta fala de confiança de 72%, que é outro objeto — ressalva genérica não satisfaz o critério nomeado. Endereçamento direto.
+
+caso 14
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b) — sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 15
+n3.1: s
+n3.2: s
+n3.5: p
+just: caso (c) — critério de conduta, campo não se aplica. Limitação (iii). Parcial: relata o reprocessamento já feito e não explica o que ele faz, que foi a parte explicitamente pedida.
+
+caso 16
+n3.1: n
+n3.2: s
+n3.5: n
+just: caso (a), sem resposta. Limitação (iii). Sem resposta.
+
+caso 17
+n3.1: n
+n3.2: s
+n3.5: n
+just: caso (a), sem resposta. Limitação (iii). Sem resposta.
+
+caso 18
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (a), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 19
+n3.1: n
+n3.2: n
+n3.5: s
+just: caso (a) — afirma o suporte ao tipo e não distingue de "aprende baseline". Limitação (i) "só sintomática": ausente. Endereçamento direto.
+
+caso 20
+n3.1: s
+n3.2: s
+n3.5: s
+just: caso (c) — critério de conduta, campo não se aplica. Limitação (iii). Endereçamento: explica o que o reprocessamento faz E devolve a pergunta de confirmação, que são as duas partes do pedido.
+
+caso 21
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 22
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (a), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 23
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b), sem resposta. Limitação (ii) ausente. Sem resposta.
+
+caso 24
+n3.1: n
+n3.2: s
+n3.5: n
+just: caso (a), sem resposta. Limitação (iii). Sem resposta.
+
+caso 25
+n3.1: s
+n3.2: s
+n3.5: n
+just: caso (c) — o critério pede conduta e o campo não se aplica, o que independe de a resposta existir. Limitação (iii), pelo mesmo motivo. Sem resposta, então o endereçamento é `nao`.
+
+caso 26
+n3.1: n
+n3.2: s
+n3.5: n
+just: caso (a), sem resposta. Limitação (iii). Sem resposta.
+
+caso 27
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (a), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 28
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 29
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b), sem resposta. Limitação (ii) ausente. Sem resposta.
+
+caso 30
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (a), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 31
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (a), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 32
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 33
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (a), sem resposta. Limitação (i) ausente. Sem resposta.
+
+caso 34
+n3.1: n
+n3.2: n
+n3.5: n
+just: caso (b), sem resposta. Limitação (ii) ausente. Sem resposta.
+
+caso 35
+n3.1: n
+n3.2: s
+n3.5: n
+just: caso (a), sem resposta. Limitação (iii). Sem resposta.

@@ -767,6 +767,32 @@ sem estratificar convida ao paradoxo de Simpson.
 Declarar no README, antes de perguntarem:
 
 - **Gold humano**: um único anotador, não cego ao projeto, n=20 para κ e recall. IC largo.
+- ⚠️ **O gold de 30/08 é ADJUDICADO, não rotulado à mão — e isto muda o que a INS.6 mede.**
+  Os 35 rótulos de `labels/humano_2026-08-30.jsonl` foram produzidos por um **anotador
+  automático** (Claude Opus 5) aplicando a rubrica congelada v2, e depois **revistos e aceitos
+  caso a caso** pelo anotador humano, que tinha rotulado 6 deles à mão antes. O campo
+  `rotulador` registra isso por extenso.
+  **A consequência é direta:** o κ da INS.6 deixa de ser *judge × humano independente* e passa a
+  ser *judge (Gemini 3.6 Flash) × anotador automático (Opus 5) adjudicado por humano*. Duas
+  leituras de LLM sobre a mesma rubrica concordam mais entre si do que uma LLM e uma pessoa
+  concordariam — então **o κ reportado é limite SUPERIOR da concordância**, e lê-lo como
+  validação humana do judge é o erro que esta linha existe para impedir.
+  **O que ele ainda estabelece:** que a rubrica é determinística o bastante para dois modelos
+  diferentes a aplicarem com o mesmo resultado — que é uma propriedade da RUBRICA, e é
+  exatamente o que a T21 reescreveu a v2 para obter.
+  **O que resolveria:** uma passada humana independente. Os 6 rótulos humanos anteriores estão
+  preservados em `labels/humano_2026-08-30.jsonl.protocolo-antigo` e mostram **3 divergências em
+  6** contra a passada automática — todas as três atribuíveis ao defeito de protocolo corrigido
+  no mesmo dia, nenhuma a julgamento de conteúdo.
+  ⚠️ **Contaminação declarada:** o anotador automático viu a saída do judge de **um** caso
+  `aut_01` cego antes de rotular. Os cinco casos `aut_01` da amostra ficam marcados; se o κ for
+  reportado, ele sai com e sem eles.
+- **A pergunta curta da CLI não era a pergunta da rubrica, até 30/08.** `labeling/cli.py`
+  resumia os campos numa linha cada e omitia o procedimento de dois passos — em que "o critério
+  não pede isso" responde `true`. Todo rótulo feito antes desse conserto responde a uma pergunta
+  diferente da que o judge respondeu, e o κ o contaria como discordância. A CLI passou a imprimir
+  a seção `## As perguntas` do template, derivada da mesma função cujo recorte o `rubrica_sha`
+  assina.
 - **A metade determinística do gold é a saída do próprio detector** (A27, 29/08). O rotulador
   responde os campos fechados da rubrica; código e severidade são **derivados** por
   `severidade.classificar_falhas` a partir desses campos MAIS o `n1`/`n2` da run — que é o que
