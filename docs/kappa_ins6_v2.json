@@ -1,0 +1,121 @@
+{
+  "todos": {
+    "n_pares": 20,
+    "campos": {
+      "causa_raiz_correta": {
+        "n": 20,
+        "descartados": 0,
+        "kappa": 0.5652,
+        "concordancia_observada": 0.8,
+        "faixa": "insuficiente",
+        "motivo_indefinido": null
+      },
+      "mencionou_limitacao_relevante": {
+        "n": 20,
+        "descartados": 0,
+        "kappa": 0.8,
+        "concordancia_observada": 0.9,
+        "faixa": "aceitavel",
+        "motivo_indefinido": null
+      },
+      "responde_a_pergunta": {
+        "n": 20,
+        "descartados": 0,
+        "kappa": 1.0,
+        "concordancia_observada": 1.0,
+        "faixa": "excelente",
+        "motivo_indefinido": null
+      },
+      "afirmacoes_sem_suporte": {
+        "n": 0,
+        "descartados": 20,
+        "kappa": null,
+        "concordancia_observada": null,
+        "faixa": "indefinido",
+        "motivo_indefinido": "nenhum par com os dois lados respondidos (20 descartado(s) por `None`)"
+      },
+      "contradiz_evidencia": {
+        "n": 0,
+        "descartados": 20,
+        "kappa": null,
+        "concordancia_observada": null,
+        "faixa": "indefinido",
+        "motivo_indefinido": "nenhum par com os dois lados respondidos (20 descartado(s) por `None`)"
+      },
+      "recomendou_acao_sem_base": {
+        "n": 0,
+        "descartados": 20,
+        "kappa": null,
+        "concordancia_observada": null,
+        "faixa": "indefinido",
+        "motivo_indefinido": "nenhum par com os dois lados respondidos (20 descartado(s) por `None`)"
+      }
+    }
+  },
+  "sem_aut_01_contaminado": {
+    "n_pares": 18,
+    "campos": {
+      "causa_raiz_correta": {
+        "n": 18,
+        "descartados": 0,
+        "kappa": 0.5068,
+        "concordancia_observada": 0.7777777777777778,
+        "faixa": "insuficiente",
+        "motivo_indefinido": null
+      },
+      "mencionou_limitacao_relevante": {
+        "n": 18,
+        "descartados": 0,
+        "kappa": 0.7805,
+        "concordancia_observada": 0.8888888888888888,
+        "faixa": "aceitavel",
+        "motivo_indefinido": null
+      },
+      "responde_a_pergunta": {
+        "n": 18,
+        "descartados": 0,
+        "kappa": 1.0,
+        "concordancia_observada": 1.0,
+        "faixa": "excelente",
+        "motivo_indefinido": null
+      },
+      "afirmacoes_sem_suporte": {
+        "n": 0,
+        "descartados": 18,
+        "kappa": null,
+        "concordancia_observada": null,
+        "faixa": "indefinido",
+        "motivo_indefinido": "nenhum par com os dois lados respondidos (18 descartado(s) por `None`)"
+      },
+      "contradiz_evidencia": {
+        "n": 0,
+        "descartados": 18,
+        "kappa": null,
+        "concordancia_observada": null,
+        "faixa": "indefinido",
+        "motivo_indefinido": "nenhum par com os dois lados respondidos (18 descartado(s) por `None`)"
+      },
+      "recomendou_acao_sem_base": {
+        "n": 0,
+        "descartados": 18,
+        "kappa": null,
+        "concordancia_observada": null,
+        "faixa": "indefinido",
+        "motivo_indefinido": "nenhum par com os dois lados respondidos (18 descartado(s) por `None`)"
+      }
+    }
+  },
+  "judge": {
+    "rubrica": "v2",
+    "sha256": "bb38b6ef977806a47dfcd2fe50bd50013cd8405b1f4effa9ad8dd6fbebfa8f98",
+    "model_id": "gemini-3.6-flash",
+    "configuracao": "cego"
+  },
+  "gold": {
+    "arquivo": "labels/humano_2026-08-30.jsonl",
+    "tipo": "adjudicado",
+    "anotador_automatico": "claude-opus-5",
+    "adjudicador": "antonio",
+    "limitacao": "METRICAS §11 — κ é limite superior: duas leituras de LLM"
+  }
+}
