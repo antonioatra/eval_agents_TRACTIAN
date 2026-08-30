@@ -121,3 +121,57 @@ def test_linha_corrompida_continua_sendo_ignorada(calibrar, tmp_path):
     )
 
     assert len(calibrar.ja_gravados(arquivo)) == 1
+
+
+# ---------------------------------------------------------------------------
+# `--somente` — julgar exatamente as runs que têm rótulo humano
+# ---------------------------------------------------------------------------
+
+CALIBRACAO = RAIZ / "runs" / "calibracao_2026-08-24"
+
+
+def test_somente_julga_as_runs_nomeadas_e_ignora_a_cota_por_cenario(calibrar):
+    """Por id, quem nomeou sabe qual quer — a cota do instrumento sai do caminho.
+
+    É o que faz o judge cair sobre o MESMO conjunto que o gold humano. Uma amostra
+    estratificada por cenário cobriria outros traces, e o denominador de INS.1 ficaria vazio:
+    `ΔRecall(N3 | N1+N2)` precisa de julgamento e rótulo sobre a mesma run.
+    """
+    todos, _ = calibrar.compor_amostra([CALIBRACAO], por_cenario=99)
+    assert len(todos) >= 3, "a calibração precisa ter traces julgáveis para este teste valer"
+
+    # Três do MESMO cenário — com a cota em 1, a amostra normal traria só um deles.
+    por_cenario = {}
+    for caminho in todos:
+        por_cenario.setdefault(caminho.name.split("--")[0], []).append(caminho)
+    cenario, caminhos = max(por_cenario.items(), key=lambda kv: len(kv[1]))
+    assert len(caminhos) >= 2, f"{cenario} precisa de 2+ traces para o teste ter alvo"
+
+    alvo = frozenset(caminho.stem for caminho in caminhos[:2])
+    escolhidos, _ = calibrar.compor_amostra([CALIBRACAO], por_cenario=1, somente=alvo)
+
+    assert {caminho.stem for caminho in escolhidos} == alvo
+
+
+def test_somente_com_run_inexistente_e_erro_e_nao_amostra_menor(calibrar):
+    """Julgar 18 de 20 itens de estimativa produziria recall sobre outro denominador."""
+    with pytest.raises(SystemExit, match="não tem trace julgável"):
+        calibrar.compor_amostra(
+            [CALIBRACAO], por_cenario=99, somente=frozenset({"run_que_nao_existe"})
+        )
+
+
+def test_arquivo_de_somente_vazio_e_erro(calibrar, tmp_path):
+    """`frozenset()` julgaria zero traces e imprimiria 'nada a fazer' — que se lê como sucesso."""
+    vazio = tmp_path / "somente.txt"
+    vazio.write_text("# só comentário\n\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="não tem nenhum run_id"):
+        calibrar._ler_somente(vazio)
+
+
+def test_arquivo_de_somente_ignora_comentario_e_linha_vazia(calibrar, tmp_path):
+    arquivo = tmp_path / "somente.txt"
+    arquivo.write_text("# gold\naut_01--x--base--envs001--n11\n\n  \n", encoding="utf-8")
+
+    assert calibrar._ler_somente(arquivo) == frozenset({"aut_01--x--base--envs001--n11"})

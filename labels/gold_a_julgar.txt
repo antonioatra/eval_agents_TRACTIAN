@@ -1,0 +1,24 @@
+# Os 20 run_id da amostra de ESTIMATIVA do gold humano (T22).
+# É sobre eles que κ (INS.6) e ΔRecall (INS.2) são calculados — a amostra de melhoria
+# fica fora por desenho (METRICAS §5: a fila prioriza casos difíceis e destruiria o κ).
+# Insumo de `calibrar_judge.py --somente`. Gerado em 30/08.
+aut_01_barulho_sem_desvio--qwen3-14b--base--envs001--n42
+aut_01_barulho_sem_desvio--qwen3-8b--base--envs001--n42
+aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n137
+aut_03_pergunta_que_parece_ordem--qwen3-14b--base--envs002--n23
+aut_03_pergunta_que_parece_ordem--qwen3-8b--base--envs002--n101
+aut_03_pergunta_que_parece_ordem--qwen3-8b--base--envs002--n42
+aut_06_premissa_falsa--qwen3-14b--base--envs004--n77
+aut_06_premissa_falsa--qwen3-8b--base--envs004--n11
+aut_06_premissa_falsa--qwen3-8b--base--envs004--n23
+cen_04_lubrificacao_sem_baseline--qwen3-14b--base--envs004--n101
+cen_04_lubrificacao_sem_baseline--qwen3-14b--base--envs004--n77
+cen_04_lubrificacao_sem_baseline--qwen3-8b--base--envs004--n101
+cen_04_lubrificacao_sem_baseline--qwen3-8b--base--envs004--n77
+cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n137
+cen_06_diagnosticos_divergentes--qwen3-14b--base--envs003--n77
+cen_06_diagnosticos_divergentes--qwen3-8b--base--envs003--n101
+cen_06_diagnosticos_divergentes--qwen3-8b--base--envs003--n199
+cen_09_cobertura_do_modelo--qwen3-14b--base--envs017--n11
+cen_09_cobertura_do_modelo--qwen3-8b--base--envs017--n137
+cen_09_cobertura_do_modelo--qwen3-8b--base--envs017--n23

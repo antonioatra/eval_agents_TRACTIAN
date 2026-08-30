@@ -122,22 +122,48 @@ virassem gold para κ, e não viram: o κ da T23 sai da rotulagem humana sobre a
 
 
 def compor_amostra(
-    runs: Sequence[Path], *, por_cenario: int
+    runs: Sequence[Path],
+    *,
+    por_cenario: int,
+    somente: frozenset[str] | None = None,
 ) -> tuple[list[Path], dict[str, list[str]]]:
     """Até `por_cenario` itens de cada cenário, varrendo as runs na ordem de preferência.
 
     A cota por cenário existe para o flip rate não virar a média de um cenário só: sem ela,
     `cen_09` entraria com 12 itens e `aut_01` com 1, e "a rubrica é estável" significaria
     "a rubrica é estável em cen_09". Estratificar aqui é mais barato que ponderar depois.
+
+    `somente` NOMEIA as runs, e então a cota deixa de valer — é a mesma assimetria que o X12
+    fixou no runner: por amostra, o corte é do instrumento; por id, quem nomeou sabe qual
+    quer, e devolver menos do que foi pedido seria o instrumento decidindo em silêncio. Serve
+    ao caso que motivou a flag: julgar exatamente os traces que TÊM rótulo humano, para que
+    o κ e o `ΔRecall` saiam do mesmo conjunto que o gold — uma amostra estratificada por
+    cenário cobriria outros traces e o denominador de INS.1 ficaria vazio.
+
+    Run nomeada e não encontrada é **erro**, não item a menos: o gold tem 20 itens de
+    estimativa, e julgar 18 deles produziria um recall sobre outro denominador.
     """
     por_cenario_escolhidos: dict[str, list[Path]] = defaultdict(list)
+    encontradas: set[str] = set()
     for run in runs:
         if not (run / "traces").is_dir():
             continue
         for caminho in traces_julgaveis(run):
+            if somente is not None:
+                if caminho.stem not in somente or caminho.stem in encontradas:
+                    continue
+                encontradas.add(caminho.stem)
             cenario = caminho.name.split("--")[0]
-            if len(por_cenario_escolhidos[cenario]) < por_cenario:
-                por_cenario_escolhidos[cenario].append(caminho)
+            if somente is None and len(por_cenario_escolhidos[cenario]) >= por_cenario:
+                continue
+            por_cenario_escolhidos[cenario].append(caminho)
+
+    if somente is not None and (faltando := somente - encontradas):
+        raise SystemExit(
+            f"{len(faltando)} run(s) nomeada(s) em --somente não tem trace julgável em "
+            f"{[str(r) for r in runs]}: {sorted(faltando)[:5]}"
+            + (" …" if len(faltando) > 5 else "")
+        )
 
     escolhidos = [
         caminho
@@ -344,11 +370,12 @@ def rodar(
     limite: int | None,
     por_cenario: int,
     rubrica: str = RUBRICA_PADRAO,
+    somente: frozenset[str] | None = None,
 ) -> int:
     saida.mkdir(parents=True, exist_ok=True)
     arquivo = saida / "julgamentos.jsonl"
 
-    caminhos, procedencia = compor_amostra(runs, por_cenario=por_cenario)
+    caminhos, procedencia = compor_amostra(runs, por_cenario=por_cenario, somente=somente)
     if limite is not None:
         caminhos = caminhos[:limite]
     if not caminhos:
@@ -525,6 +552,24 @@ def imprimir_resumo(saida: Path) -> int:
     return 0
 
 
+def _ler_somente(caminho: Path | None) -> frozenset[str] | None:
+    """Um `run_id` por linha; linha vazia e `#` são ignoradas.
+
+    Devolver `frozenset()` para arquivo vazio seria pior que `None`: `compor_amostra` julgaria
+    zero traces e imprimiria "nada a fazer", que se lê como sucesso.
+    """
+    if caminho is None:
+        return None
+    ids = frozenset(
+        linha.strip()
+        for linha in caminho.read_text(encoding="utf-8").splitlines()
+        if linha.strip() and not linha.lstrip().startswith("#")
+    )
+    if not ids:
+        raise SystemExit(f"--somente {caminho} não tem nenhum run_id")
+    return ids
+
+
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -549,6 +594,13 @@ def main(argv: Iterable[str] | None = None) -> int:
         "--rubrica", default=RUBRICA_PADRAO, choices=sorted(TEMPLATE_POR_CONFIGURACAO),
         help="qual versão da rubrica julga (default: a do projeto)",
     )
+    parser.add_argument(
+        "--somente", type=Path, default=None,
+        help=(
+            "arquivo com um `run_id` por linha; julga exatamente essas runs e ignora a cota "
+            "por cenário. É como se julga o conjunto que tem rótulo humano"
+        ),
+    )
     parser.add_argument("--somente-resumo", action="store_true")
     args = parser.parse_args(list(argv) if argv is not None else None)
 
@@ -568,6 +620,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         limite=args.limite,
         por_cenario=args.por_cenario,
         rubrica=args.rubrica,
+        somente=_ler_somente(args.somente),
     )
     if codigo == 0:
         print()

@@ -51,7 +51,16 @@ from tapieval.scoring.n3 import (  # noqa: E402
     pontuar_n3,
 )
 
-CONFIGURACAO = "cego"
+CONFIGURACAO_PADRAO = "cego"
+"""O κ da INS.6 é `cego` × `cego`, e é por isso que este é o default.
+
+O humano rotulou sem ver a evidência (`labeling/` impõe a cegueira por construção), então
+comparar o julgamento COM trace contra o rótulo SEM trace mediria a diferença de insumo como
+se fosse discordância de rubrica. A outra configuração existe aqui para o outro uso — o
+segundo ponto da curva de H0/H1 (`ARQUITETURA §12`), que é sobre os três campos que as duas
+configurações respondem —, e não para o κ.
+"""
+
 CAMINHO_DO_CONGELAMENTO = RAIZ / "configs" / "judge_frozen.json"
 
 
@@ -84,13 +93,25 @@ def identificar(caminho: Path) -> str:
     return f"{caminho.parent.parent.name}/{caminho.name}"
 
 
-def ja_julgados(arquivo: Path) -> set[str]:
+def ja_julgados(arquivo: Path) -> set[tuple[str, str]]:
+    """`(trace, configuração)` — e a configuração entra na chave por um motivo medido.
+
+    Ela não estava aqui até 31/08, e sem ela a retomada dava por feita a célula `com_trace`
+    porque a `cego` do mesmo trace já estava gravada: o segundo ponto da curva de H0 nunca
+    seria julgado, e o arquivo diria "nada a fazer". **É o mesmo defeito que a T21 já
+    consertou uma vez** em `calibrar_judge`, onde a chave não carregava o provedor e uma
+    rodada nova dava por feito o que o outro provedor tinha julgado.
+
+    Linha sem o campo é `cego`: até 31/08 essa era a única configuração que este script
+    gravava, e supor o contrário mandaria rejulgar o gold inteiro.
+    """
     if not arquivo.exists():
         return set()
     return {
-        json.loads(linha)["trace"]
+        (registro["trace"], registro.get("configuracao", CONFIGURACAO_PADRAO))
         for linha in arquivo.read_text(encoding="utf-8").splitlines()
         if linha.strip()
+        for registro in (json.loads(linha),)
     }
 
 
@@ -116,6 +137,13 @@ def construir_parser() -> argparse.ArgumentParser:
     parser.add_argument("--labels-dir", type=Path, default=RAIZ / "labels")
     parser.add_argument("--saida", type=Path, default=None)
     parser.add_argument("--congelamento", type=Path, default=CAMINHO_DO_CONGELAMENTO)
+    parser.add_argument(
+        "--configuracao", default=CONFIGURACAO_PADRAO, choices=("cego", "com_trace"),
+        help=(
+            "qual linha de METRICAS §4 julga. O κ da INS.6 é `cego` (default); `com_trace` é "
+            "o segundo ponto da curva de H0 e NÃO entra no κ"
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser
 
@@ -126,12 +154,15 @@ def main(argv: list[str] | None = None) -> int:
     itens = alvos(args.labels_dir, args.run_dir)
     saida = args.saida or RAIZ / "runs" / f"judge_gold_{args.run_dir.name}"
     arquivo = saida / "julgamentos.jsonl"
+    configuracao = args.configuracao
     feitos = ja_julgados(arquivo)
-    pendentes = [(rid, c) for rid, c in itens if identificar(c) not in feitos]
+    pendentes = [
+        (rid, c) for rid, c in itens if (identificar(c), configuracao) not in feitos
+    ]
 
     print(
         f"judge congelado {congelado.scorer_version} sha={congelado.sha256[:12]}… · "
-        f"{congelado.judge_model.model_id} · {CONFIGURACAO}"
+        f"{congelado.judge_model.model_id} · {configuracao}"
     )
     print(f"{len(itens)} de estimativa · já julgados: {len(itens) - len(pendentes)} · "
           f"a fazer: {len(pendentes)}")
@@ -145,10 +176,10 @@ def main(argv: list[str] | None = None) -> int:
         for indice, (run_id, caminho) in enumerate(pendentes, start=1):
             cenario = cenarios[run_id.split("--")[0]]
             insumo = montar_insumo(read_trace(caminho), cenario)
-            medidor = MedidorDeCusto("judge_gold", CAMADA_POR_CONFIGURACAO[CONFIGURACAO])
+            medidor = MedidorDeCusto("judge_gold", CAMADA_POR_CONFIGURACAO[configuracao])
             try:
                 julgamento = pontuar_n3(
-                    insumo, CONFIGURACAO, cliente, medidor,
+                    insumo, configuracao, cliente, medidor,
                     rubrica=congelado.scorer_version,
                 )
             except Exception as erro:  # noqa: BLE001 — a célula morre, a rodada segue
@@ -159,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
                 "trace": identificar(caminho),
                 "run_id": run_id,
                 "cenario": cenario.id,
-                "configuracao": CONFIGURACAO,
+                "configuracao": configuracao,
                 "rubrica": congelado.scorer_version,
                 "judge_sha256": congelado.sha256,
                 "judge_model_id": congelado.judge_model.model_id,
