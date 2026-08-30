@@ -1,6 +1,7 @@
 # BATERIA DE MUTANTES — INS.9. O instrumento medindo a si mesmo.
 #
-#   6 cenários de **dev** × 1 modelo × 4 mutantes × 5 `sample_seed` = 120 execuções.
+#   6 cenários de **dev** × 1 modelo × **`base` + 4 mutantes** × 5 `sample_seed` = 150 execuções.
+#   (a matriz da spec são 120, sem a coluna de controle — ver a caixa da lacuna, fechada em 30/08.)
 #
 # A pergunta é "que fração de MUT1–MUT4 o instrumento distingue do original, **por classe**?"
 # (`METRICAS §7.1`). É a fonte de verdade-terreno de viés zero — a degradação é sabida por
@@ -20,7 +21,7 @@
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
 # ─────────────────────────────────────────────────────────────────────────────────────────
-# LACUNA ABERTA — A COLUNA `base` NÃO ESTÁ NESTA MATRIZ, E A INS.9 PRECISA DELA
+# LACUNA FECHADA EM 30/08 — A COLUNA `base` ENTROU, PELA SAÍDA (a)
 #   INS.9 é "fração distinguida **do original**". A matriz de `METRICAS §9.2` (6 × 1 × 4 MUT ×
 #   5 seeds) lista só os quatro mutantes: não há coluna `base` contra a qual ler a degradação.
 #   Este arquivo reproduz a matriz da spec **como está**, para não trocar o denominador por
@@ -33,7 +34,12 @@
 #        — mas são 2 seeds das 5, e só valem se o `prompt_sha` e o SUT forem os mesmos da noite.
 #     c) ler a degradação contra a bateria principal — **não serve**: ela roda sobre test, e
 #        comparar mutante-em-dev com base-em-test confunde degradação com dificuldade de split.
-#   Recomendação: (a). Decisão do operador — ver `docs/dimensionamento.md §6`.
+#   Recomendação: (a). ✅ **ADOTADA em 30/08, ratificada pelo operador junto com o corte do
+#   A16.** A margem que o corte liberou (4,58 h) tinha este candidato único, e é a única das
+#   pendências do `docs/dimensionamento.md §6` que muda uma métrica que **vai** ser reportada.
+#   A matriz passa a 150 células (+0,65 h); a pior noite observada vai a 14,87 h contra as 16 h.
+#   O pareamento que o bloco de `sample_seeds` antecipava passa a existir: cada run mutante tem
+#   a run `base` da MESMA seed, e a detecção é lida entre pares e não entre distribuições.
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
 # `split: dev` porque os mutantes são validação do framework, não resultado sobre o corpus: a
@@ -87,11 +93,12 @@ modelos:
 # ("iteração 3 de 8 · 5 de 12 chamadas"). Sob MUT3 o agente **enxerga** o corte de 12 para 3 em
 # vez de bater nele às cegas, então o que MUT3 degrada não é só "menos orçamento", é "menos
 # orçamento, e o agente sabe". A INS.9 do MUT3 fica com esse confundimento declarado.
-variantes: [MUT1, MUT2, MUT3, MUT4]
+# `base` primeiro, e é a coluna de controle da INS.9 — não um quinto mutante.
+variantes: [base, MUT1, MUT2, MUT3, MUT4]
 
 # Cinco repetições: o prefixo das oito da principal, na mesma ordem. Prefixo e não sorteio novo
-# para que a run mutante e a run `base` da mesma seed sejam pareáveis se a saída (a) da lacuna
-# acima for adotada — sem pareamento, a detecção teria de ser lida entre distribuições em vez
+# para que a run mutante e a run `base` da mesma seed sejam pareáveis — a saída (a) da lacuna
+# acima FOI adotada em 30/08 — sem pareamento, a detecção teria de ser lida entre distribuições em vez
 # de entre pares, e o n de 5 não sustenta isso.
 sample_seeds: [11, 23, 42, 77, 101]
 

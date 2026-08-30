@@ -34,12 +34,30 @@
 #      tier com o critério "o maior disponível, **≠ dos SUTs**", pelo motivo escrito: juiz igual
 #      ao réu prefere as próprias respostas. Se o SUT de referência for `gemini-3.6-flash`, que
 #      é o `MODELO_PADRAO` do judge, o judge julga a si mesmo — exatamente o viés que a regra
-#      existe para evitar, e ele cairia sobre a única linha que serve de teto. Por isso o
-#      `model_id` abaixo é o Pro e não o Flash: os ~200 chamadas desta bateria cabem no RPD do
-#      Pro, ao contrário das ~1.400 do judge, que foi o motivo de o judge ser Flash.
-#      **`gemini-3.6-pro` é um id A CONFERIR contra o catálogo da free tier na noite da
-#      execução, e tem de ser um snapshot datado, nunca um alias `-latest`** — alias muda de
-#      modelo sob o pé e tornaria decorativo o congelamento que o resto do trabalho faz.
+#      existe para evitar, e ele cairia sobre a única linha que serve de teto.
+#
+#      ✅ **CONFERIDO EM 30/08, E O PRO NÃO EXISTE.** A sonda de `checar_catalogo_vertex.py`
+#      (mesmo host, mesmo `x-goog-user-project`) deu **404 em `gemini-3.6-pro`, `gemini-3-6-pro`,
+#      `gemini-3.6-pro-07-2026` e `gemini-3.7-pro`**, com `gemini-3.6-flash` e `gemini-3.7-flash`
+#      respondendo 200 na mesma passada — o controle passou, então é negativo real e não sonda
+#      quebrada. A premissa do parágrafo acima ("os ~200 chamadas cabem no RPD do Pro") era sobre
+#      um modelo que esta conta não alcança.
+#
+#      **O id passa a ser `gemini-3.7-flash`**, decidido pelo operador em 30/08: é o único id
+#      aceito que é **≠ do judge** (`gemini-3.6-flash`), então a regra do §13 — a que este
+#      bloqueio existe para proteger — continua satisfeita, e é o guarda de `sut/referencia.py`
+#      que a faz valer em código.
+#
+#      ⚠️ **DUAS RESSALVAS, e as duas vão para as limitações da T32:**
+#      (i) o teto passa a ser um **flash de geração mais nova**, não um modelo de fronteira. É
+#          teto mais baixo do que o `ARQUITETURA §13` supunha ao escrever "o maior disponível",
+#          e a direção do viés está nomeada em `sut/referencia.py`: teto mais baixo encolhe a
+#          distância até os Qwen3 locais e **faz os SUTs locais parecerem relativamente
+#          melhores** — viés na direção confortável, que é a que não se percebe sozinha. A
+#          leitura "os SUTs locais estão a X do teto" tem de dizer de que teto fala.
+#      (ii) `versionId` volta **`default`** — o alias mudo do X29. Não é regressão desta
+#          bateria: é a mesma propriedade que o judge já tem desde a migração de 25/08, e a
+#          mitigação é a mesma (o canário de entrada fixa antes e depois).
 #
 #   3. **RPD: 200 + 1.400 não cabem no mesmo dia.** A conta do A1 dá ~1.400 chamadas de judge
 #      na free tier; esta bateria são 24 runs × ~8 chamadas ≈ 200. Somadas passam do teto
@@ -75,7 +93,8 @@ cenarios:
 
 modelos:
   gemini-referencia:
-    model_id: gemini-3.6-pro          # snapshot datado — CONFERIR na noite (bloqueio 2 acima)
+    model_id: gemini-3.7-flash        # conferido 30/08: o Pro dá 404; este é o único aceito
+                                      # que é ≠ do judge (bloqueio 2 acima, com as ressalvas)
     served_by: gemini_free_tier
     quantization: null                # servido, não quantizado por nós
     temperature: 0.7                  # a mesma dos SUTs locais: o teto tem de ser lido sob a

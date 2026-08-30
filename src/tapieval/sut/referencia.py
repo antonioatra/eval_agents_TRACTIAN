@@ -152,17 +152,26 @@ MODELO_PADRAO = "gemini-3.7-flash"
 200 exatamente dois: `gemini-3.6-flash` (o judge — proibido aqui pela barreira) e
 `gemini-3.7-flash`. Todos os ids datados responderam 404 nos dois provedores.
 
-O QUE ISTO CUSTA, E PRECISA DE RATIFICAÇÃO
-    `configs/bateria_referencia.yaml` declara `gemini-3.6-pro`, escolhido em
+O QUE ISTO CUSTA — ✅ RATIFICADO EM 30/08, E O PRO NÃO EXISTE
+    `configs/bateria_referencia.yaml` declarava `gemini-3.6-pro`, escolhido em
     `docs/dimensionamento.md §6.6` sob a premissa de free tier (Pro cabia no RPD das ~200
     chamadas; Flash era do judge por causa das ~1.400). Essa premissa morreu com a migração,
-    e **o Pro nunca foi conferido contra o catálogo** — não está em `catalogo_vertex.json`.
+    e o Pro nunca tinha sido conferido contra o catálogo.
 
-    Um *flash* como teto é um teto MAIS BAIXO que um *pro*. Isso encolhe a distância entre o
-    modelo de fronteira e os Qwen3 8B/14B locais, ou seja, faz os SUTs locais parecerem
-    relativamente melhores — viés na direção confortável. **Tem de ser declarado ao ler a
-    figura**, e a saída limpa é conferir o Pro com `scripts/checar_catalogo_vertex.py` antes
-    da noite da execução.
+    **A conferência que este parágrafo pedia foi feita em 30/08, antes da noite da execução, e
+    o Pro deu 404** — nas quatro grafias (`gemini-3.6-pro`, `gemini-3-6-pro`,
+    `gemini-3.6-pro-07-2026`, `gemini-3.7-pro`), com `gemini-3.6-flash` e `gemini-3.7-flash`
+    respondendo 200 na mesma passada. O controle passou, então é negativo real e não sonda
+    quebrada. O manifesto passou a declarar este mesmo `MODELO_PADRAO`, e a divergência entre
+    o código e o YAML que esta docstring registrava deixou de existir.
+
+    **A ressalva NÃO foi resolvida junto — ela foi confirmada, e é a que importa ao ler a
+    figura.** Um *flash* como teto é um teto MAIS BAIXO que um *pro*. Isso encolhe a distância
+    entre o modelo de fronteira e os Qwen3 8B/14B locais, ou seja, **faz os SUTs locais
+    parecerem relativamente melhores — viés na direção confortável**. A saída limpa era
+    conferir o Pro; ela foi tentada e não existe saída. Então o teto sai com o nome do que ele
+    é, e a leitura "os locais estão a X do teto" tem de dizer de que teto fala (limitações da
+    T32).
 
 Este default só vale para quem constrói o cliente sem `ModelConfig`; na bateria quem manda é
 o `model_id` da célula, que vem do YAML."""

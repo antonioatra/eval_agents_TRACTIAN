@@ -21,6 +21,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# Logs do operador da noite. `runs/` É rastreado (os traces são o dado), mas o stdout do
+# runner não é dado: é o que rolou no terminal, e ele se refaz rodando de novo.
+runs/_log_*.log
+
 # macOS
 .DS_Store
 

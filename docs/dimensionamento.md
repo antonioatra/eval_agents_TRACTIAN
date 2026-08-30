@@ -182,6 +182,11 @@ oferecer um caminho barato para mantê-las.
 
 ## 4 · Recomendação
 
+✅ **RATIFICADA em 30/08 — é a decisão do A16, e a execução das T24–26 saiu do bloqueio.**
+O item (a) da margem (a coluna `base` dos mutantes, +0,65 h) **não** foi incluído junto: ele muda
+um manifesto já validado célula a célula, e como o runner retoma por célula, acrescentá-lo depois
+custa as 30 runs novas e nada de retrabalho. Fica na mesa, não fechado.
+
 > **Cortar a bateria de ambiente e a bateria metamórfica. Manter `pass^8`, os quatro mutantes,
 > a bateria de referência e as 35 rotulagens humanas.**
 >
@@ -376,12 +381,28 @@ make api
 .venv/bin/python -m tapieval.runner --manifest configs/bateria_referencia.yaml
 ```
 
-Saída esperada do `--dry-run`, conferida contra a tabela do §1:
+Saída esperada do `--dry-run` — **atualizada em 30/08, depois do corte do A16 e da coluna
+`base`**, e conferida contra a tabela do §1:
 
 ```
 principal    18 cenários × 2 modelos × 1 variantes × 8 seeds = 288 células
-mutantes      6 cenários × 1 modelos × 4 variantes × 5 seeds = 120 células
-metamorfica   6 cenários × 2 modelos × 1 variantes × 1 seeds =  12 células   (braço de referência)
-ambiente      6 cenários × 2 modelos × 1 variantes × 1 seeds =  12 células   (braço canônico)
+mutantes      6 cenários × 1 modelos × 5 variantes × 5 seeds = 150 células   ← `base` + 4 MUT
 referencia    6 cenários × 1 modelos × 1 variantes × 4 seeds =  24 células
 ```
+
+**São três, e não cinco.** `metamorfica` e `ambiente` saíram no corte do A16 (30/08) e não rodam:
+os manifestos ficam no repositório com a matriz por extenso e o bloqueio de código nomeado, como
+trabalho futuro declarado. Rodá-los hoje produziria o braço reduzido de 12 células cada, que não é
+a bateria — é o que sobra dela sem os eixos que `runner/matriz.py` não tem.
+
+**A linha `mutantes` mudou de 120 para 150** quando a coluna `base` foi ratificada (§6.8, item (a)
+da margem). Quem conferir contra uma cópia antiga desta página vai achar que a matriz cresceu
+sozinha; cresceu por decisão, e está registrada no cabeçalho do YAML.
+
+⚠️ **E o `model_id` da referência mudou.** O `gemini-3.6-pro` que o §6.6 declarava **não existe**
+no catálogo — conferido em 30/08 com `scripts/checar_catalogo_vertex.py`, 404 nas quatro grafias,
+com os dois flash respondendo 200 na mesma passada (controle passou: é negativo real). O manifesto
+passou a `gemini-3.7-flash`, que é o único id aceito **≠ do judge** e já era o `MODELO_PADRAO` de
+`sut/referencia.py`. **A ressalva não sumiu, foi confirmada:** um flash como teto é teto mais baixo
+que um pro, o que encolhe a distância até os Qwen3 locais e faz os SUTs locais parecerem
+relativamente melhores — viés na direção confortável, e ele vai para as limitações da T32.
