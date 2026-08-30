@@ -126,7 +126,7 @@ A coluna que decide é a última, não a primeira.
 
 | # | corte | economia | escopo restante | **o que deixa de ser sustentável** |
 |---|---|---|---|---|
-| 1 | **cortar ambiente** | **−2,75 h** | 14,36 h | **H4 inteira.** Some a decomposição de variância de `METRICAS §7.2`: `pass^8` com `env_seed` fixo continua, `pass^8` com `env_seed` livre não existe, e a área entre as curvas — que É a inconsistência atribuível à plataforma — deixa de ser mensurável. Some também INS.8 lido "por mundo". Custo real menor que o nominal: a H4 que se perde já era de 1 cenário em 6 (§2.1). |
+| 1 | **cortar ambiente** | **−2,75 h** | 14,36 h *(12,95–13,26 com a metamórfica real)* | **H4 inteira.** Some a decomposição de variância de `METRICAS §7.2`: `pass^8` com `env_seed` fixo continua, `pass^8` com `env_seed` livre não existe, e a área entre as curvas — que É a inconsistência atribuível à plataforma — deixa de ser mensurável. Some também INS.8 lido "por mundo". Custo real menor que o nominal: a H4 que se perde já era de 1 cenário em 6 (§2.1). |
 | 2 | **cortar metamórfica** | **−2,94 h** (nominal) · −1,5 a −1,8 h (real) | 11,42 h | **Robustez e invariâncias.** Sem P1 não há evidência sobre sensibilidade a superfície linguística; sem P2 o respeito a permissão (D1) é medido só onde o cenário já o testa de propósito, nunca sob perturbação; sem P4 a sicofancia (C2) fica sem teste dirigido; sem P5 o viés de confirmação (C1) idem. Nenhuma delas some da **taxonomia** — somem da **evidência**. |
 | 3 | **cortar MUT3** (mantendo MUT1, MUT2, MUT4) | **−0,65 h** nominal, e **menos na prática** | 10,77 h | **Metade do apoio da classe P na curva de INS.9.** Sobra MUT1 como único ponto de P contra dois de C. Duas ressalvas empurram em direções opostas: (a) a economia é superestimada — MUT3 roda com `max_tool_calls: 3` e é o mutante de runs mais curtas, então 0,65 h é teto, não valor; (b) MUT3 é o único mutante **já confundido** pelo A17/A18 — o SUT informa o orçamento restante, então sob MUT3 o agente *enxerga* o corte de 12 → 3 em vez de bater nele às cegas. É o mutante mais barato de perder cientificamente e o que menos economiza. |
 | 4 | **`sample_seed` 8 → 5** | **−3,31 h** | 13,81 h (sozinho) | **O `pass^8` vira `pass^5`, e é o resultado central.** `pass^k` decai rápido e o valor de k **é** a afirmação: com 80 % de acerto, `pass^8 ≈ 0,17` e `pass^5 ≈ 0,33` — o relatório passa a apresentar um número duas vezes mais otimista sobre a mesma confiabilidade, e a comparação com o τ-bench, que é de onde a métrica vem, muda de eixo. O IC bootstrap de INS.2 (o número que testa H0) também perde precisão. É o eixo que `matriz.py` marca em mensagem de erro como "o único que não se corta para caber no tempo". |
@@ -137,17 +137,46 @@ A coluna que decide é a última, não a primeira.
 O escopo é fixo; o que varia é a velocidade da noite. As colunas abaixo aplicam ao mesmo escopo
 o fator de cada uma das quatro passadas (19,8 / 13,5 / 21,3 / 17,3 h para as ~600 execuções).
 
+⚠️ **Refeita em 30/08: uma linha desta tabela estava inflada.** A versão anterior media TODOS os
+escopos com a metamórfica **nominal** (96 células, 2,94 h) — o número que a própria §2.2 diz não
+ser realizável. Contada pelas 50–60 células que de fato se constroem (1,53–1,84 h), cortar **só o
+ambiente** não estoura por 1,7 h: fica **na linha** dos 16 h. A recomendação do §4 não muda; o
+motivo dela muda, e isso importa.
+
 | escopo | 4ª (17,3) | 3ª (21,3) — **a pior** | 1ª (19,8) | 2ª (13,5) | cabe em 16 h? |
 |---|---|---|---|---|---|
-| tudo | 17,11 | **21,07** | 19,59 | 13,35 | **não** |
-| − ambiente | 14,36 | **17,68** | 16,43 | 11,21 | **não numa noite ruim** |
-| − ambiente − metamórfica | 11,42 | **14,06** | 13,07 | 8,91 | **sim, sempre** |
-| − ambiente − metamórfica − MUT3 | 10,77 | 13,25 | 12,32 | 8,40 | sim |
+| tudo (metamórfica nominal) | 17,11 | **21,07** | 19,59 | 13,35 | **não** |
+| tudo (metamórfica real) | 15,71–16,01 | **19,34–19,71** | 17,98–18,33 | 12,26–12,49 | **não** |
+| − ambiente (metamórfica nominal) | 14,36 | 17,68 | 16,43 | 11,21 | não |
+| **− ambiente (metamórfica real)** | 12,95–13,26 | **15,95–16,32** | 14,82–15,17 | 10,11–10,35 | **na linha** |
+| − ambiente (metam. real) **+ coluna `base`** | 13,60–13,91 | **16,75–17,13** | 15,57–15,92 | 10,62–10,85 | **não** |
+| **− ambiente − metamórfica** | 11,42 | **14,06** | 13,07 | 8,91 | **sim, sempre** |
+| − ambiente − metamórfica **+ coluna `base`** | 12,07 | 14,87 | 13,82 | 9,42 | **sim** |
+| − ambiente − metamórfica − MUT3 | 10,77 | 13,26 | 12,33 | 8,40 | sim |
 | só `sample_seed` 8 → 5 | 13,81 | **17,00** | 15,80 | 10,78 | **não numa noite ruim** |
 
-É esta tabela que decide, e não a de economias: **cortar só a bateria de ambiente cabe na conta
-mediana e estoura numa noite como a da 3ª passada.** O mesmo vale para o corte de `sample_seed`
-sozinho — que ainda por cima paga com o resultado central.
+*(A §2.2 arredondou o piso da metamórfica real para 1,47 h; a mistura 25 + 25 dá **1,53 h**.
+Nenhuma conclusão depende dessa diferença.)*
+
+**O que a tabela corrigida diz, e é diferente do que a anterior dizia:**
+
+1. **Pelo tempo puro, manter a metamórfica é empate técnico, não estouro.** Na pior noite
+   observada ela erra os 16 h por 0 a 20 minutos, e cabe nas outras três passadas. Quem decidir
+   por tempo, e só por tempo, pode legitimamente mantê-la — a tabela antiga não permitia essa
+   leitura porque cobrava dela 1,4 h que não existem.
+2. **A coluna `base` dos mutantes desempata** (§2.3, +0,65 h). É a única pendência que muda uma
+   métrica que **vai** ser reportada — a INS.9 —, e com ela dentro manter a metamórfica volta a
+   estourar (16,75–17,13 h na pior noite) enquanto cortar as duas fica em 14,87 h.
+3. **E nenhuma das duas roda hoje**, que é o argumento que não é de tempo e por isso não cabe
+   nesta tabela: `Bateria.expandir` (`runner/matriz.py`) tem quatro eixos — cenários × modelos ×
+   variantes × `sample_seeds`. Não há eixo de `env_seed` nem de perturbação, e `scenarios/` não
+   tem um único YAML perturbado. O ambiente precisa do eixo (ou de 45 YAMLs clonados só para
+   variar a seed); a metamórfica precisa de ~24 YAMLs derivados, da regra de derivação de
+   gabarito em código, e do mesmo eixo ausente para a P3.
+
+**A recomendação do §4 vale, com o motivo 1 corrigido:** o que exclui as duas baterias não é a
+aritmética da madrugada — é que elas não existem como código. A aritmética apenas deixa de
+oferecer um caminho barato para mantê-las.
 
 ---
 
@@ -160,9 +189,13 @@ sozinho — que ainda por cima paga com o resultado central.
 
 Três motivos, na ordem em que pesam:
 
-**1. É o único escopo que sobrevive à pior noite observada.** 14,06 h contra 16 h no fator da 3ª
-passada. Cortar só o ambiente dá 17,68 h no mesmo fator — estoura. Com uma dispersão de passada
-para passada de ±25 %, uma margem de 10 % não é margem, é sorte.
+**1. É o único escopo que sobrevive à pior noite observada COM a coluna `base` dentro.** 14,87 h
+contra 16 h no fator da 3ª passada. ⚠️ **Corrigido em 30/08:** cortar só o ambiente **não** dá as
+17,68 h que este parágrafo afirmava — aquele número media a metamórfica pelas 96 células nominais
+da §2.2, e pelas 50–60 realizáveis o mesmo escopo dá 15,95–16,32 h, que é empate na linha. O que o
+desempata pelo tempo é a coluna `base` (+0,65 h, §2.3), que leva o escopo com metamórfica a
+16,75–17,13 h. Com uma dispersão de passada para passada de ±25 %, uma margem de 10 % não é
+margem, é sorte — e aqui nem 10 % havia.
 
 **2. Nenhuma das duas é construível em duas noites**, e este é o argumento que fecha a questão.
 Não é só tempo de GPU: a bateria de ambiente exige um eixo `env_seeds` em `runner/matriz.py` que
