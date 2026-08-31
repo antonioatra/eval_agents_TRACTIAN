@@ -14,7 +14,8 @@ FIG_NOTEBOOKS := notebooks/nb01_exploracao_api.ipynb notebooks/nb02_cobertura_co
                  notebooks/nb03_calibracao_judge.ipynb notebooks/nb04_resultados_principais.ipynb
 FIG_ARQUIVOS  := figures/fig01_distribuicao_status.png figures/fig02_matriz_cobertura.png \
                  figures/fig03_flip_rate.png figures/fig04_curva_rubrica.png \
-                 figures/fig05_custo_recall_h0.png figures/fig06_recall_por_classe_h0.png
+                 figures/fig05_custo_recall_h0.png figures/fig06_recall_por_classe_h0.png \
+                 figures/fig07_h2_funcao_vs_args.png figures/fig08_ins9_mutantes.png
 
 # `uv` não está disponível neste ambiente; o venv é criado com o venv da stdlib.
 $(VENV):

@@ -37,5 +37,153 @@
       "C": 0.8077,
       "D": 1.0
     }
+  },
+  "h2": {
+    "tool_f1": {
+      "delta": 0.0206,
+      "ic95": [
+        -0.0212,
+        0.0616
+      ],
+      "n_pares": 144,
+      "n_descartados": 0,
+      "p_bootstrap": 0.331,
+      "veredito_estavel": true,
+      "leitura": "cruza zero"
+    },
+    "tool_f1_liquido": {
+      "delta": 0.0569,
+      "ic95": [
+        0.0076,
+        0.107
+      ],
+      "n_pares": 144,
+      "n_descartados": 0,
+      "p_bootstrap": 0.0242,
+      "veredito_estavel": true,
+      "leitura": "não cruza zero"
+    },
+    "args_acc": {
+      "delta": -0.0614,
+      "ic95": [
+        -0.1234,
+        0.0003
+      ],
+      "n_pares": 124,
+      "n_descartados": 21,
+      "p_bootstrap": 0.0514,
+      "veredito_estavel": false,
+      "leitura": "no limiar — este n não decide"
+    },
+    "decisao_correta": {
+      "delta": -0.1019,
+      "ic95": [
+        -0.2037,
+        0.0
+      ],
+      "n_pares": 108,
+      "n_descartados": 37,
+      "p_bootstrap": 0.0696,
+      "veredito_estavel": true,
+      "leitura": "cruza zero"
+    }
+  },
+  "ins9": {
+    "codigos": {
+      "MUT1": {
+        "valor": 0.8667,
+        "poder_util": 0.0667,
+        "invertida": 0.1667,
+        "n_pares": 30
+      },
+      "MUT2": {
+        "valor": 0.7333,
+        "poder_util": 0.1667,
+        "invertida": 0.0333,
+        "n_pares": 30
+      },
+      "MUT3": {
+        "valor": 1.0,
+        "poder_util": 0.0,
+        "invertida": 0.7333,
+        "n_pares": 30
+      },
+      "MUT4": {
+        "valor": 0.7667,
+        "poder_util": 0.0667,
+        "invertida": 0.3,
+        "n_pares": 30
+      },
+      "agregada": {
+        "valor": 0.8417,
+        "poder_util": 0.075,
+        "invertida": 0.3083,
+        "n_pares": 120
+      }
+    },
+    "sem_s2": {
+      "MUT1": {
+        "valor": 0.4667,
+        "poder_util": 0.2667,
+        "invertida": 0.2,
+        "n_pares": 30
+      },
+      "MUT2": {
+        "valor": 0.3,
+        "poder_util": 0.1333,
+        "invertida": 0.1667,
+        "n_pares": 30
+      },
+      "MUT3": {
+        "valor": 0.7333,
+        "poder_util": 0.0,
+        "invertida": 0.7333,
+        "n_pares": 30
+      },
+      "MUT4": {
+        "valor": 0.3,
+        "poder_util": 0.1667,
+        "invertida": 0.1333,
+        "n_pares": 30
+      },
+      "agregada": {
+        "valor": 0.45,
+        "poder_util": 0.1417,
+        "invertida": 0.3083,
+        "n_pares": 120
+      }
+    },
+    "nominal": {
+      "MUT1": {
+        "valor": 0.0,
+        "poder_util": 0.0,
+        "invertida": 0.0,
+        "n_pares": 30
+      },
+      "MUT2": {
+        "valor": 0.0,
+        "poder_util": 0.0,
+        "invertida": 0.0,
+        "n_pares": 30
+      },
+      "MUT3": {
+        "valor": 0.0,
+        "poder_util": 0.0,
+        "invertida": 0.0,
+        "n_pares": 30
+      },
+      "MUT4": {
+        "valor": 0.0,
+        "poder_util": 0.0,
+        "invertida": 0.0,
+        "n_pares": 30
+      },
+      "agregada": {
+        "valor": 0.0,
+        "poder_util": 0.0,
+        "invertida": 0.0,
+        "n_pares": 120
+      }
+    }
   }
 }
