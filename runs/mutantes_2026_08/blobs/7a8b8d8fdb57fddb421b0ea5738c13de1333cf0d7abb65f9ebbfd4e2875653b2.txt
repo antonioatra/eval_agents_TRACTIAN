@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O usuário está perguntando sobre o baseline da bomba de refrigerante e se um pico indica uma falha no rolamento. Preciso verificar o baseline do ativo e as análises recentes para confirmar.", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_B211"}}, "resposta": null, "decisao": "agir", "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "O modelo 'specialist_v1' não foi encontrado. Talvez o ID esteja incorreto ou o modelo tenha sido excluído. Carla precisa de mais informações para entender a situação atual do ativo.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_M205"}}, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

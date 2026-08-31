@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "Não há análises 'pending'. Vou verificar se a análise atual é suficiente para reprocessar ou se preciso escalar.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_C210"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "o baseline não está disponível, o que significa que a análise atual não pode ser comparada com o estado normal. preciso verificar se há dados suficientes para concluir sobre a falha de rolamento.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_B211"}}, "resposta": null, "decisao": "agir", "prioridade_escalonamento": null}

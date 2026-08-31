@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "Vou verificar os dados de qualidade e as análises do ativo para identificar possíveis anomalias.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_H110", "status": "current"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

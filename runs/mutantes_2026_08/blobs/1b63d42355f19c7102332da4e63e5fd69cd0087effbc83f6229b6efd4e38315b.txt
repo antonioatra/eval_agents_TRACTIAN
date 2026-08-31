@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "Pergunta do técnico sobre anomalia no martelete (asset_H110). Inicia a investigação com base nos dados disponíveis. Primeiro, verifico se os dados de vibração estão disponíveis e em qual estado.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_H110"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

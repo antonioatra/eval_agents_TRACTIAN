@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "A análise atual está em 'current' e tem confiança de 0,93. Vou verificar se há uma análise mais antiga com status 'pending' ou 'inconclusive' que possa indicar um problema.", "acao": {"tool": "list_analyses", "args": {"asset_id": "asset_C210", "status": "pending"}}, "resposta": null, "decisao": null, "prioridade_escalonamento": null}

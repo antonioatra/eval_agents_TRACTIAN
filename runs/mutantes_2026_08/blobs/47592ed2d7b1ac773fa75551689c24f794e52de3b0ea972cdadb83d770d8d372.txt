@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "A qualidade dos dados é boa (completude 95%, frescor de 6 minutos, SNR 16,1 dB). Agora devo verificar a série temporal de RMS e o espectro para identificar desvios ou anormalidades.", "acao": {"tool": "get_rms_series", "args": {"asset_id": "asset_H110"}}, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

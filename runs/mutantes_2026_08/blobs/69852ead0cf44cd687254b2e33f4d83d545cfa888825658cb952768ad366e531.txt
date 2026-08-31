@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "O usuário está perguntando como o sistema detecta falta de lubrificação em um motor novo, ainda sem baseline. A resposta depende da análise de dados recém-colhidos e do modelo utilizado.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_M208"}}, "resposta": null, "decisao": "perguntar", "prioridade_escalonamento": null}

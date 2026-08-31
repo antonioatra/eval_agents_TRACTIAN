@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "Os dados do sensor estão completos e frescos, o que é bom. Mas como o motor foi instalado semana passada, talvez o baseline ainda não tenha sido estabelecido. Vamos verificar o baseline do ativo.", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_M208"}}, "resposta": null, "decisao": "agir", "prioridade_escalonamento": null}

@@ -1,0 +1,1 @@
+{"modo": "contextualizar", "pensamento": "O usuário está perguntando sobre uma discrepância entre o sistema e um relatório de especialista. Preciso entender a situação antes de responder.\", \"acao\": null, \"resposta\": null, \"citacoes\": []}", "acao": null, "resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}

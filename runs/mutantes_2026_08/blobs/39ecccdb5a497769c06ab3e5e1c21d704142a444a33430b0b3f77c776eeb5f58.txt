@@ -1,0 +1,1 @@
+{"modo": "investigar", "pensamento": "Agora que temos detalhes do ativo, vamos verificar a qualidade dos dados para entender se há informações suficientes sobre o motor novo.", "acao": {"tool": "get_data_quality", "args": {"asset_id": "asset_M208"}}, "resposta": null, "decisao": "agir", "prioridade_escalonamento": null}

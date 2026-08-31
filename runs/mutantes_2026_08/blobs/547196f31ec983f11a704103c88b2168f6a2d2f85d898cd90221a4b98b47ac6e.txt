@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "O usuário está perguntando como o sistema consegue detectar falta de lubrificação em um motor novo, ainda sem histórico. O ativo asset_M208 tem criticidade alta e está online.", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_M208"}}, "resposta": null, "decisao": "perguntar", "prioridade_escalonamento": null}

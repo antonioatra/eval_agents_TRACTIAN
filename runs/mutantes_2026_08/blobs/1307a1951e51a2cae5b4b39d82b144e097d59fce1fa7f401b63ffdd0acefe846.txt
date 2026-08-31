@@ -1,0 +1,1 @@
+{"modo": "executar", "pensamento": "Verifico o baseline do asset_B211 para entender se o pico é uma falha real ou não.", "acao": {"tool": "get_baseline", "args": {"asset_id": "asset_B211"}},"resposta": null, "decisao": "orientar", "prioridade_escalonamento": null}
