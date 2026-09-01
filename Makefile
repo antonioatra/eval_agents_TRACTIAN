@@ -11,11 +11,13 @@ API_PY  := $(API_DIR)/api/.venv/bin/python
 # figuras da lista foram regravadas. É a lista que se estende quando a bateria oficial rodar
 # (curva custo × recall, matriz de concordância, pass^k) — ver o comentário de `repro`.
 FIG_NOTEBOOKS := notebooks/nb01_exploracao_api.ipynb notebooks/nb02_cobertura_corpus.ipynb \
-                 notebooks/nb03_calibracao_judge.ipynb notebooks/nb04_resultados_principais.ipynb
+                 notebooks/nb03_calibracao_judge.ipynb notebooks/nb04_resultados_principais.ipynb \
+                 notebooks/nb05_passk_estabilidade.ipynb
 FIG_ARQUIVOS  := figures/fig01_distribuicao_status.png figures/fig02_matriz_cobertura.png \
                  figures/fig03_flip_rate.png figures/fig04_curva_rubrica.png \
                  figures/fig05_custo_recall_h0.png figures/fig06_recall_por_classe_h0.png \
-                 figures/fig07_h2_funcao_vs_args.png figures/fig08_ins9_mutantes.png
+                 figures/fig07_h2_funcao_vs_args.png figures/fig08_ins9_mutantes.png \
+                 figures/fig09_passk_curvas.png figures/fig10_decomposicao_variancia.png
 
 # `uv` não está disponível neste ambiente; o venv é criado com o venv da stdlib.
 $(VENV):
@@ -119,11 +121,14 @@ pontuar: install
 # curva custo × recall (H0) e o recall por classe. Zero chamada de rede: `scoring/ins.py` é
 # função pura de (trace, gabarito, rótulo).
 #
-# O QUE AINDA NÃO TEM FIGURA são as baterias principal e de mutantes, que só fecharam em
-# 31/08: o pass^k por modelo, a H2 e a detecção de mutantes entram quando os notebooks delas
-# existirem. Estender é acrescentar o par (notebook, figura) a FIG_NOTEBOOKS/FIG_ARQUIVOS lá
-# em cima: a conferência final já reprova, com o nome do arquivo, figura declarada que não
-# apareceu no disco.
+# O NB05 ENTROU EM 31/08 E TAMBÉM NÃO PRECISA DA API. Ele lê `runs/principal_2026_08/
+# scores.jsonl` versionado e regrava as curvas de `pass^k` e a decomposição de variância.
+# `scoring/estabilidade.py` é função pura de `ScoreRecord`.
+#
+# O QUE AINDA NÃO TEM FIGURA é a severidade S0–S4 e a taxonomia de falhas (T30, nb06), sobre a
+# mesma bateria principal. Estender é acrescentar o par (notebook, figura) a
+# FIG_NOTEBOOKS/FIG_ARQUIVOS lá em cima: a conferência final já reprova, com o nome do arquivo,
+# figura declarada que não apareceu no disco.
 repro: install
 	$(PY) -m pytest -q tests/test_repro.py
 	@$(PY) -c "import httpx; httpx.get('http://localhost:8000/openapi.json', timeout=5)" \

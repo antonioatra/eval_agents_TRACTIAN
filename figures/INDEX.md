@@ -20,14 +20,15 @@ notebooks e **reprova** se alguma figura declarada não for regravada no disco.
 | 06 | `fig06_recall_por_classe_h0.png` | nb04 | **a predição de H0**: o ganho está inteiro em conteúdo (C: 0% → 81%); processo e decisão o gabarito estrutural já dava | os 100% de P e D — mesma identidade do A27. E C2/C3/C7 não estão no gold, que é cego |
 | 07 | `fig07_h2_funcao_vs_args.png` | nb04 | **H2**: a diferença entre os modelos é maior nos argumentos (−0,061) que na função (+0,021), e o **sinal se inverte** — o 14B escolhe melhor a função e preenche pior o schema | que `args_acc` seja conclusivo: p = 0,0514 contra corte de 0,05 — **está no limiar**, e a figura o marca em âmbar em vez de escolher um lado |
 | 08 | `fig08_ins9_mutantes.png` | nb04 | **INS.9**: o corte nominal de §6.5 tem poder **zero** nos quatro mutantes (o X33), e mesmo a lente rica acerta a direção em só 8% dos 120 pares | que 84% seja "taxa de detecção": 31% das distinções vão na direção errada — no MUT3, o agente sabotado é o mais bem avaliado |
+| 09 | `fig09_passk_curvas.png` | nb05 | **a média ordena os modelos ao contrário da consistência**: a média simples põe o 14B à frente (38,2% × 26,4%) e o `pass^k` inverte a partir de **k = 3** — a inversão sobrevive às três leituras das 37 execuções sem decisão | que o 8B seja o melhor modelo: em **k = 8 os dois são 0,000**, nenhum cenário é entregue nas 8 seeds. E nada sobre ambiente — o eixo de `env_seed` não existe |
+| 10 | `fig10_decomposicao_variancia.png` | nb05 | **por que a ordem inverte**: 42–49% da variância do 8B é **entre** cenários (ele tem cenários que domina), contra 19–35% do 14B, cuja variância é sobretudo **dentro** do mesmo cenário — que é o que o `pass^k` cobra | **não é a decomposição de H4.** `METRICAS §7.2` separa modelo × ambiente e exige dois braços; aqui o ambiente é **constante** e a pergunta é outra |
 
 ## O que ainda não tem figura
 
 | o quê | por quê | quando |
 |---|---|---|
-| pass^k por modelo (INS.8) | a bateria principal fechou em 31/08; o notebook é o nb05 (T29) | próxima leva |
 | severidade S0–S4 e taxonomia (T30) | mesma bateria, notebook nb06 | próxima leva |
-| decomposição de variância (H4) | **não vai existir**: o A16 cortou a bateria de ambiente, e sem eixo de `env_seed` não há variância ambiental para decompor | trabalho futuro declarado |
+| decomposição de variância **de H4** (modelo × ambiente) | **não vai existir sem rodar a bateria**: o A16 cortou a de ambiente e `runner/matriz.py` não tem eixo de `env_seed`. A `fig10` decompõe outra coisa — entre cenários × dentro do cenário — e diz isso no próprio título | trabalho futuro declarado; `tests/test_estabilidade.py` tem o tripwire que avisa quando o eixo existir |
 | κ do judge por configuração | a `fig05_kappa_por_config` do enunciado da T28 virou a `fig03`/`fig04` do nb03, que já mostram estabilidade e curva da rubrica | não vai existir com esse nome |
 
 ## Regenerar
@@ -37,5 +38,5 @@ make api      # noutro terminal — o nb01 e o nb02 medem a API do parceiro
 make repro    # executa os notebooks e confere que TODA figura da lista foi regravada
 ```
 
-O nb03 e o nb04 **não** precisam da API: leem `runs/` e `labels/` versionados, e a pontuação
+O nb03, o nb04 e o nb05 **não** precisam da API: leem `runs/` e `labels/` versionados, e a pontuação
 N1/N2 é função pura de `(trace, gabarito)` — `tests/test_repro.py` bloqueia `socket` para provar.
