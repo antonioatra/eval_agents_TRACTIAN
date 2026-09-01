@@ -14,12 +14,14 @@ FIG_NOTEBOOKS := notebooks/nb01_exploracao_api.ipynb notebooks/nb02_cobertura_co
                  notebooks/nb03_calibracao_judge.ipynb notebooks/nb04_resultados_principais.ipynb \
                  notebooks/nb05_passk_estabilidade.ipynb \
                  notebooks/nb06_severidade_erros.ipynb
-FIG_ARQUIVOS  := figures/fig01_distribuicao_status.png figures/fig02_matriz_cobertura.png \
-                 figures/fig03_flip_rate.png figures/fig04_curva_rubrica.png \
-                 figures/fig05_custo_recall_h0.png figures/fig06_recall_por_classe_h0.png \
-                 figures/fig07_h2_funcao_vs_args.png figures/fig08_ins9_mutantes.png \
-                 figures/fig09_passk_curvas.png figures/fig10_decomposicao_variancia.png \
-                 figures/fig11_severidade_por_modelo.png figures/fig12_taxonomia_falhas.png
+FIG_NOMES     := fig01_distribuicao_status fig02_matriz_cobertura fig03_flip_rate \
+                 fig04_curva_rubrica fig05_custo_recall_h0 fig06_recall_por_classe_h0 \
+                 fig07_h2_funcao_vs_args fig08_ins9_mutantes fig09_passk_curvas \
+                 fig10_decomposicao_variancia fig11_severidade_por_modelo fig12_taxonomia_falhas
+# Desde a T31 toda figura sai em PNG **e** SVG na mesma chamada de `figuras.exportar`. A
+# conferência cobra os dois: um sem o outro é a versão do slide atrasada em relação à do
+# documento, e nada no repositório denunciaria isso.
+FIG_ARQUIVOS  := $(foreach f,$(FIG_NOMES),figures/$(f).png figures/$(f).svg)
 
 # `uv` não está disponível neste ambiente; o venv é criado com o venv da stdlib.
 $(VENV):

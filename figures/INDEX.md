@@ -6,6 +6,18 @@ modéstia: é o que impede a figura de ser citada por algo que ela não mostra.
 Toda figura aqui é regenerável rodando o notebook da coluna *origem* — `make repro` executa os
 notebooks e **reprova** se alguma figura declarada não for regravada no disco.
 
+**Cada figura existe em dois formatos, gravados na mesma chamada** (`tapieval.figuras.exportar`):
+o `.png` a 3540 px (1180 lógicos × 3 ≈ 300 dpi), que é o que entra no README, e o `.svg`, que é
+o que sobrevive ao projetor — vetor não borra quando o slide é esticado. Os dois saem juntos
+para não existir a versão regravada e a que ficou para trás.
+
+**A identidade é uma só, e mora em `src/tapieval/figuras.py`.** Paleta, família tipográfica,
+escala de corpo, largura canônica e a exportação. Até 01/09 cada notebook declarava a própria:
+metade fixava `Inter` e a outra metade caía no default do plotly, a escala variava entre 2 e 3
+sobre três larguras diferentes, e o `nb05` tinha anotação em `size=8`. Nada disso mudava um
+número, que é exatamente por que ninguém percebeu — `tests/test_figuras.py` agora reprova a
+volta de cada um.
+
 > ⚠️ **A numeração não segue a do `PLANO`.** A T28 foi escrita antes do nb03 existir e pedia
 > `fig04_custo_recall_h0`; o `fig04` já era do nb03 desde 26/08. A numeração segue a ordem em que
 > as figuras passaram a existir, e este arquivo é o mapa entre as duas.
