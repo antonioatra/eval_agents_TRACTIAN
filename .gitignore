@@ -29,6 +29,11 @@ __pycache__/
 # runner não é dado: é o que rolou no terminal, e ele se refaz rodando de novo.
 runs/_log_*.log
 
+# A página do copiloto é DERIVADA de `runs/` + `docs/*.json`, os dois versionados, e pesa 2 MB.
+# `make app` a refaz em segundos em qualquer máquina; versioná-la seria carregar no histórico um
+# arquivo que muda inteiro a cada repontuação. O template e o gerador é que sobem.
+app/copiloto.html
+
 # macOS
 .DS_Store
 

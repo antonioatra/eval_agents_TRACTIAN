@@ -1,4 +1,4 @@
-.PHONY: venv install test lint corpus api api-stop t0b piloto judge pontuar repro clean
+.PHONY: venv install test lint corpus api api-stop t0b piloto judge pontuar repro app clean
 
 VENV    := .venv
 PY      := $(VENV)/bin/python
@@ -155,6 +155,14 @@ repro: install
 	done; \
 	rm -rf "$$saida" "$$marca"; \
 	exit $$estado
+
+# A página de inspeção de traces (TAPI §6). Lê a bateria versionada e escreve UM html
+# autocontido — sem servidor, sem rede, sem modelo. O placar sai dos JSONs dos notebooks, e é
+# regerado antes para que a página nunca cite número mais velho que a bateria.
+app: install
+	$(PY) scripts/gerar_placar.py
+	$(PY) -m tapieval.app --raiz . --saida app/copiloto.html
+	@echo "make app: abra app/copiloto.html no navegador (duplo clique serve)"
 
 # Sobe a API industrial do parceiro em localhost:8000 (necessária para `make corpus`).
 api:

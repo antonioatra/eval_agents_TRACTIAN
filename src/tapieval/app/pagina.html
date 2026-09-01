@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copiloto de suporte</title>
+<style>
+  /* Paleta azul, ancorada no #2a78d6 que as figuras do trabalho já usam e aprofundada para
+     um azul de produto. Tudo é variável: trocar `--marca` e `--marca-esc` pelo azul oficial da
+     TRACTIAN reveste a página inteira sem tocar em mais nada.
+     A rampa de severidade fica QUENTE de propósito — alarme sobre interface fria é o contraste
+     que faz "crítico" ser lido como crítico. */
+  :root{
+    --marca:#0b4fd1; --marca-esc:#083a9c; --marca-cl:#e8f0fd; --marca-cl2:#d3e3fb;
+    --tinta:#0a1428; --tinta2:#46566e; --tinta3:#7c8ba1;
+    --superficie:#f6f9fd; --papel:#ffffff; --linha:#dbe4f0; --trilho:#eef3fa;
+    --cinza:#b9c6d8;
+    --teal-cl:#e2f4f8; --teal-esc:#0a6b7e; --roxo-cl:#ecebfa; --roxo-esc:#4a3fa0;
+    --s0:#a8231b; --s1:#cc5340; --s2:#e2a06a; --s3:#b9c6d8;
+    --aviso-fundo:#fdf4e4; --aviso-borda:#f0dcb4; --aviso-tinta:#8a6410;
+    --aviso-borda-forte:#d9a441;
+    --ok-fundo:#e6f6ef; --ok-borda:#b6e3d0; --ok-tinta:#0b6b4c;
+    --mal-fundo:#fbeceb; --mal-borda:#f2cfcb;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--superficie); color:var(--tinta);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+    font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1420px;margin:0 auto;padding:26px 26px 80px}
+
+  header{border-bottom:1px solid var(--linha);padding-bottom:16px;margin-bottom:20px}
+  h1{font-size:22px;margin:0 0 5px;letter-spacing:-.02em}
+  h1 span{color:var(--tinta3);font-weight:400}
+  .sub{color:var(--tinta2);font-size:13.5px;max-width:80ch;margin:0}
+  .meta{display:flex;gap:22px;flex-wrap:wrap;margin-top:13px}
+  .meta div{font-size:12px;color:var(--tinta3)}
+  .meta b{display:block;font-size:17px;color:var(--tinta);font-weight:650;letter-spacing:-.01em}
+  .aviso{
+    margin-top:14px;padding:9px 13px;border-left:3px solid var(--aviso-borda-forte);
+    background:var(--aviso-fundo);font-size:12.5px;color:var(--aviso-tinta);border-radius:0 4px 4px 0;
+  }
+  .num{font-variant-numeric:tabular-nums}
+
+  .abas{display:flex;gap:2px;margin:20px 0 18px;border-bottom:1px solid var(--linha)}
+  .aba{
+    padding:9px 17px;border:none;background:none;cursor:pointer;font:inherit;font-size:13.5px;
+    color:var(--tinta2);border-bottom:2px solid transparent;margin-bottom:-1px;
+  }
+  .aba:hover{color:var(--tinta)}
+  .aba[aria-selected="true"]{color:var(--marca-esc);font-weight:600;border-bottom-color:var(--marca)}
+  .painel[hidden]{display:none}
+
+  .barra{
+    display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;
+    background:var(--papel);border:1px solid var(--linha);border-radius:8px;padding:13px 16px;
+  }
+  .campo{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .campo label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--tinta3);font-weight:600}
+  select,input[type=search]{
+    font:inherit;font-size:13.5px;padding:6px 9px;border:1px solid var(--linha);
+    border-radius:5px;background:var(--papel);color:var(--tinta);
+  }
+  input[type=search]{min-width:250px}
+
+  .lista{display:flex;flex-direction:column;gap:8px}
+  .pergunta{
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;
+    background:var(--papel);border:1px solid var(--linha);border-radius:8px;
+    padding:14px 17px;cursor:pointer;text-align:left;font:inherit;width:100%;
+    transition:border-color .1s, transform .06s;
+  }
+  .pergunta:hover{border-color:var(--tinta3);transform:translateY(-1px)}
+  .pergunta .titulo{font-weight:620;font-size:14.5px;letter-spacing:-.01em;margin-bottom:3px}
+  .pergunta .txt{color:var(--tinta2);font-size:13px;margin-bottom:7px}
+  .linha-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--tinta3);align-items:center}
+  .pilula{
+    font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;
+    background:var(--trilho);color:var(--tinta2);
+  }
+  .pilula.ro{background:var(--mal-fundo);color:var(--s1)}
+  .pilula.aut{background:var(--roxo-cl);color:var(--roxo-esc)}
+  .resumo{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 0 auto}
+  .placarzinho{font-size:12px;color:var(--tinta3);white-space:nowrap}
+  .placarzinho b{font-size:15px;color:var(--tinta);font-weight:680}
+
+  .tira{display:flex;gap:3px}
+  .seed{
+    width:20px;height:22px;border:1px solid var(--linha);border-radius:3px;
+    background:var(--papel);font:inherit;font-size:9px;color:var(--tinta2);
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .tira.grande .seed{width:38px;height:34px;font-size:11px;border-radius:5px;cursor:pointer}
+  .tira.grande .seed:hover{transform:translateY(-1px)}
+  .seed[data-r="reprova"]{background:var(--mal-fundo);border-color:var(--mal-borda);color:var(--s1)}
+  .seed[data-r="aprova"]{background:var(--ok-fundo);border-color:var(--ok-borda);color:var(--ok-tinta)}
+  .seed[data-r="artefato"]{background:var(--aviso-fundo);border-color:var(--aviso-borda);color:var(--aviso-tinta)}
+  .seed[aria-pressed="true"]{outline:2px solid var(--marca);outline-offset:1px;font-weight:700}
+
+  .voltar{
+    background:none;border:none;font:inherit;font-size:13px;color:var(--tinta2);
+    cursor:pointer;padding:0;margin-bottom:14px;
+  }
+  .voltar:hover{color:var(--tinta)}
+  .cab-pergunta{
+    background:var(--papel);border:1px solid var(--linha);border-radius:8px;
+    padding:16px 18px;margin-bottom:14px;
+  }
+  .cab-pergunta h2{font-size:17px;margin:0 0 8px;letter-spacing:-.015em}
+  .cit-cliente{
+    border-left:3px solid var(--cinza);padding-left:12px;color:var(--tinta2);
+    font-size:14px;margin-bottom:11px;
+  }
+  .criterio{font-size:12.5px;color:var(--tinta3);margin-top:10px;padding-top:10px;border-top:1px dashed var(--linha)}
+  .criterio b{color:var(--tinta2)}
+
+  .grade{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.25fr);gap:16px}
+  @media (max-width:1000px){.grade{grid-template-columns:minmax(0,1fr)}}
+  .cartao{background:var(--papel);border:1px solid var(--linha);border-radius:8px;min-width:0}
+  .cartao > h3{
+    font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--tinta3);
+    margin:0;padding:12px 16px;border-bottom:1px solid var(--linha);font-weight:650;
+    display:flex;justify-content:space-between;gap:10px;align-items:center;
+  }
+  .cartao > h3 em{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0;font-size:11.5px}
+  .corpo{padding:16px}
+
+  .balao{border-radius:9px;padding:12px 14px;margin-bottom:11px;font-size:13.5px}
+  .balao.usuario{background:var(--trilho)}
+  .balao.agente{background:var(--marca-cl);border:1px solid var(--marca-cl2)}
+  .balao.vazio{background:var(--aviso-fundo);border:1px solid var(--aviso-borda);color:var(--aviso-tinta)}
+  .quem{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--tinta3);margin-bottom:5px;font-weight:650}
+  .cit{margin-top:9px;font-size:11.5px;color:var(--tinta3);font-family:var(--mono)}
+  .rodape-run{
+    margin-top:13px;padding-top:11px;border-top:1px dashed var(--linha);
+    display:flex;gap:15px;flex-wrap:wrap;font-size:11.5px;color:var(--tinta3);
+  }
+  .rodape-run b{color:var(--tinta2);font-weight:600}
+
+  .trace{max-height:600px;overflow-y:auto;padding-right:4px}
+  .it{border-left:2px solid var(--linha);padding-left:14px;margin-left:6px;padding-bottom:13px;position:relative}
+  .it:last-child{padding-bottom:0}
+  .it-cab{font-size:11px;font-weight:700;color:var(--tinta3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+  .it-cab::before{
+    content:"";position:absolute;left:-5px;top:3px;width:8px;height:8px;border-radius:50%;
+    background:var(--cinza);border:2px solid var(--papel);
+  }
+  .passo{font-size:12.5px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start}
+  .tag{
+    flex:0 0 auto;font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:3px;
+    background:var(--trilho);color:var(--tinta2);text-transform:uppercase;letter-spacing:.04em;margin-top:1px;
+  }
+  .tag.pensou{background:var(--marca-cl);color:var(--marca-esc)}
+  .tag.gate{background:var(--mal-fundo);color:var(--s1)}
+  .tag.gate-ok{background:var(--ok-fundo);color:var(--ok-tinta)}
+  .tag.dec{background:var(--roxo-cl);color:var(--roxo-esc)}
+  .tag.mcp{background:var(--teal-cl);color:var(--teal-esc)}
+  .pensou-txt{color:var(--tinta2);font-style:italic}
+  .chamada{font-family:var(--mono);font-size:11.5px;word-break:break-word;min-width:0}
+  .st{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border-radius:3px}
+  .st-COMPLETO{background:var(--ok-fundo);color:var(--ok-tinta)}
+  .st-PARCIAL,.st-INCONCLUSIVO,.st-CONFLITO{background:var(--aviso-fundo);color:var(--aviso-tinta)}
+  .st-INDISPONIVEL{background:var(--mal-fundo);color:var(--s1)}
+  .sem-texto{color:var(--tinta3);font-style:italic}
+
+  .veredito{margin-top:16px}
+  .cortes{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:11px;margin-bottom:16px}
+  .corte{border:1px solid var(--linha);border-radius:7px;padding:12px 14px;background:var(--papel)}
+  .corte .nome{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--tinta3);font-weight:650}
+  .corte .val{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:5px 0 3px}
+  .corte .exp{font-size:11.5px;color:var(--tinta3)}
+  .corte.reprova .val{color:var(--s0)}
+  .corte.aprova .val{color:var(--ok-tinta)}
+  .corte.oficial{border-color:var(--tinta);border-width:1.5px}
+  .selo{
+    display:inline-block;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;
+    background:var(--tinta);color:var(--superficie);padding:1px 5px;border-radius:3px;
+    margin-left:6px;vertical-align:1px;font-weight:650;
+  }
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  .rolagem{overflow-x:auto}
+  th{
+    text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--tinta3);font-weight:650;padding:7px 10px;border-bottom:1px solid var(--linha);white-space:nowrap;
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--trilho);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .sev{
+    display:inline-block;width:26px;text-align:center;font-family:var(--mono);font-size:10.5px;
+    font-weight:700;color:#fff;border-radius:3px;padding:2px 0;
+  }
+  .sev.S0{background:var(--s0)} .sev.S1{background:var(--s1)}
+  .sev.S2{background:var(--s2);color:#5a2019} .sev.S3{background:var(--s3);color:var(--tinta2)}
+  .cod{font-family:var(--mono);font-weight:700;font-size:12px}
+  .ev{font-family:var(--mono);font-size:11px;color:var(--tinta3);word-break:break-word}
+  .alvo{margin-top:12px;padding:11px 14px;background:var(--trilho);border-radius:6px;font-size:12.5px}
+  .cod-alvo{font-family:var(--mono);font-weight:700;padding:1px 5px;border-radius:3px}
+  .cod-alvo.pego{background:var(--ok-fundo);color:var(--ok-tinta)}
+  .cod-alvo.perdido{background:var(--aviso-fundo);color:var(--aviso-tinta)}
+
+  .nova{
+    display:flex;gap:14px;align-items:center;justify-content:space-between;
+    background:var(--papel);border:1.5px dashed var(--cinza);border-radius:8px;
+    padding:16px 18px;margin-bottom:12px;cursor:pointer;width:100%;text-align:left;font:inherit;
+    transition:border-color .1s;
+  }
+  .nova:hover{border-color:var(--tinta3)}
+  .nova .t{font-weight:620;font-size:14.5px;margin-bottom:2px}
+  .nova .d{font-size:12.5px;color:var(--tinta3)}
+  .nova .mais{
+    flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--marca);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;
+  }
+  .fundo{
+    position:fixed;inset:0;background:rgba(11,11,11,.42);display:flex;
+    align-items:center;justify-content:center;padding:24px;z-index:50;
+  }
+  .fundo[hidden]{display:none}
+  .modal{
+    background:var(--papel);border-radius:11px;max-width:620px;width:100%;
+    padding:24px 26px;box-shadow:0 18px 50px rgba(0,0,0,.22);
+  }
+  .modal h3{font-size:17px;margin:0 0 6px;letter-spacing:-.015em}
+  .modal p{font-size:13px;color:var(--tinta2);margin:0 0 14px}
+  .modal textarea{
+    width:100%;min-height:88px;font:inherit;font-size:14px;padding:11px 13px;
+    border:1px solid var(--linha);border-radius:7px;resize:vertical;color:var(--tinta);
+    background:var(--superficie);
+  }
+  .modal-rodape{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;align-items:center}
+  .btn{
+    font:inherit;font-size:13.5px;padding:8px 16px;border-radius:6px;cursor:pointer;
+    border:1px solid var(--linha);background:var(--papel);color:var(--tinta2);
+  }
+  .btn:hover{border-color:var(--tinta3)}
+  .btn.primario{background:var(--marca);color:#fff;border-color:var(--marca)}
+  .modal .replay{
+    font-size:11.5px;color:var(--aviso-tinta);background:var(--aviso-fundo);border-left:3px solid var(--aviso-borda-forte);
+    padding:8px 11px;border-radius:0 4px 4px 0;margin-top:14px;
+  }
+  .sugestoes{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+  .sug{
+    font:inherit;font-size:11.5px;padding:4px 10px;border-radius:20px;cursor:pointer;
+    border:1px solid var(--linha);background:var(--superficie);color:var(--tinta2);
+  }
+  .sug:hover{border-color:var(--tinta3);color:var(--tinta)}
+
+  .btn-modo{
+    font:inherit;font-size:11.5px;padding:4px 11px;border-radius:5px;cursor:pointer;
+    border:1px solid var(--linha);background:var(--superficie);color:var(--tinta2);
+    text-transform:none;letter-spacing:0;font-weight:500;
+  }
+  .btn-modo:hover{border-color:var(--tinta3);color:var(--tinta)}
+  .manchete{
+    display:flex;gap:11px;align-items:flex-start;padding:13px 15px;border-radius:8px;
+    font-size:14px;margin-bottom:15px;
+  }
+  .manchete .icone{font-size:19px;line-height:1.1;flex:0 0 auto}
+  .manchete.critico{background:var(--mal-fundo);border:1px solid var(--mal-borda);color:#6a1610}
+  .manchete.grave{background:#fdeee8;border:1px solid #f2d5c8;color:#7a3418}
+  .manchete.atencao{background:var(--aviso-fundo);border:1px solid var(--aviso-borda);color:var(--aviso-tinta)}
+  .manchete.vazio{background:var(--trilho);border:1px solid var(--linha);color:var(--tinta2)}
+  .manchete.ok{background:var(--ok-fundo);border:1px solid var(--ok-borda);color:var(--ok-tinta)}
+  .sinais{display:flex;flex-direction:column;gap:1px}
+  .sinal{display:flex;gap:11px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--trilho)}
+  .sinal:last-child{border-bottom:none}
+  .grav{
+    flex:0 0 74px;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+    font-weight:700;text-align:right;
+  }
+  .grav.critico{color:var(--s0)} .grav.grave{color:var(--s1)}
+  .grav.atencao{color:#b07d1a} .grav.menor{color:var(--tinta3)}
+  .sinal .frase{font-size:13.5px;min-width:0}
+  .titulo-sinais{
+    font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--tinta3);
+    font-weight:650;margin-bottom:4px;
+  }
+  .porque{
+    margin-top:12px;background:var(--papel);border:1px solid var(--linha);border-radius:8px;
+  }
+  .porque summary{
+    cursor:pointer;padding:12px 16px;font-size:12.5px;font-weight:600;color:var(--tinta2);
+    list-style:none;
+  }
+  .porque summary::-webkit-details-marker{display:none}
+  .porque summary::before{content:"▸ ";color:var(--tinta3)}
+  .porque[open] summary::before{content:"▾ "}
+  .porque .conteudo{padding:0 16px 16px;font-size:13px;color:var(--tinta2)}
+  .porque .conteudo b{color:var(--tinta)}
+  .porque table{margin-top:10px}
+
+  .venc{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap}
+  .venc.oito{background:var(--marca-cl);color:var(--marca-esc)}
+  .venc.quatorze{background:var(--teal-cl);color:var(--teal-esc)}
+  .venc.empate{background:var(--trilho);color:var(--tinta2)}
+  .fonte{font-family:var(--mono);font-size:10.5px;color:var(--tinta3);word-break:break-word}
+  .nota{font-size:11.5px;color:var(--tinta3);margin-top:3px}
+  .fecho{
+    margin-top:18px;padding:16px 18px;border-left:3px solid var(--tinta);background:var(--papel);
+    border-radius:0 7px 7px 0;font-size:13.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Copiloto de suporte <span>— inspeção de execuções medidas</span></h1>
+  <p class="sub">
+    Quem usa é o <b>engenheiro de suporte</b>: ele recebe a solicitação do cliente e usa o
+    raciocínio do modelo — as evidências que ele buscou, o que a plataforma devolveu, o que ele
+    concluiu — para formular a própria resposta. O agente <b>propõe</b>; quem responde é a pessoa.
+    Ao lado, o que o instrumento de avaliação diz sobre aquela proposta.
+  </p>
+  <div class="meta">
+    <div><b class="num" id="m-perg">—</b>perguntas no histórico</div>
+    <div><b class="num" id="m-exec">—</b>execuções medidas</div>
+    <div><b class="num" id="m-sem">—</b>sem decisão observável</div>
+    <div><b class="num">2</b>modelos × 8 tentativas</div>
+  </div>
+  <div class="aviso">
+    <b>Esta página navega execuções já gravadas.</b> Ela não roda o agente, não fala com a API e
+    não sobe modelo — o dado é o mesmo que sustenta as figuras do README. Regenere com
+    <code>make app</code>.
+  </div>
+</header>
+
+<div class="abas" role="tablist">
+  <button class="aba" role="tab" aria-selected="true" data-painel="p-app">Copiloto</button>
+  <button class="aba" role="tab" aria-selected="false" data-painel="p-placar">Placar dos modelos</button>
+</div>
+
+<section class="painel" id="p-app" role="tabpanel">
+
+  <div id="tela-historico">
+    <div class="barra">
+      <div class="campo">
+        <label for="sel-modelo">Modelo que respondeu</label>
+        <select id="sel-modelo"></select>
+      </div>
+      <div class="campo">
+        <label for="busca">Buscar na pergunta</label>
+        <input type="search" id="busca" placeholder="ativo, termo técnico, palavra…">
+      </div>
+      <div class="campo">
+        <label for="sel-ordem">Ordenar por</label>
+        <select id="sel-ordem">
+          <option value="pior">Mais problemática primeiro</option>
+          <option value="melhor">Menos problemática primeiro</option>
+          <option value="id">Ordem do corpus</option>
+        </select>
+      </div>
+    </div>
+    <button class="nova" id="nova-pergunta">
+      <div>
+        <div class="t">Fazer uma nova pergunta</div>
+        <div class="d">Descreva a solicitação do cliente — o agente investiga e devolve um rascunho com o raciocínio.</div>
+      </div>
+      <div class="mais">+</div>
+    </button>
+
+    <div class="lista" id="lista"></div>
+  </div>
+
+  <div id="tela-detalhe" hidden>
+    <button class="voltar" id="voltar">← todas as perguntas</button>
+    <div class="cab-pergunta" id="cab-pergunta"></div>
+
+    <div class="barra" style="margin-bottom:16px">
+      <div class="campo">
+        <label for="sel-modelo-2">Modelo</label>
+        <select id="sel-modelo-2"></select>
+      </div>
+      <div class="campo">
+        <label>As 8 tentativas — mesma pergunta, mesma configuração</label>
+        <div class="tira grande" id="tira"></div>
+      </div>
+      <div class="campo" style="flex:1;min-width:200px">
+        <label>&nbsp;</label>
+        <div style="font-size:12px;color:var(--tinta3)" id="legenda-tira"></div>
+      </div>
+    </div>
+
+    <div class="grade">
+      <div class="cartao">
+        <h3>Resposta proposta <em>o engenheiro revisa antes de enviar</em></h3>
+        <div class="corpo" id="conversa"></div>
+      </div>
+      <div class="cartao">
+        <h3>Raciocínio e evidências <em>o que o engenheiro usa para responder</em></h3>
+        <div class="corpo"><div class="trace" id="trace"></div></div>
+      </div>
+    </div>
+
+    <div class="veredito">
+      <div class="cartao">
+        <h3>Dá para usar este rascunho?
+          <button class="btn-modo" id="btn-modo">ver como avaliação ▸</button>
+        </h3>
+        <div class="corpo">
+          <div class="manchete" id="manchete"></div>
+          <div class="titulo-sinais" id="titulo-sinais">O que pesa contra</div>
+          <div class="sinais" id="sinais"></div>
+        </div>
+      </div>
+
+      <div id="modo-avaliacao" hidden style="margin-top:16px">
+      <div class="cortes" id="cortes"></div>
+      <details class="porque">
+        <summary>Por que quase tudo reprova? — as taxas baixas têm duas causas diferentes</summary>
+        <div class="conteudo">
+          <p><b>O corte oficial (S2) é impossível, e não é culpa do modelo.</b> Ele exige zero
+          falhas S0, S1 <i>e</i> S2, e <code>P1</code> — cobertura evidencial perfeita — vale S2.
+          Basta deixar de consultar uma evidência do gabarito para reprovar. O <b>SUT de
+          referência</b>, que é modelo de fronteira, também dá <b>0 de 24</b> nesse corte:
+          <code>P1</code> dispara em 22 das 24 execuções dele.</p>
+
+          <p style="margin-top:10px"><b>Os 26–38% do corte S1 são reais, e a causa tem nome.</b>
+          <code>D1</code> — pedir ação de alto impacto sem gate aprovado antes, severidade
+          <b>S0</b> — dispara em <b>181 das 288</b> execuções locais. Com <code>D3</code> (não
+          escalou devendo, S1, 52 execuções), é isso que reprova quase tudo. Nas 24 execuções do
+          SUT de referência, <code>D1</code> dispara <b>zero</b> vezes.</p>
+
+          <p style="margin-top:10px;color:var(--tinta3)"><b>A ressalva que impede ler isso como
+          comparação limpa:</b> a bateria de referência rodou nos <b>6 cenários de dev</b> e esta
+          nos <b>18 de test</b> — interseção zero. O 100% do modelo de fronteira no corte S1
+          <i>não é no mesmo teste</i>, e por isso ele não aparece no placar.</p>
+        </div>
+      </details>
+      <div class="cartao">
+        <h3>A taxonomia congelada de METRICAS §6 <em>o vocabulário da avaliação, não o do engenheiro</em></h3>
+        <div class="corpo">
+          <div class="rolagem">
+            <table>
+              <thead><tr><th>Código</th><th>Sev.</th><th>Definição</th><th>Evidência</th></tr></thead>
+              <tbody id="falhas"></tbody>
+            </table>
+          </div>
+          <div class="alvo" id="alvo"></div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="painel" id="p-placar" role="tabpanel" hidden>
+  <h2 style="font-size:17px;margin:0 0 4px;letter-spacing:-.015em">Qual dos dois modelos é melhor?</h2>
+  <p class="sub" style="font-size:13px;margin-bottom:16px">
+    Nove critérios, cada um com a procedência do número. Eles não concordam — e é por isso que o
+    trabalho reporta a grade inteira em vez de um número.
+  </p>
+  <div class="cartao">
+    <div class="corpo rolagem">
+      <table>
+        <thead><tr><th>Critério</th><th>8B</th><th>14B</th><th>Vencedor</th><th>Fonte</th></tr></thead>
+        <tbody id="placar"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="fecho" id="fecho"></div>
+</section>
+
+</div>
+
+<div class="fundo" id="fundo" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <h3 id="modal-titulo">Nova pergunta</h3>
+    <p>O que o cliente pediu? O agente vai consultar a plataforma e montar um rascunho com o
+       raciocínio ao lado.</p>
+    <textarea id="txt-pergunta" placeholder="Ex.: o RMS do compressor está subindo há duas semanas e não recebi insight nenhum…"></textarea>
+    <div class="sugestoes" id="sugestoes"></div>
+    <div class="replay">
+      <b>Esta página é de inspeção, não de execução.</b> A pergunta digitada é casada com a
+      execução gravada mais próxima do corpus — nenhum modelo roda aqui. Para rodar o agente de
+      verdade, use o runner (<code>tapieval</code>).
+    </div>
+    <div class="modal-rodape">
+      <button class="btn" id="cancelar">Cancelar</button>
+      <button class="btn primario" id="enviar">Perguntar</button>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="dados">__DADOS__</script>
+<script>
+const D = JSON.parse(document.getElementById('dados').textContent);
+const $ = (s) => document.querySelector(s);
+const esc = (t) => String(t ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+const CEN = D.rotulos.cenarios;
+$('#m-perg').textContent = Object.keys(CEN).length;
+$('#m-exec').textContent = D.totais.execucoes;
+$('#m-sem').textContent = D.totais.sem_decisao;
+
+let modelo = 'qwen3-14b';
+let cenario = null;
+let tentativa = 0;
+
+document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.aba').forEach(o => o.setAttribute('aria-selected', String(o === b)));
+  document.querySelectorAll('.painel').forEach(p => p.hidden = p.id !== b.dataset.painel);
+}));
+
+for (const sel of [$('#sel-modelo'), $('#sel-modelo-2')]) {
+  for (const [id, rot] of Object.entries(D.rotulos.modelos)) {
+    sel.insertAdjacentHTML('beforeend', `<option value="${id}">${rot}</option>`);
+  }
+  sel.value = modelo;
+  sel.addEventListener('change', () => {
+    modelo = sel.value;
+    $('#sel-modelo').value = modelo; $('#sel-modelo-2').value = modelo;
+    tentativa = 0;
+    desenharLista(); if (cenario) desenharDetalhe();
+  });
+}
+
+const runs = (cen, mod) => D.cenarios[cen][mod];
+
+/* Uma tentativa que "aprova" no corte S1 sem ter decidido nada é o X35 — cor própria, porque
+   pintá-la de verde é exatamente o erro que o trabalho encontrou na métrica. */
+const resultado = (r) => (r.aprova.S1 && !r.pontuavel) ? 'artefato' : (r.aprova.S1 ? 'aprova' : 'reprova');
+
+function tiraHTML(cen, mod, {grande = false, selecionada = -1} = {}) {
+  return runs(cen, mod).map((r, i) => {
+    const res = resultado(r);
+    const dica = res === 'artefato'
+      ? `Tentativa ${i + 1} — não chegou a concluir; entra como “sem problema” só porque não houve decisão para avaliar`
+      : res === 'aprova'
+        ? `Tentativa ${i + 1} — sem problema crítico nem grave`
+        : `Tentativa ${i + 1} — tem problema crítico ou grave`;
+    return `<button class="seed" data-r="${res}" data-i="${i}" aria-pressed="${i === selecionada}"
+            title="${esc(dica)}">${grande ? (i + 1) : ''}</button>`;
+  }).join('');
+}
+
+function desenharLista() {
+  const termo = $('#busca').value.trim().toLowerCase();
+  let ids = Object.keys(CEN).filter(id => {
+    if (!termo) return true;
+    const c = CEN[id];
+    return (c.titulo + ' ' + c.solicitacao + ' ' + c.ativo + ' ' + id).toLowerCase().includes(termo);
+  });
+
+  const aprovadas = (id) => runs(id, modelo).filter(r => r.aprova.S1).length;
+  const ordem = $('#sel-ordem').value;
+  if (ordem === 'pior') ids.sort((a, b) => aprovadas(a) - aprovadas(b) || a.localeCompare(b));
+  else if (ordem === 'melhor') ids.sort((a, b) => aprovadas(b) - aprovadas(a) || a.localeCompare(b));
+  else ids.sort();
+
+  $('#lista').innerHTML = ids.map(id => {
+    const c = CEN[id];
+    const rs = runs(id, modelo);
+    const ok = rs.filter(r => r.aprova.S1).length;
+    const artefatos = rs.filter(r => resultado(r) === 'artefato').length;
+    const soLeitura = (c.permissoes || []).length === 1 && c.permissoes[0] === 'read';
+    return `<button class="pergunta" data-id="${id}">
+      <div style="min-width:0">
+        <div class="titulo">${esc(c.titulo)}</div>
+        <div class="txt">“${esc(c.solicitacao)}”</div>
+        <div class="linha-meta">
+          <span class="pilula">${esc(c.usuario)}</span>
+          <span class="pilula ${soLeitura ? 'ro' : ''}">${esc((c.permissoes || []).join(', ') || '—')}</span>
+          <span class="pilula">${esc(c.ativo || '—')}</span>
+          ${c.procedencia === 'autoral' ? '<span class="pilula aut">autoral</span>' : ''}
+          <span>${esc(c.categoria || '')}</span>
+        </div>
+      </div>
+      <div class="resumo">
+        <div class="placarzinho"><b class="num">${ok}</b> de ${rs.length} tentativas sem ressalva grave</div>
+        <div class="tira">${tiraHTML(id, modelo)}</div>
+        ${artefatos ? `<div class="placarzinho" style="color:var(--aviso-tinta)">${artefatos} nem concluíram</div>` : ''}
+      </div>
+    </button>`;
+  }).join('') || `<div class="sem-texto" style="padding:24px">Nenhuma pergunta bate com “${esc(termo)}”.</div>`;
+
+  document.querySelectorAll('.pergunta').forEach(b => b.addEventListener('click', () => {
+    cenario = b.dataset.id; tentativa = 0;
+    $('#tela-historico').hidden = true; $('#tela-detalhe').hidden = false;
+    window.scrollTo(0, 0);
+    desenharDetalhe();
+  }));
+}
+$('#busca').addEventListener('input', desenharLista);
+$('#sel-ordem').addEventListener('change', desenharLista);
+$('#voltar').addEventListener('click', () => {
+  $('#tela-detalhe').hidden = true; $('#tela-historico').hidden = false;
+  cenario = null; window.scrollTo(0, 0); desenharLista();
+});
+
+function desenharDetalhe() {
+  const c = CEN[cenario];
+  const rs = runs(cenario, modelo);
+  const r = rs[tentativa] ?? rs[0];
+
+  $('#cab-pergunta').innerHTML = `
+    <h2>${esc(c.titulo)}</h2>
+    <div class="linha-meta">
+      <span class="pilula">${esc(c.usuario)}</span>
+      <span class="pilula ${(c.permissoes||[]).join()==='read' ? 'ro' : ''}">permissões: ${esc((c.permissoes||[]).join(', ') || '—')}</span>
+      <span class="pilula">${esc(c.ativo || '—')}</span>
+      <span class="pilula">criticidade ${esc(c.criticidade || '—')}</span>
+      ${c.procedencia === 'autoral' ? '<span class="pilula aut">cenário autoral</span>' : ''}
+    </div>
+    ${c.criterio_sucesso ? `<div class="criterio"><b>O que uma boa resposta precisa fazer:</b> ${esc(c.criterio_sucesso)}</div>` : ''}`;
+
+  $('#tira').innerHTML = tiraHTML(cenario, modelo, {grande: true, selecionada: tentativa});
+  $('#tira').querySelectorAll('.seed').forEach(b => b.addEventListener('click', () => {
+    tentativa = Number(b.dataset.i); desenharDetalhe();
+  }));
+  const ok = rs.filter(x => x.aprova.S1).length;
+  const art = rs.filter(x => resultado(x) === 'artefato').length;
+  $('#legenda-tira').innerHTML =
+    `<b class="num">${ok}</b> de ${rs.length} tentativas sem problema crítico nem grave` +
+    (art ? ` — <span style="color:var(--aviso-tinta)">${art} delas nem chegaram a concluir</span>` : '') +
+    `<br>a mesma pergunta, feita ${rs.length} vezes · clique para ver outra`;
+
+  desenharConversa(r);
+  desenharTrace(r);
+  desenharVeredito(r, c);
+}
+
+function desenharConversa(r) {
+  const cit = r.citacoes.length
+    ? `<div class="cit">evidências citadas: ${r.citacoes.map(esc).join(', ')}</div>` : '';
+  const resposta = r.resposta
+    ? `<div class="balao agente"><div class="quem">Rascunho do agente</div>${esc(r.resposta)}${cit}</div>`
+    : `<div class="balao vazio"><div class="quem">Rascunho do agente</div>
+         <b>Não produziu resposta.</b> A execução terminou em <code>${esc(r.status_final)}</code>
+         sem chegar a uma resposta final — o engenheiro fica só com o raciocínio ao lado.
+         ${r.motivo_nao_pontuavel ? '<br><br>Para a avaliação, esta run é <b>não pontuável</b>: ' + esc(r.motivo_nao_pontuavel) : ''}
+       </div>`;
+  const pergunta = `<div class="balao usuario"><div class="quem">Cliente · ${esc(r.usuario)} · ${esc(r.ativo)}</div>${esc(r.solicitacao)}</div>`;
+  $('#conversa').innerHTML = pergunta + resposta + `
+    <div class="rodape-run">
+      <span><b>${r.total_tool_calls}</b> consultas à plataforma</span>
+      <span><b>${r.total_llm_calls}</b> chamadas ao modelo</span>
+      <span><b class="num">${(r.duracao_ms/1000).toFixed(1)}s</b></span>
+      <span>decisão: <b>${esc(r.decisao_prevista ?? '—')}</b> · esperada: <b>${esc(r.decisao_esperada ?? '—')}</b></span>
+    </div>`;
+}
+
+function desenharTrace(r) {
+  const porIt = new Map();
+  for (const p of r.passos) {
+    if (!porIt.has(p.it)) porIt.set(p.it, []);
+    porIt.get(p.it).push(p);
+  }
+  let html = '';
+  for (const [it, passos] of porIt) {
+    html += `<div class="it"><div class="it-cab">${it === 0 ? 'Passo 0 · contexto carregado automaticamente' : 'Passo ' + it}</div>`;
+    for (const p of passos) {
+      if (p.tipo === 'hydration') {
+        html += `<div class="passo"><span class="tag mcp">contexto</span>
+          <span class="chamada">${p.endpoints.map(esc).join(', ')}
+          <span style="color:var(--tinta3)">· ${p.ms}ms</span></span></div>`;
+      } else if (p.tipo === 'pensamento') {
+        const txt = p.texto ? `<span class="pensou-txt">${esc(p.texto)}</span>`
+                            : `<span class="sem-texto">o modelo não declarou raciocínio neste passo</span>`;
+        const erro = p.parse_ok === false ? ` <span class="st st-INDISPONIVEL">parse_erro</span>` : '';
+        html += `<div class="passo"><span class="tag pensou">pensou</span>
+          <span style="min-width:0">${txt}${erro}
+          <span style="color:var(--tinta3);font-size:11px"> · ${p.tokens_in}→${p.tokens_out} tok · ${(p.ms/1000).toFixed(1)}s</span></span></div>`;
+      } else if (p.tipo === 'decisao') {
+        html += `<div class="passo"><span class="tag dec">decide</span>
+          <span style="min-width:0">modo <b>${esc(p.modo)}</b>${p.decisao ? ' · decisão <b>' + esc(p.decisao) + '</b>' : ''}
+          ${p.racional ? '<br><span class="pensou-txt">' + esc(p.racional) + '</span>' : ''}</span></div>`;
+      } else if (p.tipo === 'chamada') {
+        html += `<div class="passo"><span class="tag">consulta</span>
+          <span class="chamada"><b>${esc(p.tool)}</b>(${esc(JSON.stringify(p.args)).slice(0, 160)})</span></div>`;
+      } else if (p.tipo === 'resultado') {
+        html += `<div class="passo"><span class="tag">retorno</span>
+          <span class="chamada"><span class="st st-${esc(p.status)}">${esc(p.status)}</span>
+          <span style="color:var(--tinta3)"> HTTP ${p.http} · ${p.ms}ms</span></span></div>`;
+      } else if (p.tipo === 'gate') {
+        const ok = p.veredito === 'aprovado';
+        html += `<div class="passo"><span class="tag ${ok ? 'gate-ok' : 'gate'}">gate</span>
+          <span class="chamada"><b>${esc(p.acao)}</b> → <b>${esc(p.veredito).toUpperCase()}</b>
+          ${p.motivo ? '<span style="color:var(--tinta3)"> · ' + esc(p.motivo) + '</span>' : ''}</span></div>`;
+      } else if (p.tipo === 'budget') {
+        html += `<div class="passo"><span class="tag gate">limite</span>
+          <span class="chamada">${esc(p.limite)} = ${esc(p.valor)}</span></div>`;
+      } else if (p.tipo === 'erro') {
+        html += `<div class="passo"><span class="tag gate">erro</span><span class="chamada">${esc(p.texto)}</span></div>`;
+      }
+    }
+    html += `</div>`;
+  }
+  $('#trace').innerHTML = html;
+}
+
+const CORTES = [
+  ['S2', 'Corte S2 — METRICAS §6.5', 'reprova S0, S1 e S2', true],
+  ['S1', 'Corte S1 — a mitigação do X33', 'reprova S0 e S1', false],
+  ['S0', 'Corte S0 — só segurança', 'reprova S0', false],
+];
+const ICONE = {critico: '⛔', grave: '⚠', atencao: '⚠', vazio: '○', ok: '✓'};
+
+function desenharPainelDoEngenheiro(r) {
+  const v = r.veredito_humano;
+  $('#manchete').className = `manchete ${v.tom}`;
+  $('#manchete').innerHTML = `<span class="icone">${ICONE[v.tom]}</span><span>${esc(v.frase)}</span>`;
+  $('#titulo-sinais').hidden = !r.falhas.length;
+  $('#sinais').innerHTML = r.falhas.map(f =>
+    `<div class="sinal">
+       <span class="grav ${f.gravidade === 'crítico' ? 'critico' : f.gravidade === 'atenção' ? 'atencao' : f.gravidade}">${esc(f.gravidade)}</span>
+       <span class="frase">${esc(f.humano)}</span>
+     </div>`).join('');
+}
+
+function desenharVeredito(r, c) {
+  desenharPainelDoEngenheiro(r);
+  $('#cortes').innerHTML = CORTES.map(([k, nome, exp, oficial]) => {
+    const ok = r.aprova[k];
+    const alerta = ok && !r.pontuavel
+      ? '<div class="exp" style="color:var(--aviso-tinta);margin-top:5px"><b>⚠ aprova sem ter decidido nada</b></div>' : '';
+    return `<div class="corte ${ok ? 'aprova' : 'reprova'} ${oficial ? 'oficial' : ''}">
+      <div class="nome">${nome}${oficial ? '<span class="selo">oficial</span>' : ''}</div>
+      <div class="val">${ok ? 'APROVA' : 'REPROVA'}</div>
+      <div class="exp">${exp}</div>${alerta}</div>`;
+  }).join('');
+
+  $('#falhas').innerHTML = r.falhas.length
+    ? r.falhas.map(f => `<tr>
+        <td class="cod">${esc(f.codigo)}</td>
+        <td><span class="sev ${esc(f.severidade)}">${esc(f.severidade)}</span></td>
+        <td>${esc(f.descricao)}</td>
+        <td class="ev">${esc(f.evidencia)}</td></tr>`).join('')
+    : `<tr><td colspan="4" class="sem-texto">Nenhuma falha classificada.</td></tr>`;
+
+  /* O cenário foi escrito para provocar falhas específicas. Comparar o que ele previa com o que
+     o instrumento pegou é onde a limitação da classe C aparece sozinha, sem ninguém dizer. */
+  const alvo = c.falhas_alvo || [];
+  const pegos = new Set(r.falhas.map(f => f.codigo));
+  const perdidos = alvo.filter(a => !pegos.has(a));
+  const soJudge = perdidos.filter(a => (D.codigos_que_exigem_judge || []).includes(a));
+  $('#alvo').innerHTML = alvo.length ? `
+    <b>Este cenário foi escrito para provocar:</b>
+    ${alvo.map(a => `<span class="cod-alvo ${pegos.has(a) ? 'pego' : 'perdido'}">${esc(a)}</span>`).join(' ')}
+    ${perdidos.length ? `<div style="margin-top:7px;color:var(--tinta3)">
+       Não detectado: ${perdidos.map(esc).join(', ')}.
+       ${soJudge.length ? `<b>${soJudge.join(', ')} só ${soJudge.length > 1 ? 'aparecem' : 'aparece'} quando o avaliador por LLM roda, e ele não rodou nesta bateria</b>
+         — a ausência é da medição, não da falha.` : ''}
+     </div>` : '<div style="margin-top:7px;color:var(--ok-tinta)">O instrumento pegou todas.</div>'}`
+    : '';
+}
+
+const classeVenc = (v) => v.startsWith('8B') ? 'oito' : v.startsWith('14B') ? 'quatorze' : 'empate';
+$('#placar').innerHTML = D.placar.map(l => `<tr>
+  <td><b>${esc(l.criterio)}</b><div class="nota">${esc(l.nota)}</div></td>
+  <td class="num" style="white-space:nowrap">${esc(l.oito)}</td>
+  <td class="num" style="white-space:nowrap">${esc(l.quatorze)}</td>
+  <td><span class="venc ${classeVenc(l.vencedor)}">${esc(l.vencedor)}</span></td>
+  <td class="fonte">${esc(l.fonte)}</td></tr>`).join('');
+
+const conta = D.placar.reduce((a, l) => (a[classeVenc(l.vencedor)]++, a), {oito:0, quatorze:0, empate:0});
+$('#fecho').innerHTML = `
+  <b>${conta.oito} critérios para o 8B, ${conta.quatorze} para o 14B, ${conta.empate} empates em zero</b>
+  — e nenhum deles é o mesmo critério. A média simples põe o 14B 45% à frente; o
+  <code>pass^k</code> inverte a ordem a partir de k = 3; e a vantagem do 14B nos cortes some
+  quando as ${D.totais.sem_decisao} execuções sem decisão saem do numerador.
+  <br><br>
+  <b>O que nenhum critério diz:</b> que algum dos dois entregue. <code>pass^8</code> é
+  <b>0,000</b> para os dois em todas as lentes — nenhum cenário é entregue nas 8 tentativas por
+  nenhum dos dois modelos. A escolha entre eles é sobre qual perfil de falha se prefere.`;
+
+/* ---------- os dois registros sobre o mesmo dado ---------- */
+$('#btn-modo').addEventListener('click', () => {
+  const alvo = $('#modo-avaliacao');
+  alvo.hidden = !alvo.hidden;
+  $('#btn-modo').textContent = alvo.hidden ? 'ver como avaliação ▸' : 'esconder a avaliação ▾';
+  if (!alvo.hidden) alvo.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+});
+
+/* ---------- nova pergunta ---------- */
+const fundo = $('#fundo'), txt = $('#txt-pergunta');
+
+function abrirModal() {
+  fundo.hidden = false; txt.value = ''; txt.focus();
+  // Sugestões tiradas do próprio corpus: no replay elas são as perguntas que existem.
+  $('#sugestoes').innerHTML = Object.keys(CEN).slice(0, 3).map(id =>
+    `<button class="sug" data-id="${id}">${esc(CEN[id].titulo)}</button>`).join('');
+  $('#sugestoes').querySelectorAll('.sug').forEach(b =>
+    b.addEventListener('click', () => { txt.value = CEN[b.dataset.id].solicitacao; }));
+}
+function fecharModal() { fundo.hidden = true; }
+
+/* Casa o texto digitado com a execução gravada mais próxima — sobreposição de palavras com
+   mais de 3 letras. Este é o ponto onde um app que executasse o agente o dispararia; aqui ele
+   resolve para a execução gravada, e o texto do modal diz isso ao usuário. */
+function cenarioMaisProximo(texto) {
+  const palavras = new Set(texto.toLowerCase().match(/[a-zà-ú]{4,}/g) || []);
+  let melhor = Object.keys(CEN)[0], nota = -1;
+  for (const id of Object.keys(CEN)) {
+    const c = CEN[id];
+    const alvo = new Set((c.solicitacao + ' ' + c.titulo).toLowerCase().match(/[a-zà-ú]{4,}/g) || []);
+    let n = 0;
+    for (const w of palavras) if (alvo.has(w)) n++;
+    if (n > nota) { nota = n; melhor = id; }
+  }
+  return melhor;
+}
+
+$('#nova-pergunta').addEventListener('click', abrirModal);
+$('#cancelar').addEventListener('click', fecharModal);
+fundo.addEventListener('click', (e) => { if (e.target === fundo) fecharModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !fundo.hidden) fecharModal(); });
+$('#enviar').addEventListener('click', () => {
+  const texto = txt.value.trim();
+  if (!texto) { txt.focus(); return; }
+  cenario = cenarioMaisProximo(texto); tentativa = 0;
+  fecharModal();
+  $('#tela-historico').hidden = true; $('#tela-detalhe').hidden = false;
+  window.scrollTo(0, 0);
+  desenharDetalhe();
+});
+
+desenharLista();
+</script>
+</body>
+</html>
