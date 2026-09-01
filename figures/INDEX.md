@@ -22,12 +22,13 @@ notebooks e **reprova** se alguma figura declarada não for regravada no disco.
 | 08 | `fig08_ins9_mutantes.png` | nb04 | **INS.9**: o corte nominal de §6.5 tem poder **zero** nos quatro mutantes (o X33), e mesmo a lente rica acerta a direção em só 8% dos 120 pares | que 84% seja "taxa de detecção": 31% das distinções vão na direção errada — no MUT3, o agente sabotado é o mais bem avaliado |
 | 09 | `fig09_passk_curvas.png` | nb05 | **a média ordena os modelos ao contrário da consistência**: a média simples põe o 14B à frente (38,2% × 26,4%) e o `pass^k` inverte a partir de **k = 3** — a inversão sobrevive às três leituras das 37 execuções sem decisão | que o 8B seja o melhor modelo: em **k = 8 os dois são 0,000**, nenhum cenário é entregue nas 8 seeds. E nada sobre ambiente — o eixo de `env_seed` não existe |
 | 10 | `fig10_decomposicao_variancia.png` | nb05 | **por que a ordem inverte**: 42–49% da variância do 8B é **entre** cenários (ele tem cenários que domina), contra 19–35% do 14B, cuja variância é sobretudo **dentro** do mesmo cenário — que é o que o `pass^k` cobra | **não é a decomposição de H4.** `METRICAS §7.2` separa modelo × ambiente e exige dois braços; aqui o ambiente é **constante** e a pergunta é outra |
+| 11 | `fig11_severidade_por_modelo.png` | nb06 | **onde a linha do sucesso é traçada muda o nível e nada mais**: 0/288 no corte oficial S2, 26–38% em S1, 31–44% em S0 — e a vantagem do 14B em S1 (+11,8 pts) **vira −0,7** quando as 37 execuções sem decisão saem do numerador (o X35) | que 63% de S0 seja o perfil de falha do agente: a bateria rodou **sem judge**, então a classe C inteira está fora desta distribuição |
+| 12 | `fig12_taxonomia_falhas.png` | nb06 | **a classe C é invisível para esta bateria, e não por ausência de falha**: no gold humano de dev, C1 (causa-raiz errada, **S1**) aparece em 14 das 20 execuções — logo a lente `sem S2` da T29 é **teto**, não estimativa | que as duas amostras sejam comparáveis: 20 execuções de dev contra 288 de test. O teto projetado (26%→8%, 38%→11%) é **projeção entre splits**, e não entra em conclusão nenhuma |
 
 ## O que ainda não tem figura
 
 | o quê | por quê | quando |
 |---|---|---|
-| severidade S0–S4 e taxonomia (T30) | mesma bateria, notebook nb06 | próxima leva |
 | decomposição de variância **de H4** (modelo × ambiente) | **não vai existir sem rodar a bateria**: o A16 cortou a de ambiente e `runner/matriz.py` não tem eixo de `env_seed`. A `fig10` decompõe outra coisa — entre cenários × dentro do cenário — e diz isso no próprio título | trabalho futuro declarado; `tests/test_estabilidade.py` tem o tripwire que avisa quando o eixo existir |
 | κ do judge por configuração | a `fig05_kappa_por_config` do enunciado da T28 virou a `fig03`/`fig04` do nb03, que já mostram estabilidade e curva da rubrica | não vai existir com esse nome |
 
@@ -38,5 +39,5 @@ make api      # noutro terminal — o nb01 e o nb02 medem a API do parceiro
 make repro    # executa os notebooks e confere que TODA figura da lista foi regravada
 ```
 
-O nb03, o nb04 e o nb05 **não** precisam da API: leem `runs/` e `labels/` versionados, e a pontuação
+O nb03, o nb04, o nb05 e o nb06 **não** precisam da API: leem `runs/` e `labels/` versionados, e a pontuação
 N1/N2 é função pura de `(trace, gabarito)` — `tests/test_repro.py` bloqueia `socket` para provar.

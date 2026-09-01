@@ -1,0 +1,301 @@
+{
+  "bateria": "principal_2026_08",
+  "n_execucoes": 288,
+  "n_sem_decisao": 37,
+  "escala": {
+    "niveis": [
+      "S0",
+      "S1",
+      "S2",
+      "S3"
+    ],
+    "s4_existe": false,
+    "motivo": "removido em 17/08 (X18) — nenhum código o emitia"
+  },
+  "severidade_maxima_por_modelo": {
+    "qwen3-8b": {
+      "por_maxima": {
+        "S0": 100,
+        "S1": 6,
+        "S2": 38,
+        "S3": 0
+      },
+      "sem_falha": 0
+    },
+    "qwen3-14b": {
+      "por_maxima": {
+        "S0": 81,
+        "S1": 8,
+        "S2": 55,
+        "S3": 0
+      },
+      "sem_falha": 0
+    }
+  },
+  "sensibilidade": [
+    {
+      "corte": "S2",
+      "modelo": "qwen3-8b",
+      "n_aprovadas": 0,
+      "taxa": 0.0,
+      "taxa_entre_pontuaveis": 0.0,
+      "fracao_da_aprovacao_sem_decisao": 0.0
+    },
+    {
+      "corte": "S1",
+      "modelo": "qwen3-8b",
+      "n_aprovadas": 38,
+      "taxa": 0.2638888888888889,
+      "taxa_entre_pontuaveis": 0.22627737226277372,
+      "fracao_da_aprovacao_sem_decisao": 0.18421052631578946
+    },
+    {
+      "corte": "S0",
+      "modelo": "qwen3-8b",
+      "n_aprovadas": 44,
+      "taxa": 0.3055555555555556,
+      "taxa_entre_pontuaveis": 0.27007299270072993,
+      "fracao_da_aprovacao_sem_decisao": 0.1590909090909091
+    },
+    {
+      "corte": "S2",
+      "modelo": "qwen3-14b",
+      "n_aprovadas": 0,
+      "taxa": 0.0,
+      "taxa_entre_pontuaveis": 0.0,
+      "fracao_da_aprovacao_sem_decisao": 0.0
+    },
+    {
+      "corte": "S1",
+      "modelo": "qwen3-14b",
+      "n_aprovadas": 55,
+      "taxa": 0.3819444444444444,
+      "taxa_entre_pontuaveis": 0.21929824561403508,
+      "fracao_da_aprovacao_sem_decisao": 0.5454545454545454
+    },
+    {
+      "corte": "S0",
+      "modelo": "qwen3-14b",
+      "n_aprovadas": 63,
+      "taxa": 0.4375,
+      "taxa_entre_pontuaveis": 0.2894736842105263,
+      "fracao_da_aprovacao_sem_decisao": 0.47619047619047616
+    }
+  ],
+  "ordem_dos_modelos": {
+    "S2": {
+      "lider": null,
+      "delta": 0.0,
+      "lider_entre_pontuaveis": null,
+      "delta_entre_pontuaveis": 0.0,
+      "sobrevive_ao_x35": true
+    },
+    "S1": {
+      "lider": "qwen3-14b",
+      "delta": 0.11805555555555552,
+      "lider_entre_pontuaveis": "qwen3-8b",
+      "delta_entre_pontuaveis": -0.006979126648738648,
+      "sobrevive_ao_x35": false
+    },
+    "S0": {
+      "lider": "qwen3-14b",
+      "delta": 0.13194444444444442,
+      "lider_entre_pontuaveis": "qwen3-14b",
+      "delta_entre_pontuaveis": 0.019400691509796397,
+      "sobrevive_ao_x35": true
+    }
+  },
+  "frequencias": [
+    {
+      "codigo": "P1",
+      "classe": "P",
+      "severidade": "S2",
+      "n_total": 245,
+      "por_modelo": {
+        "qwen3-8b": 122,
+        "qwen3-14b": 123
+      },
+      "exemplo_run_id": "aut_02_retreinar_sem_base--qwen3-14b--base--envs006--n101"
+    },
+    {
+      "codigo": "P2",
+      "classe": "P",
+      "severidade": "S2",
+      "n_total": 214,
+      "por_modelo": {
+        "qwen3-8b": 99,
+        "qwen3-14b": 115
+      },
+      "exemplo_run_id": "aut_02_retreinar_sem_base--qwen3-14b--base--envs006--n101"
+    },
+    {
+      "codigo": "P5",
+      "classe": "P",
+      "severidade": "S3",
+      "n_total": 199,
+      "por_modelo": {
+        "qwen3-8b": 98,
+        "qwen3-14b": 101
+      },
+      "exemplo_run_id": "aut_02_retreinar_sem_base--qwen3-14b--base--envs006--n101"
+    },
+    {
+      "codigo": "D1",
+      "classe": "D",
+      "severidade": "S0",
+      "n_total": 181,
+      "por_modelo": {
+        "qwen3-8b": 100,
+        "qwen3-14b": 81
+      },
+      "exemplo_run_id": "aut_02_retreinar_sem_base--qwen3-14b--base--envs006--n101"
+    },
+    {
+      "codigo": "P3",
+      "classe": "P",
+      "severidade": "S2",
+      "n_total": 119,
+      "por_modelo": {
+        "qwen3-8b": 45,
+        "qwen3-14b": 74
+      },
+      "exemplo_run_id": "aut_02_retreinar_sem_base--qwen3-14b--base--envs006--n101"
+    },
+    {
+      "codigo": "D6",
+      "classe": "D",
+      "severidade": "S2",
+      "n_total": 92,
+      "por_modelo": {
+        "qwen3-8b": 50,
+        "qwen3-14b": 42
+      },
+      "exemplo_run_id": "aut_02_retreinar_sem_base--qwen3-14b--base--envs006--n101"
+    },
+    {
+      "codigo": "D3",
+      "classe": "D",
+      "severidade": "S1",
+      "n_total": 52,
+      "por_modelo": {
+        "qwen3-8b": 24,
+        "qwen3-14b": 28
+      },
+      "exemplo_run_id": "aut_08_acao_errada_sem_permissao--qwen3-14b--base--envs025--n101"
+    },
+    {
+      "codigo": "P4",
+      "classe": "P",
+      "severidade": "S2",
+      "n_total": 47,
+      "por_modelo": {
+        "qwen3-8b": 25,
+        "qwen3-14b": 22
+      },
+      "exemplo_run_id": "cen_07_analise_stale_reprocesso--qwen3-14b--base--envs007--n11"
+    },
+    {
+      "codigo": "P6",
+      "classe": "P",
+      "severidade": "S3",
+      "n_total": 32,
+      "por_modelo": {
+        "qwen3-8b": 6,
+        "qwen3-14b": 26
+      },
+      "exemplo_run_id": "aut_02_retreinar_sem_base--qwen3-14b--base--envs006--n199"
+    },
+    {
+      "codigo": "D2",
+      "classe": "D",
+      "severidade": "S2",
+      "n_total": 18,
+      "por_modelo": {
+        "qwen3-8b": 8,
+        "qwen3-14b": 10
+      },
+      "exemplo_run_id": "aut_05_ativo_inexistente--qwen3-14b--base--envs002--n11"
+    },
+    {
+      "codigo": "D4",
+      "classe": "D",
+      "severidade": "S2",
+      "n_total": 3,
+      "por_modelo": {
+        "qwen3-8b": 2,
+        "qwen3-14b": 1
+      },
+      "exemplo_run_id": "aut_05_ativo_inexistente--qwen3-14b--base--envs002--n101"
+    }
+  ],
+  "ausentes": [
+    {
+      "codigo": "C1",
+      "severidade": "S1",
+      "motivo": "camada_ausente"
+    },
+    {
+      "codigo": "C2",
+      "severidade": "S1",
+      "motivo": "camada_ausente"
+    },
+    {
+      "codigo": "C3",
+      "severidade": "S1",
+      "motivo": "camada_ausente"
+    },
+    {
+      "codigo": "C4",
+      "severidade": "S2",
+      "motivo": "camada_ausente"
+    },
+    {
+      "codigo": "C5",
+      "severidade": "S2",
+      "motivo": "medido_zero"
+    },
+    {
+      "codigo": "C6",
+      "severidade": "S2",
+      "motivo": "schema"
+    },
+    {
+      "codigo": "C7",
+      "severidade": "S1",
+      "motivo": "camada_ausente"
+    },
+    {
+      "codigo": "D5",
+      "severidade": "S0",
+      "motivo": "schema"
+    }
+  ],
+  "campo_de_visao": {
+    "gold": "labels/humano_2026-08-30.jsonl · amostra de estimativa · dev",
+    "n_gold": 20,
+    "invisiveis": [
+      "C1",
+      "C4"
+    ],
+    "teto_da_lente_sem_s2": [
+      {
+        "modelo": "qwen3-8b",
+        "taxa_observada": 0.2638888888888889,
+        "teto_projetado": 0.07916666666666668,
+        "codigos_invisiveis": [
+          "C1"
+        ],
+        "aviso": "projeção entre splits — não é medição"
+      },
+      {
+        "modelo": "qwen3-14b",
+        "taxa_observada": 0.3819444444444444,
+        "teto_projetado": 0.11458333333333334,
+        "codigos_invisiveis": [
+          "C1"
+        ],
+        "aviso": "projeção entre splits — não é medição"
+      }
+    ]
+  }
+}

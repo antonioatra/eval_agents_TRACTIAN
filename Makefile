@@ -12,12 +12,14 @@ API_PY  := $(API_DIR)/api/.venv/bin/python
 # (curva custo × recall, matriz de concordância, pass^k) — ver o comentário de `repro`.
 FIG_NOTEBOOKS := notebooks/nb01_exploracao_api.ipynb notebooks/nb02_cobertura_corpus.ipynb \
                  notebooks/nb03_calibracao_judge.ipynb notebooks/nb04_resultados_principais.ipynb \
-                 notebooks/nb05_passk_estabilidade.ipynb
+                 notebooks/nb05_passk_estabilidade.ipynb \
+                 notebooks/nb06_severidade_erros.ipynb
 FIG_ARQUIVOS  := figures/fig01_distribuicao_status.png figures/fig02_matriz_cobertura.png \
                  figures/fig03_flip_rate.png figures/fig04_curva_rubrica.png \
                  figures/fig05_custo_recall_h0.png figures/fig06_recall_por_classe_h0.png \
                  figures/fig07_h2_funcao_vs_args.png figures/fig08_ins9_mutantes.png \
-                 figures/fig09_passk_curvas.png figures/fig10_decomposicao_variancia.png
+                 figures/fig09_passk_curvas.png figures/fig10_decomposicao_variancia.png \
+                 figures/fig11_severidade_por_modelo.png figures/fig12_taxonomia_falhas.png
 
 # `uv` não está disponível neste ambiente; o venv é criado com o venv da stdlib.
 $(VENV):
@@ -125,10 +127,15 @@ pontuar: install
 # scores.jsonl` versionado e regrava as curvas de `pass^k` e a decomposição de variância.
 # `scoring/estabilidade.py` é função pura de `ScoreRecord`.
 #
-# O QUE AINDA NÃO TEM FIGURA é a severidade S0–S4 e a taxonomia de falhas (T30, nb06), sobre a
-# mesma bateria principal. Estender é acrescentar o par (notebook, figura) a
-# FIG_NOTEBOOKS/FIG_ARQUIVOS lá em cima: a conferência final já reprova, com o nome do arquivo,
-# figura declarada que não apareceu no disco.
+# O NB06 ENTROU EM 01/09 E TAMBÉM NÃO PRECISA DA API. Ele lê o mesmo `scores.jsonl` da
+# principal mais o gold humano da T22 e os traces da calibração — tudo versionado — e regrava a
+# distribuição de severidade e a taxonomia observada. Ele também reescreve
+# `docs/taxonomia_erros.md`, que é GERADO e não escrito à mão: número digitado num markdown
+# envelhece na primeira vez que a bateria muda e ninguém percebe.
+#
+# ESTENDER é acrescentar o par (notebook, figura) a FIG_NOTEBOOKS/FIG_ARQUIVOS lá em cima: a
+# conferência final já reprova, com o nome do arquivo, figura declarada que não apareceu no
+# disco.
 repro: install
 	$(PY) -m pytest -q tests/test_repro.py
 	@$(PY) -c "import httpx; httpx.get('http://localhost:8000/openapi.json', timeout=5)" \

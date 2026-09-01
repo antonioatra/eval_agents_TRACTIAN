@@ -476,3 +476,29 @@ def severidade_maxima(falhas: Sequence[Falha]) -> Severidade | None:
 def codigos(falhas: Iterable[Falha]) -> set[str]:
     """Só os códigos — o que entra em contagem de recall e em tabela de relatório."""
     return {falha.codigo for falha in falhas}
+
+
+# ---------------------------------------------------------------------------
+# O que cada camada consegue sustentar (T30)
+# ---------------------------------------------------------------------------
+
+CODIGOS_QUE_EXIGEM_N3: frozenset[str] = frozenset({"C1", "C2", "C3", "C4", "C7"})
+"""Os códigos que `_falhas_de_conteudo` só emite quando recebe um veredito de rubrica.
+
+Existe porque a T30 precisa distinguir **três** ausências que se parecem no relatório: código
+que o schema não sustenta (`FALHAS_NAO_CLASSIFICAVEIS`), código que a camada não foi executada
+(este conjunto), e código medido cujo valor deu zero. Sem a distinção, uma bateria pontuada só
+com N1/N2 produz uma distribuição de severidade em que a classe C inteira aparece como
+"nenhuma falha de conteúdo" — que é a leitura que `n3=None` existe para impedir, e que a
+figura da T30 estaria mostrando em barra.
+
+C5 fica de fora de propósito: é a única de conteúdo que é determinística
+(`n1.citacoes_validas`), e por isso é medida mesmo sem judge. C6 também fica de fora, mas por
+outro motivo — ele não é emitido por camada nenhuma hoje, e quem registra isso é
+`FALHAS_NAO_CLASSIFICAVEIS`. Um código não pode estar nos dois mapas, e o teste confere.
+
+⚠️ **Não é lista escrita à mão que se acredita.** `test_taxonomia.py` sonda
+`_falhas_de_conteudo` com um veredito que reprova em tudo, com e sem `n3`, e exige que a
+diferença seja exatamente este conjunto. Se alguém acrescentar um campo à rubrica e emitir
+código novo, o teste falha aqui em vez de a T30 classificar a ausência dele como "medido zero".
+"""
