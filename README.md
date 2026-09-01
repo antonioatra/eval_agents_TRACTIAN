@@ -202,14 +202,73 @@ importa, e está na tabela em vez de numa nota de rodapé.
 A v2 foi escrita para o campo que estava pior e ganhou 18 pontos nele; os outros dois pioraram
 dentro do ruído de 22 itens. A comparação pareada está em `nb03`.
 
+**Poder de detecção contra agentes sabotados** (INS.9 — 4 mutantes × base, 120 pares,
+[`fig08`](figures/fig08_ins9_mutantes.png)). É o teste que pergunta se o instrumento **reage** a
+uma piora que se sabe existir:
+
+| lente | pares distinguidos | na direção certa | invertidos |
+|---|---|---|---|
+| códigos da taxonomia | **84%** | **8%** | 31% |
+| binário sem S2 | 45% | 14% | 31% |
+| binário §6.5 (oficial) | **0%** | 0% | 0% |
+
+⚠️ **A lente oficial tem poder zero, e a mitigação tem defeito próprio.** O MUT3 — orçamento
+cortado de 12 para 3 chamadas — passa em **100%** contra 27% da base pela lente sem S2: o agente
+sabotado é o mais bem avaliado do conjunto. O mecanismo é estrutural e vale para a taxonomia
+inteira: P1 (cobertura), P2 (redundância) e P4 (precedência) são proporcionais à **oportunidade**.
+Um agente que só pode dar três passos não tem como perder cobertura em oito, repetir chamada nem
+violar ordem. **Cortar passos não melhora o agente; melhora a nota.**
+
+O que isso **não** diz é que a taxonomia não presta: 55 dos 120 pares são distinção *lateral* —
+troca de falha, que é distinção legítima sem ser confirmação de piora —, e o instrumento reage à
+sabotagem em 84% dos pares. O que ele não sabe é **para que lado**. Por isso o número reportado é
+sempre o par (fração distinguida, poder útil), nunca o primeiro sozinho.
+
 ### 7.3 O agente, como corpo de prova
 
-O contraste que o SUT de referência existe para produzir:
+O agente não é objeto de estudo — ele existe para o instrumento ter o que medir. Os números
+abaixo saem da bateria principal: **288 execuções**, 18 cenários de test × 2 modelos × 8
+`sample_seed`, com `env_seed` constante.
+
+**O contraste que o SUT de referência existe para produzir:**
 
 | | conclui dentro de 12 tool calls |
 |---|---|
 | Qwen3 8B / 14B (4 bit, local) | 43% |
 | `gemini-3.7-flash` (fronteira) | **24 de 24** |
+
+**A média ordena os modelos ao contrário da consistência** ([`fig09`](figures/fig09_passk_curvas.png)).
+A média simples põe o 14B 45% à frente em termos relativos — 38,2% contra 26,4% —, e o `pass^k`
+inverte a ordem **a partir de k = 3**. A inversão sobrevive às três leituras possíveis das 37
+execuções sem decisão; só o *k* em que ela acontece muda. O mecanismo está na
+[`fig10`](figures/fig10_decomposicao_variancia.png): 42–49% da variância do 8B é **entre**
+cenários, contra 19–35% do 14B, cuja variância é sobretudo **dentro** do mesmo cenário — que é
+exatamente o que o `pass^k` cobra e a média apaga.
+
+⚠️ **Isso não autoriza "então use o 8B".** `pass^8` é **0,000 para os dois** em todas as lentes:
+nenhum cenário é entregue nas 8 seeds por nenhum dos dois modelos.
+
+**Onde a linha do sucesso é traçada muda o nível, e nada mais**
+([`fig11`](figures/fig11_severidade_por_modelo.png)). O corte oficial de `METRICAS §6.5` dá
+**0/288**. Afrouxá-lo para S1 dá 26,4% × 38,2%, e para S0 dá 30,6% × 43,8%. Mas a vantagem do 14B
+é artefato: as 37 execuções sem decisão observável recebem só códigos de processo — nenhum S0 ou
+S1 — e portanto **aprovam** em todo corte abaixo de S2. 30 delas são do 14B. Descontadas, os
++11,8 pontos do corte S1 viram **−0,7** e o 8B passa à frente; os +13,2 do corte S0 viram **+1,9**,
+dentro do ruído de n = 251. **Nenhum corte ordena os modelos por capacidade.**
+
+**H2 confirma a magnitude e derruba a premissa.** `ARQUITETURA §12` previa diferença maior nos
+argumentos que na escolha da função, e é isso: 0,061 contra 0,021. Mas o **sinal se inverte** — o
+14B escolhe melhor a função (`tool_f1_liquido` +0,057) e preenche **pior** os argumentos
+(`args_acc` −0,061, p = 0,0514 contra corte de 0,05: o efeito está no limiar e este n não decide).
+O que cai é a premissa implícita de que o modelo maior ganharia nos dois eixos
+([`fig07`](figures/fig07_h2_funcao_vs_args.png)).
+
+**O código mais grave é o quarto mais frequente.** `D1` — chamada de alto impacto sem gate
+aprovado antes dela, severidade S0 — aparece em **181 das 288** execuções. Não é falha de borda: é
+o comportamento modal. A métrica olha o **pedido** e não o resultado, então uma escrita que o gate
+bloqueou continua sendo ação indevida do agente
+([`fig12`](figures/fig12_taxonomia_falhas.png), e `docs/taxonomia_erros.md` com a taxonomia
+inteira, definição, exemplo real e frequência).
 
 Execução que estoura o orçamento sem responder **não é dado perdido**: é falha de processo, medida
 pela N2 e classificada como P5. O que ela não sustenta é julgamento de conteúdo.
@@ -235,14 +294,21 @@ Na ordem de quanto afetam a conclusão.
    perfeita e vale S2. A variante "sem S2", que o próprio documento define, discrimina — e as duas
    curvas vão lado a lado. Afrouxar P1 agora seria mexer em taxonomia congelada **depois** de ler
    o resultado.
-7. **O teto de leitura é um `flash`, não um `pro`** — o `gemini-3.6-pro` não existe no catálogo,
+7. **A classe C nunca foi medida na bateria principal.** As três baterias no disco foram
+   pontuadas só com N1+N2, e sem judge os códigos de conteúdo — C1 a C4 e C7 — não são avaliados.
+   A distribuição de severidade de §7.3 é a das falhas de **processo e decisão**, não o perfil de
+   falha do agente. No gold humano de dev, C1 (causa-raiz errada, **S1**) aparece em 14 das 20
+   execuções, e S1 reprova no corte S1 — logo toda taxa de aprovação acima de zero é **teto**, não
+   estimativa. `tests/test_taxonomia.py::test_a_bateria_principal_nao_tem_n3` é o tripwire: no dia
+   em que o judge rodar sobre a principal, ele falha e manda refazer as figuras da T30.
+8. **O teto de leitura é um `flash`, não um `pro`** — o `gemini-3.6-pro` não existe no catálogo,
    conferido com controle passando na mesma sonda. Teto mais baixo **favorece** os SUTs locais: é
    viés na direção confortável.
-8. **O congelamento do judge é de prompt e id, nunca de peso.** O alias do provedor é mudo.
+9. **O congelamento do judge é de prompt e id, nunca de peso.** O alias do provedor é mudo.
    Mitigação: canário de entrada fixa antes e depois de cada bateria.
-9. **`env_seed` fixa** elimina variância ambiental por construção — o `pass^k` reportado é **limite
+10. **`env_seed` fixa** elimina variância ambiental por construção — o `pass^k` reportado é **limite
    superior** de confiabilidade.
-10. **Um domínio, dados fictícios**, 5 cenários autorais no test sem potência para comparar autoral
+11. **Um domínio, dados fictícios**, 5 cenários autorais no test sem potência para comparar autoral
     × oficial (reportado como descritivo, nunca como teste de hipótese).
 
 ## 9. Evolução
