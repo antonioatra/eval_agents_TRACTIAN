@@ -18,8 +18,8 @@ A EXTRAPOLAÇÃO USA MEDIANA, E NÃO MÉDIA
     modelos misturados, erraria a conta na direção de quem tem mais células.
 
 USO
-    python scripts/analisar_piloto.py runs/piloto_2026-08-23
-    python scripts/analisar_piloto.py runs/piloto_2026-08-23 --json docs/piloto.json
+    python scripts/analisar_piloto.py runs/piloto_2026-08-23 python scripts/analisar_piloto.py
+    runs/piloto_2026-08-23 --json docs/anexos/resultados/piloto.json
 """
 
 from __future__ import annotations

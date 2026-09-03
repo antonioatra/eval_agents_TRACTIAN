@@ -6,7 +6,7 @@ custo é medido na camada certa, a justificativa só cita id que existe. O que e
 provar é que o modelo do outro lado responde a rubrica — e essa é a pergunta que decide se o
 judge v1 vai para a T21 ou volta para a prancheta.
 
-Três coisas são medidas aqui, e todas viram número no `docs/judge.md`:
+Três coisas são medidas aqui, e todas viram número no `docs/anexos/apuracao/judge.md`:
 
 1. **Detecção com gabarito conhecido.** A resposta é FABRICADA sobre um trace real, com
    defeitos plantados — o método da T12 (agente falso calibra o instrumento). O gabarito é o

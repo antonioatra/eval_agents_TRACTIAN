@@ -8,7 +8,7 @@ POR QUE ISTO EXISTE
 
     Este script NÃO é a bateria. Não usa o runner, não escreve trace, não pontua com N1/N2 e
     não executa nenhuma chamada contra a API — ele mede só a mecânica de tool calling. O que
-    ele produz é `docs/tool_calling_baseline.md`.
+    ele produz é `docs/anexos/apuracao/tool_calling_baseline.md`.
 
 O CATÁLOGO É O REAL, NÃO UM RASCUNHO
     O `PLANO.md` previa "~15 tools de rascunho" porque a T0b foi escrita antes da T13. As 18
@@ -504,8 +504,8 @@ def main() -> int:
     parser.add_argument("--base-url", default=BASE_URL_PADRAO)
     parser.add_argument("--modelo", action="append", default=None,
                         help="id do modelo (repetível). Padrão: os dois que o servidor listar.")
-    parser.add_argument("--saida", default="docs/tool_calling_baseline.md")
-    parser.add_argument("--bruto", default="docs/tool_calling_baseline.json",
+    parser.add_argument("--saida", default="docs/anexos/apuracao/tool_calling_baseline.md")
+    parser.add_argument("--bruto", default="docs/anexos/resultados/tool_calling_baseline.json",
                         help="julgamentos crus, para auditoria")
     args = parser.parse_args()
 

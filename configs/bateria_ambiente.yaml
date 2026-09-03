@@ -19,7 +19,7 @@
 #   Elas são o ponto de comparação — sem o mundo canônico medido na mesma seed de amostragem,
 #   as outras 78 células não têm contra o que ser lidas. As 78 restantes exigem o eixo.
 #
-#   Extensão mínima que destrava (ver `docs/dimensionamento.md §5`):
+#   Extensão mínima que destrava (ver `docs/anexos/apuracao/dimensionamento.md §5`):
 #     1. `CAMPOS_DA_BATERIA` ganha `env_seeds`;
 #     2. `env_seeds` é um mapeamento `cenario_id -> [seeds]`, nunca uma lista global — seed de
 #        ambiente global não existe (`CENARIOS §2.3`);
@@ -71,7 +71,7 @@
 #   abaixo, e o carregador confere o sha256; esta linha fica pelo argumento.
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
-# RECOMENDAÇÃO DE CORTE: esta é a bateria nº 1 da fila (`docs/dimensionamento.md §3`).
+# RECOMENDAÇÃO DE CORTE: esta é a bateria nº 1 da fila (`docs/anexos/apuracao/dimensionamento.md §3`).
 # Economiza 2,75 h, é a única bloqueada por código que ainda não existe, e é a que entrega
 # menos — H4 apoiada em 1 cenário de 6. Cortada, "sensibilidade a mundo" vira trabalho futuro
 # declarado, com esta matriz de 90 já escrita para quem retomar.

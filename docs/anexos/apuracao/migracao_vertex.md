@@ -1,6 +1,6 @@
 # O judge sai da free tier: o que a migração para o Vertex mudou, e o que ela corrigiu
 
-**Data: 25/08/2026.** Fecha a consequência de cronograma aberta em `docs/limites_free_tier.md §5`
+**Data: 25/08/2026.** Fecha a consequência de cronograma aberta em `docs/anexos/apuracao/limites_free_tier.md §5`
 ("o judge na free tier não sustenta o trabalho") e corrige uma afirmação que o projeto vinha
 repetindo desde 15/08 sobre o congelamento da T23.
 
@@ -22,7 +22,7 @@ ser o regime.
 
 ## 2 · O catálogo, medido
 
-`scripts/checar_catalogo_vertex.py`, saída bruta em `docs/catalogo_vertex.json`:
+`scripts/checar_catalogo_vertex.py`, saída bruta em `docs/anexos/resultados/catalogo_vertex.json`:
 
 | modelo | meta | chamada | versionId | launchStage |
 |---|---|---|---|---|
@@ -89,7 +89,7 @@ AI Studio não regride.
 * detectou as **três** afirmações plantadas e `acao_sem_base=True`;
 * **não** acusou a resposta limpa — falso positivo aqui viraria C3 fantasma e inflaria o recall;
 * razão de tokens de entrada com_trace/cego: **2,2×**, o mesmo valor medido no AI Studio em
-  24/08 (`docs/judge.md §3`).
+  24/08 (`docs/anexos/apuracao/judge.md §3`).
 
 A razão ter se reproduzido é o resultado que mais importa: o instrumento mede a mesma coisa dos
 dois lados.
@@ -152,7 +152,7 @@ instável — por um ponto final:
 ```
 
 Um canário que comparasse texto exato teria dado alarme falso de cara. A contagem (3) ficou
-estável e o sinal grosso sobreviveu. Linha de base em `docs/canario_do_judge.json`: 7 campos
+estável e o sinal grosso sobreviveu. Linha de base em `docs/anexos/resultados/canario_do_judge.json`: 7 campos
 estáveis, `tokens_in = 5993`.
 
 ### O defeito

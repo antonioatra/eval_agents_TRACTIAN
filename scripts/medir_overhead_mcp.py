@@ -24,8 +24,8 @@ CACHE DESLIGADO NA MARRA
     `RunContext` novo — e é o que a bateria faz também: um servidor por run.
 
 USO
-    python scripts/medir_overhead_mcp.py
-    python scripts/medir_overhead_mcp.py --repeticoes 10 --json docs/overhead_mcp.json
+    python scripts/medir_overhead_mcp.py python scripts/medir_overhead_mcp.py --repeticoes 10 --json
+    docs/anexos/resultados/overhead_mcp.json
 """
 
 from __future__ import annotations

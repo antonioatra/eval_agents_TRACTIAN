@@ -208,9 +208,9 @@ def traces_julgaveis(run: Path) -> list[Path]:
 def chave(linha: Mapping[str, Any]) -> tuple[str, str, int, str, str]:
     """A célula, e **por quem ela foi julgada**.
 
-    O `served_by` entra na chave porque em 25/08 o judge trocou de provedor (A23), e a mesma
-    célula julgada dos dois lados não é a mesma medição: o Vertex conta **6–8% mais tokens de
-    entrada** para o prompt byte a byte idêntico (`docs/migracao_vertex.md §5`). Sem o
+    O `served_by` entra na chave porque em 25/08 o judge trocou de provedor (A23), e a mesma célula
+    julgada dos dois lados não é a mesma medição: o Vertex conta **6–8% mais tokens de entrada**
+    para o prompt byte a byte idêntico (`docs/anexos/apuracao/migracao_vertex.md §5`). Sem o
     provedor na chave, uma retomada depois da migração daria a célula por feita e o flip rate
     compararia um julgamento do AI Studio contra quatro do Vertex — atribuindo à rubrica uma
     variação que é de infraestrutura. Linha antiga sem o campo é do AI Studio, que é o único

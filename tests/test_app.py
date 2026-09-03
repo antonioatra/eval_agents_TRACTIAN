@@ -36,7 +36,7 @@ from tests.test_severidade import n1_limpo, n2_limpo
 
 RAIZ = Path(__file__).resolve().parents[1]
 TEMPLATE = RAIZ / "src" / "tapieval" / "app" / "pagina.html"
-PLACAR = RAIZ / "docs" / "placar_modelos.json"
+PLACAR = RAIZ / "docs" / "anexos" / "resultados" / "placar_modelos.json"
 BATERIA = "principal_2026_08"
 
 
@@ -119,11 +119,28 @@ def test_a_manchete_segue_a_pior_severidade_presente():
 # ---------------------------------------------------------------------------
 
 
+MARCA_INICIO = "<!-- INICIO REGISTRO DA AVALIACAO -->"
+MARCA_FIM = "<!-- FIM REGISTRO DA AVALIACAO -->"
+
+
 def _fora_do_modo_avaliacao(html: str) -> str:
-    """O template menos o bloco que só aparece atrás do botão "ver como avaliação"."""
-    i = html.index('id="modo-avaliacao"')
-    j = html.index("</section>", i)
-    return html[:i] + html[j:]
+    """O template menos os blocos que só aparecem atrás de um botão "ver como avaliação".
+
+    Recorta por marcador explícito, e não por `id=` até o próximo `</section>`. A versão
+    anterior fazia isto último e passou a comer tudo o que fosse acrescentado DEPOIS do bloco
+    dentro da mesma `<section>` — foi o que aconteceu quando a tela da consulta ao vivo entrou:
+    ela nasceu inteira dentro do recorte e nunca foi varrida por este teste. Um teste que para
+    de olhar para a tela nova sem falhar é pior que teste nenhum, porque ele continua verde.
+
+    São dois blocos hoje — o da execução gravada e o da consulta ao vivo —, e o par de
+    marcadores é conferido por `test_os_marcadores_do_registro_da_avaliacao_estao_pareados`.
+    """
+    limpo, resto = "", html
+    while MARCA_INICIO in resto:
+        antes, resto = resto.split(MARCA_INICIO, 1)
+        _dentro, resto = resto.split(MARCA_FIM, 1)
+        limpo += antes
+    return limpo + resto
 
 
 JARGAO = re.compile(
@@ -148,6 +165,27 @@ def test_o_vocabulario_da_avaliacao_nao_aparece_na_tela_do_engenheiro():
 
     achados = sorted({m.group(0) for m in JARGAO.finditer(sem_placar)})
     assert not achados, f"jargão de avaliação na tela do engenheiro: {achados}"
+
+
+def test_os_marcadores_do_registro_da_avaliacao_estao_pareados():
+    """Sem par, `_fora_do_modo_avaliacao` recorta até o fim do arquivo — e a varredura de jargão
+    passa a olhar para nada, em silêncio. É o modo de falha que este teste existe para pegar."""
+    html = TEMPLATE.read_text(encoding="utf-8")
+    assert html.count(MARCA_INICIO) == html.count(MARCA_FIM) >= 2
+    assert html.index(MARCA_INICIO) < html.index(MARCA_FIM)
+
+
+def test_a_tela_da_consulta_ao_vivo_e_varrida_pela_regra_do_jargao():
+    """A tela ao vivo tem de estar DENTRO do que o teste de jargão olha.
+
+    O bloco escondido dela (os 19 códigos, com o que não foi medido) fica fora, como o da
+    execução gravada; o resto — pergunta, resposta, trace, frase do engenheiro — fica dentro.
+    Sem esta âncora, um recorte mal posto devolveria a tela inteira para a sombra outra vez.
+    """
+    superficie = _fora_do_modo_avaliacao(TEMPLATE.read_text(encoding="utf-8"))
+    assert 'id="tela-vivo"' in superficie
+    assert 'id="sinais-vivo"' in superficie
+    assert 'id="tab-nao-medidos"' not in superficie
 
 
 def test_a_tabela_da_taxonomia_nao_mostra_mais_a_camada_detectora():
@@ -201,8 +239,9 @@ def test_o_placar_declara_as_fontes_de_cada_criterio(placar):
 
 def test_o_placar_bate_com_os_resultados_dos_notebooks(placar):
     """Os dois números que a apresentação mais cita, conferidos contra quem os produziu."""
-    passk = json.loads((RAIZ / "docs" / "resultados_passk.json").read_text(encoding="utf-8"))
-    taxo = json.loads((RAIZ / "docs" / "resultados_taxonomia.json").read_text(encoding="utf-8"))
+    resultados = RAIZ / "docs" / "anexos" / "resultados"
+    passk = json.loads((resultados / "resultados_passk.json").read_text(encoding="utf-8"))
+    taxo = json.loads((resultados / "resultados_taxonomia.json").read_text(encoding="utf-8"))
     por = {c["criterio"]: c for c in placar["criterios"]}
 
     media = por["Média simples das execuções"]

@@ -104,47 +104,47 @@ Mapeamento com a arquitetura de referência do TAPI §8: solicitação → agent
 | # | Tema | Decisão | Status |
 |---|---|---|---|
 | **Escopo** ||||
-| 1 | Entregáveis | os dois do TAPI §2, uma pilha só | ✅ |
-| 2 | Integração | **servidor MCP** entre agente e API | ✅ |
-| 3 | Instrumentação | servidor MCP (chamadas) + harness (modelo), unidos por `seq` | ✅ |
+| 1 | Entregáveis | os dois do TAPI §2, uma pilha só | fechada |
+| 2 | Integração | **servidor MCP** entre agente e API | fechada |
+| 3 | Instrumentação | servidor MCP (chamadas) + harness (modelo), unidos por `seq` | fechada |
 | **Agente** ||||
-| 4 | Topologia | nós = fases de decisão; tools no loop | ✅ |
-| 5 | Triagem | hidratação determinística + intenção por LLM | ✅ |
-| 6 | Mini-agentes | 3 subgrafos, um por modo do TAPI §4 | ✅ |
-| 7 | Estado | `StateGraph` tipado com Pydantic | ✅ |
-| 8 | Granularidade das tools | 1:1 com endpoint, sem tool de conveniência | ✅ |
-| 9 | Retorno degradado | classificação determinística no servidor MCP | ✅ |
-| 10 | Parada | 8 iterações · 12 tool calls · cache, orçamento nunca reseta | ✅ |
-| 11 | Suficiência | checklist por tipo de solicitação | ✅ |
-| 12 | Gate de ação | `Approver` injetável no servidor; humano é uma das políticas | ✅ revisto |
-| 13 | Permissões | checa antes de tentar | ✅ |
-| 14 | Idempotência | chave acumulativa por ação+args, nunca reseta | ✅ |
-| 15 | Fundamentação | schema + validador determinístico de citações | ✅ |
-| 16 | Memória | SQLite de casos resolvidos, com guarda de recência | ✅ |
-| 17 | RAG | não. Conhecimento é tool da API | ✅ |
-| 18 | Multi-turno | **turno único** na bateria; multi-turno só na demo, se sobrar | ⚠️ revisto |
-| 19 | Concorrência | `asyncio` entre solicitações, sem broker | ✅ |
+| 4 | Topologia | nós = fases de decisão; tools no loop | fechada |
+| 5 | Triagem | hidratação determinística + intenção por LLM | fechada |
+| 6 | Mini-agentes | 3 subgrafos, um por modo do TAPI §4 | fechada |
+| 7 | Estado | `StateGraph` tipado com Pydantic | fechada |
+| 8 | Granularidade das tools | 1:1 com endpoint, sem tool de conveniência | fechada |
+| 9 | Retorno degradado | classificação determinística no servidor MCP | fechada |
+| 10 | Parada | 8 iterações · 12 tool calls · cache, orçamento nunca reseta | fechada |
+| 11 | Suficiência | checklist por tipo de solicitação | fechada |
+| 12 | Gate de ação | `Approver` injetável no servidor; humano é uma das políticas | revista |
+| 13 | Permissões | checa antes de tentar | fechada |
+| 14 | Idempotência | chave acumulativa por ação+args, nunca reseta | fechada |
+| 15 | Fundamentação | schema + validador determinístico de citações | fechada |
+| 16 | Memória | SQLite de casos resolvidos, com guarda de recência | fechada |
+| 17 | RAG | não. Conhecimento é tool da API | fechada |
+| 18 | Multi-turno | **turno único** na bateria; multi-turno só na demo, se sobrar | revista |
+| 19 | Concorrência | `asyncio` entre solicitações, sem broker | fechada |
 | **Framework** ||||
-| 20 | Núcleo | runner de cenários + métricas de trajetória | ✅ |
-| 21 | Ordem do corpus | cenários primeiro, catálogo da API depois | ✅ |
-| 22 | Gabarito | relativo ao estado observado (função, não valor fixo) | ✅ |
-| 23 | Ambiente | proxy record/replay + fault injection | ⚠️ depende do Swagger |
-| 24 | Trace | JSONL canônico, imutável, escrito pelo framework | ✅ |
-| 25 | Scores | arquivos separados do trace, versionados, recomputáveis | ✅ |
-| 26 | Judge | prompt + rubrica + few-shot. Sem fine-tuning | ✅ |
-| 27 | Saída do judge | perguntas fechadas; agregação aritmética própria | ✅ |
-| 28 | Validação do judge | flip rate + κ contra humano, split dev/test | ✅ |
-| 29 | Congelamento | judge versionado com hash antes da bateria final | ✅ |
-| 30 | Severidade | escala S0–S3, define sucesso binário | ✅ |
-| 31 | Estabilidade | pass^k (τ-bench), n=8 seeds | ✅ |
-| 32 | Trade-off | cortar eixos de variação para pagar repetições | ✅ |
+| 20 | Núcleo | runner de cenários + métricas de trajetória | fechada |
+| 21 | Ordem do corpus | cenários primeiro, catálogo da API depois | fechada |
+| 22 | Gabarito | relativo ao estado observado (função, não valor fixo) | fechada |
+| 23 | Ambiente | proxy record/replay + fault injection | condicional — Swagger |
+| 24 | Trace | JSONL canônico, imutável, escrito pelo framework | fechada |
+| 25 | Scores | arquivos separados do trace, versionados, recomputáveis | fechada |
+| 26 | Judge | prompt + rubrica + few-shot. Sem fine-tuning | fechada |
+| 27 | Saída do judge | perguntas fechadas; agregação aritmética própria | fechada |
+| 28 | Validação do judge | flip rate + κ contra humano, split dev/test | fechada |
+| 29 | Congelamento | judge versionado com hash antes da bateria final | fechada |
+| 30 | Severidade | escala S0–S3, define sucesso binário | fechada |
+| 31 | Estabilidade | pass^k (τ-bench), n=8 seeds | fechada |
+| 32 | Trade-off | cortar eixos de variação para pagar repetições | fechada |
 | **Entrega** ||||
-| 33 | Modelos | 2 SUTs locais + 1 judge distinto, tudo local | ⚠️ par definitivo na S1 |
-| 34 | Hipóteses | **H0 principal** (curva custo × recall); H1 virou dois pontos dela; H2 apoio, H4 secundária | ⚠️ revisto 14/08 |
-| 35 | Interface | CLI de trace (dia 1) + notebooks; **React cortado** | ⚠️ revisto |
-| 36 | Apresentação | notebooks versionados → figuras → README | ✅ |
+| 33 | Modelos | 2 SUTs locais + 1 judge distinto, tudo local | condicional — S1 |
+| 34 | Hipóteses | **H0 principal** (curva custo × recall); H1 virou dois pontos dela; H2 apoio, H4 secundária | revista 14/08 |
+| 35 | Interface | CLI de trace + notebooks + **um html autocontido**, e um servidor local que roda a **pergunta nova** | revista 14/08, reaberta 02/09 |
+| 36 | Apresentação | notebooks versionados → figuras → README | fechada |
 
-As três linhas marcadas **revisto** mudaram na fusão dos dois documentos de arquitetura —
+As linhas marcadas **revista** mudaram na fusão dos dois documentos de arquitetura —
 o porquê de cada uma está em §17.
 
 ---
@@ -736,9 +736,9 @@ projeto.
 
 | Semana | Foco | LLM? |
 |---|---|---|
-| **S1** 13–19/08 | Teste de tool calling do modelo maior (dias 1–2, **antes de tudo**). Cenários v1 sem ver a API → reconciliação → catálogo → cobertura. Cliente + modelos do Swagger. Proxy record/replay. Schema de trace. Scorers N1/N2. **Agente falso** para calibrar o instrumento. `nb01`, `nb02` | ❌ |
-| **S2** 20–26/08 | Servidor MCP: tools 1:1, cache, gate, emissão de eventos. Cliente MCP + agente ReAct. Fault injection. Mutantes M1–M4. Bateria piloto | ✅ |
-| **S3** 27/08–02/09 | Judge v1 → flip rate → v2 → 35 rotulagens → κ → **congela**. Baterias principal, mutantes e ambiente livre. `nb03`–`nb06` | ✅ |
+| **S1** 13–19/08 | Teste de tool calling do modelo maior (dias 1–2, **antes de tudo**). Cenários v1 sem ver a API → reconciliação → catálogo → cobertura. Cliente + modelos do Swagger. Proxy record/replay. Schema de trace. Scorers N1/N2. **Agente falso** para calibrar o instrumento. `nb01`, `nb02` | não |
+| **S2** 20–26/08 | Servidor MCP: tools 1:1, cache, gate, emissão de eventos. Cliente MCP + agente ReAct. Fault injection. Mutantes M1–M4. Bateria piloto | sim |
+| **S3** 27/08–02/09 | Judge v1 → flip rate → v2 → 35 rotulagens → κ → **congela**. Baterias principal, mutantes e ambiente livre. `nb03`–`nb06` | sim |
 | **S4** 03–08/09 | `nb07`, README completo, reprodutibilidade ponta a ponta, ensaio | — |
 
 **Regra do agente falso (S1).** Um stub que emite trajetórias escritas à mão — uma boa, uma que
@@ -767,6 +767,42 @@ E uma que se manteve, contra a intuição inicial: **MCP é camada, não nó.** 
 todos os nós do agente, não é o primeiro deles. O primeiro passo continua sendo a hidratação
 determinística (§3.1), e a escolha de tool pela LLM só acontece depois da triagem de intenção.
 
+### 17.1 A interface, reaberta em 02/09 — e o que exatamente mudou
+
+A linha "Interface" acima continua **certa no que ela decidiu** e ficou **errada no que ela
+implicava**. O que ela decidiu foi não gastar um dia e meio em React + FastAPI + SSE antes da
+bateria; isso se manteve, e a bateria existe por causa disso. O que ela passou a implicar,
+depois que a bateria fechou, era que o projeto não tinha interface — e isso deixou de ser
+verdade em duas etapas:
+
+| Quando | O que entrou | O que ele custou |
+|---|---|---|
+| 01/09 | `app/copiloto.html` — **um** html autocontido de 2,2 MB, gerado por `make app`, que navega as 288 execuções medidas. Abre por duplo clique: sem servidor, sem rede, sem GPU. | um dia, **depois** da bateria |
+| 02/09 | `make copiloto` — a **mesma** página, servida por `tapieval.vivo`, com a consulta ao vivo ligada: uma pergunta que não está no corpus vira cenário executável, roda no runner real contra a API do parceiro, e o trace aparece na tela enquanto acontece. | meio dia, depois de tudo |
+
+**Por que os dois, e não só o segundo.** Eles falham de formas opostas. O html não depende de
+nada e por isso não mostra nada acontecendo; o servidor mostra o agente rodando e por isso
+depende de GPU, de endpoint no ar e de dois a três minutos que não voltam se a run travar. Uma
+demonstração com um só teria de escolher entre não convencer e não funcionar. **Os dois saem do
+mesmo template** (`src/tapieval/app/pagina.html`) e diferem por um campo no payload — duas
+páginas divergiriam na semana da entrega, e a que fosse projetada seria a errada.
+
+**O que a consulta ao vivo prova, e que nenhuma figura prova.** As figuras mostram o
+instrumento aplicado a um corpus preparado, com gabarito escrito antes. A consulta ao vivo
+mostra o instrumento **onde ele é mais fraco**: uma pergunta que ninguém preparou, sem gabarito
+nenhum. Dos 19 códigos da taxonomia congelada, **4 saem do trace sozinho** — `D1`, `P5`, `P6` e
+`C5` — e os outros 15 aparecem na tela nomeados, cada um com o motivo de não ter sido medido
+(`scoring/sem_gabarito.py`). Que `D1` esteja entre os quatro não é sorte: é a falha mais grave
+(S0) e a mais frequente da bateria principal (181 de 288), e ela é detectável sem gabarito
+porque o gate é da **fronteira**, não do gabarito. É §4.1 pagando por si outra vez.
+
+**A tentação que esse módulo existe para recusar.** O caminho curto seria montar `N1`/`N2` com
+os campos de gabarito em valor neutro e chamar `classificar_falhas`: sai a lista certa de
+códigos e sai uma execução "limpa" nas dimensões que ninguém mediu — `cobertura_evidencial=1.0`
+afirmando "consultou toda a evidência obrigatória" quando o que houve foi "não havia evidência
+obrigatória declarada". É a mesma regra que §5 já aplica a `aderencia_causal is None`, uma
+camada acima: **não medido nunca vira zero.**
+
 ---
 
 ## 18. Pendências
@@ -789,12 +825,12 @@ Descobertas que **não** estavam na lista e mudaram o desenho:
 
 **As duas que ficaram em aberto fecharam:**
 
-4. ✅ **Par de modelos** — **resolvido 15/08** (`DECISOES A1`) e **confirmado pela T0b**:
+4. **Par de modelos** — **resolvido 15/08** (`DECISOES A1`) e **confirmado pela T0b**:
    Qwen3-8B + Qwen3-14B locais como SUTs. A formulação anterior assumia 22 GB efetivos e cogitava
    MoE 30B-A3B como SUT B; com os ~16 GB reais isso não cabe. O par sobreviveu à conferência — o
    14B não erra seleção de função sistematicamente; **erra formato**, e a 15× mais que o 8B
    (`X31`), o que virou limitação declarada em vez de troca de modelo.
-5. ✅ **Checklists de suficiência** — preenchidos contra o mock na S1 e **revisados contra o
+5. **Checklists de suficiência** — preenchidos contra o mock na S1 e **revisados contra o
    Swagger real** na reconciliação de 14/08 (`CENARIOS §5`), que é de onde saíram o X5, o X10 e o
    X17.
 
@@ -803,4 +839,4 @@ chamadas por dia (medido em 24/08), o que poria as ~1.400 chamadas do judge a 70
 migrou os dois para o **Vertex AI**, que serve o mesmo modelo por *dynamic shared quota* — o
 limite diário não ficou maior, deixou de ser o regime. Custo declarado: os valores absolutos de
 token subiram 6–8% para o mesmo prompt, então o judge de uma bateria roda **inteiro num provedor
-só**. Detalhes em `docs/migracao_vertex.md`.
+só**. Detalhes em `docs/anexos/apuracao/migracao_vertex.md`.

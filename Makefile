@@ -1,4 +1,4 @@
-.PHONY: venv install test lint corpus api api-stop t0b piloto judge pontuar repro app clean
+.PHONY: venv install test lint corpus api api-stop t0b piloto judge pontuar repro app copiloto deck clean
 
 VENV    := .venv
 PY      := $(VENV)/bin/python
@@ -52,10 +52,10 @@ t0b: install
 	$(PY) scripts/medir_tool_calling.py
 
 # X25 — a passada corrente da piloto vive em UMA variável, e o teste de estrutura reprova se
-# ela divergir do diretório que o `docs/piloto.json` versionado declara. O defeito que isto
-# conserta: o alvo rodava `configs/bateria_piloto.yaml` (1ª passada) e analisava
-# `runs/piloto_2026-08-24` enquanto o `docs/piloto.json` descrevia a 4ª — então `make piloto`
-# sobrescrevia a aritmética do A16 com números de um SUT anterior ao A17 e ao A18.
+# ela divergir do diretório que o `docs/anexos/resultados/piloto.json` versionado declara. O defeito
+# que isto conserta: o alvo rodava `configs/bateria_piloto.yaml` (1ª passada) e analisava
+# `runs/piloto_2026-08-24` enquanto o `docs/anexos/resultados/piloto.json` descrevia a 4ª — então
+# `make piloto` sobrescrevia a aritmética do A16 com números de um SUT anterior ao A17 e ao A18.
 PILOTO_CONFIG := configs/bateria_piloto_a18b.yaml
 PILOTO_DIR    := runs/piloto_2026-08-24c
 
@@ -67,8 +67,8 @@ PILOTO_DIR    := runs/piloto_2026-08-24c
 #   lms load qwen3-8b-mlx  --context-length 16384 --parallel 1 --gpu max -y
 piloto: install
 	$(PY) -m tapieval.runner --manifest $(PILOTO_CONFIG) --paralelismo 1
-	$(PY) scripts/analisar_piloto.py $(PILOTO_DIR) --json docs/piloto.json
-	$(PY) scripts/medir_overhead_mcp.py --repeticoes 20 --json docs/overhead_mcp.json
+	$(PY) scripts/analisar_piloto.py $(PILOTO_DIR) --json docs/anexos/resultados/piloto.json
+	$(PY) scripts/medir_overhead_mcp.py --repeticoes 20 --json docs/anexos/resultados/overhead_mcp.json
 
 # T20 — portão de viabilidade do judge. Fala com o Gemini (A1), então exige GEMINI_API_KEY
 # no ambiente ou no .env, e gasta ~4 chamadas da free tier. A mecânica do N3 é provada
@@ -93,7 +93,7 @@ pontuar: install
 	$(PY) -m tapieval.scoring --bateria $(BATERIA)
 
 # Reprodutibilidade ponta a ponta. É a demonstração da banca: de um clone limpo até
-# uma figura que saiu de trace real, sem passo manual no meio. Instruções em `docs/REPRODUZIR.md`.
+# uma figura que saiu de trace real, sem passo manual no meio. Instruções em `docs/anexos/REPRODUZIR.md`.
 #
 #   1. install   venv + dependências;
 #   2. replay    pontua N1 e N2 dos 24 traces versionados de `runs/piloto_2026-08-24c/` DUAS
@@ -131,9 +131,9 @@ pontuar: install
 #
 # O NB06 ENTROU EM 01/09 E TAMBÉM NÃO PRECISA DA API. Ele lê o mesmo `scores.jsonl` da
 # principal mais o gold humano da T22 e os traces da calibração — tudo versionado — e regrava a
-# distribuição de severidade e a taxonomia observada. Ele também reescreve
-# `docs/taxonomia_erros.md`, que é GERADO e não escrito à mão: número digitado num markdown
-# envelhece na primeira vez que a bateria muda e ninguém percebe.
+# distribuição de severidade e a taxonomia observada. Ele também reescreve o
+# `docs/anexos/apuracao/taxonomia_erros.md`, que é GERADO e não escrito à mão: número digitado num
+# markdown envelhece na primeira vez que a bateria muda e ninguém percebe.
 #
 # ESTENDER é acrescentar o par (notebook, figura) a FIG_NOTEBOOKS/FIG_ARQUIVOS lá em cima: a
 # conferência final já reprova, com o nome do arquivo, figura declarada que não apareceu no
@@ -165,6 +165,29 @@ app: install
 	$(PY) scripts/gerar_placar.py
 	$(PY) -m tapieval.app --raiz . --saida app/copiloto.html
 	@echo "make app: abra app/copiloto.html no navegador (duplo clique serve)"
+
+# A MESMA página, servida — e com a consulta ao vivo ligada: uma pergunta que não está no
+# corpus vira cenário executável, roda no runner de verdade contra a API do parceiro, e o trace
+# aparece na tela enquanto acontece.
+#
+# EXIGE OS DOIS SERVIÇOS NO AR, e confere antes de subir:
+#   1. a API do parceiro em :8000  ->  `make api` noutro terminal;
+#   2. o LM Studio em :1234 com o modelo carregado ->
+#        lms load qwen3-8b-mlx --context-length 16384 --parallel 1 --gpu max -y
+#
+# `make app` continua sendo o plano B do palco: ele grava um html que abre por duplo clique, sem
+# servidor, sem rede e sem GPU. Este alvo é o contrário — ele mostra o agente rodando, e por isso
+# tem as dependências que o outro existe para não ter. Os dois saem do mesmo template.
+copiloto: install
+	$(PY) scripts/gerar_placar.py
+	$(PY) -m tapieval.vivo --raiz . --porta 7000
+
+# O deck de 10 minutos em PowerPoint nativo — formas e tabelas editáveis, notas do
+# apresentador no lugar em que o PowerPoint as espera, e as figuras lidas de `figures/`.
+# Roda DEPOIS de `make repro`: o alvo desenha a figura que estiver no disco, e figura velha no
+# slide é a única forma de o deck citar um número que a bateria já não sustenta.
+deck: install
+	$(PY) scripts/gera_pptx.py
 
 # Sobe a API industrial do parceiro em localhost:8000 (necessária para `make corpus`).
 api:

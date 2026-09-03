@@ -328,13 +328,13 @@ def _fabrica_padrao(bateria: Bateria) -> FabricaDeInferencia:
     repetição do `pass^k` viraria uma coluna constante.
 
     R5 · POR QUE O DESPACHO MORA AQUI, E NÃO NUMA FLAG DA CLI
-        A bateria de referência (T26c, `ARQUITETURA §13`) roda contra um modelo de fronteira
-        na nuvem, e `sut/llm.py` promete não sair para a rede. `sut/referencia.py` é a porta
-        que falta, e satisfaz o mesmo Protocol — mas até aqui **nenhum caminho de linha de
-        comando a alcançava**: esta função montava sempre um `ClienteDeInferencia` apontado
-        para `inferencia_base_url`, e a costura injetável (`fabrica_de_inferencia`) só existe
-        para quem chama `executar_bateria` em Python. `docs/dimensionamento.md §7` manda
-        rodar esta bateria pela CLI.
+        A bateria de referência (T26c, `ARQUITETURA §13`) roda contra um modelo de fronteira na
+        nuvem, e `sut/llm.py` promete não sair para a rede. `sut/referencia.py` é a porta que falta,
+        e satisfaz o mesmo Protocol — mas até aqui **nenhum caminho de linha de comando a
+        alcançava**: esta função montava sempre um `ClienteDeInferencia` apontado para
+        `inferencia_base_url`, e a costura injetável (`fabrica_de_inferencia`) só existe para quem
+        chama `executar_bateria` em Python. `docs/anexos/apuracao/dimensionamento.md §7` manda rodar
+        esta bateria pela CLI.
 
         Uma flag `--referencia` resolveria por fora e estaria errada: o que decide o cliente
         é o **modelo da célula**, não a invocação. Uma bateria com um modelo local e um de

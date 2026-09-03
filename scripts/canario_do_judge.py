@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """O canário da T23 — detectar que o modelo do judge mudou sob o pé.
 
-POR QUE ELE EXISTE (medido em 25/08, `docs/migracao_vertex.md §3`)
+POR QUE ELE EXISTE (medido em 25/08, `docs/anexos/apuracao/migracao_vertex.md §3`)
     A T23 congela o judge por sha256 para que ele não mude no meio do trabalho. Só que o que
     o sha256 congela é o PROMPT e o ID — e o id é um alias. `gemini-3.6-flash-07-2026` responde
     404 nos dois provedores: o AI Studio deixa LER para onde o alias aponta (`version`), o
@@ -74,7 +74,7 @@ from tapieval.scoring.n3 import (  # noqa: E402
     pontuar_n3,
 )
 
-CAMINHO_PADRAO = Path("docs/canario_do_judge.json")
+CAMINHO_PADRAO = Path("docs/anexos/resultados/canario_do_judge.json")
 
 REPETICOES_PADRAO = 3
 """Três porque duas não distinguem 'estável' de 'coincidiu': com N=2 qualquer campo que caia no
@@ -100,7 +100,7 @@ def caminho_do_flip_rate(rubrica: str) -> Path:
     omissão, a lista de testemunhas de outra rubrica — na direção perigosa, porque a v2 existe
     justamente para mexer no flip dos dois campos que a v1 reprovou.
     """
-    return Path(f"docs/flip_rate_judge_{rubrica}.json")
+    return Path(f"docs/anexos/resultados/flip_rate_judge_{rubrica}.json")
 
 
 CAMINHO_FLIP_RATE_PADRAO = caminho_do_flip_rate(RUBRICA_PADRAO)

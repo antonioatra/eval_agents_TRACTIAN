@@ -54,7 +54,7 @@ experiment_id: piloto_2026-08-24c
 judge:
   sem_congelamento: >-
     bateria de dimensionamento (T19, 4ª passada), anterior ao congelamento do judge da T23. É
-    dela que sai a extrapolação de `docs/dimensionamento.md`, e nenhum número de lá depende de
+    dela que sai a extrapolação de `docs/anexos/apuracao/dimensionamento.md`, e nenhum número de lá depende de
     rubrica.
 
 cenarios:

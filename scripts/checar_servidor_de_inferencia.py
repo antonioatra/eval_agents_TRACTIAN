@@ -3,8 +3,9 @@
 
 POR QUE ISTO EXISTE
     A T0b mede o modelo. Este script mede o SERVIDOR, e roda antes: se o endpoint não honra
-    `response_format: json_schema` ou ignora `seed`, a T0b mediria a ferramenta de servir em
-    vez do modelo, e o número iria para `docs/tool_calling_baseline.md` como se fosse do Qwen.
+    `response_format: json_schema` ou ignora `seed`, a T0b mediria a ferramenta de servir em vez do
+    modelo, e o número iria para `docs/anexos/apuracao/tool_calling_baseline.md` como se fosse do
+    Qwen.
 
 AS TRÊS EXIGÊNCIAS, E O QUE CADA UMA QUEBRA SE FALTAR
     1. `/v1/models` responde e lista os dois modelos do par (A1: Qwen3-8B + Qwen3-14B).

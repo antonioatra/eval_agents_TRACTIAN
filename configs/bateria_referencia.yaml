@@ -19,7 +19,7 @@
 # ═════════════════════════════════════════════════════════════════════════════════════════
 #
 # ═════════════════════════════════════════════════════════════════════════════════════════
-# TRÊS BLOQUEIOS ANTES DE RODAR. NENHUM É CONFIGURAÇÃO. Ver `docs/dimensionamento.md §5`.
+# TRÊS BLOQUEIOS ANTES DE RODAR. NENHUM É CONFIGURAÇÃO. Ver `docs/anexos/apuracao/dimensionamento.md §5`.
 #
 #   1. **O cliente do SUT não fala com a nuvem, de propósito.** `sut/llm.py` declara em
 #      docstring que "não conhece provedor pago, não lê chave de API de ambiente nenhum e não

@@ -32,9 +32,9 @@ def test_schema_de_trace_foi_movido():
 def test_x25_o_alvo_piloto_do_makefile_e_o_piloto_json_falam_da_mesma_passada():
     """X25 — `make piloto` não pode analisar uma passada e sobrescrever o JSON de outra.
 
-    O alvo rodava a 1ª passada e escrevia por cima do `docs/piloto.json` da 4ª, que é a base
-    da aritmética do A16. As três fontes (manifesto do alvo, diretório do alvo, diretório
-    declarado no JSON versionado) têm de nomear o mesmo experimento.
+    O alvo rodava a 1ª passada e escrevia por cima do `docs/anexos/resultados/piloto.json` da 4ª,
+    que é a base da aritmética do A16. As três fontes (manifesto do alvo, diretório do alvo,
+    diretório declarado no JSON versionado) têm de nomear o mesmo experimento.
     """
     import json
     import re
@@ -62,8 +62,10 @@ def test_x25_o_alvo_piloto_do_makefile_e_o_piloto_json_falam_da_mesma_passada():
         f"{config} roda `{experiment_id}` e o alvo analisa `{diretorio}`"
     )
 
-    declarado = json.loads((raiz / "docs" / "piloto.json").read_text())["diretorio"]
+    piloto_json = raiz / "docs" / "anexos" / "resultados" / "piloto.json"
+    declarado = json.loads(piloto_json.read_text())["diretorio"]
     assert declarado == diretorio, (
-        f"`make piloto` analisaria `{diretorio}` e o docs/piloto.json versionado descreve "
+        f"`make piloto` analisaria `{diretorio}` e o docs/anexos/resultados/piloto.json versionado "
+        f"descreve "
         f"`{declarado}` — rodar o alvo sobrescreveria os números de outra passada"
     )

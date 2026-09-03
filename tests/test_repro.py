@@ -21,7 +21,7 @@ POR QUE O N3 FICA DE FORA, DELIBERADAMENTE
     experimento e não como asserção de CI.
 
     Quem for "consertar" este arquivo acrescentando N3: não é conserto, é trocar uma
-    propriedade que vale por uma que não vale. O mesmo aviso está em `docs/REPRODUZIR.md`.
+    propriedade que vale por uma que não vale. O mesmo aviso está em `docs/anexos/REPRODUZIR.md`.
 
 POR QUE NÃO PODE FALAR COM A REDE
     N1 e N2 são funções puras de `(trace, gabarito)` — o gabarito vem de YAML no disco e o

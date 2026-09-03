@@ -43,12 +43,12 @@ from tapieval.schema.trace import SCHEMA_VERSION
 # diferença de custo entre elas é um resultado do trabalho (H1), não um detalhe de
 # implementação — separá-las aqui é o que permite plotar os dois pontos.
 #
-# `SUT_referencia` (R5) é a exceção, e ela NÃO é uma camada de julgamento: é o custo do
-# SUJEITO, não do instrumento. Existe porque o SUT de referência é o único SUT que fala com
-# a nuvem (`sut/referencia.py`) e o único cujo custo de saída NÃO cabe no trace — `LLMCall`
-# tem `prompt_tokens` e `completion_tokens` e mais nada, e um modelo de fronteira com
-# raciocínio interno gasta ~35× mais tokens de raciocínio que de resposta
-# (`docs/migracao_vertex.md §4`). Sem esta camada esse custo não teria onde ser medido.
+# `SUT_referencia` (R5) é a exceção, e ela NÃO é uma camada de julgamento: é o custo do SUJEITO, não
+# do instrumento. Existe porque o SUT de referência é o único SUT que fala com a nuvem
+# (`sut/referencia.py`) e o único cujo custo de saída NÃO cabe no trace — `LLMCall` tem
+# `prompt_tokens` e `completion_tokens` e mais nada, e um modelo de fronteira com raciocínio interno
+# gasta ~35× mais tokens de raciocínio que de resposta (`docs/anexos/apuracao/migracao_vertex.md
+# §4`). Sem esta camada esse custo não teria onde ser medido.
 #
 # **Quem agregar INS.4 tem de excluí-la.** Somar o custo do sujeito dentro do custo das
 # camadas de julgamento moveria o eixo x de H0 para o lado que favorece a conclusão que o

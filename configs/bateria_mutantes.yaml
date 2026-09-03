@@ -36,7 +36,7 @@
 #        comparar mutante-em-dev com base-em-test confunde degradação com dificuldade de split.
 #   Recomendação: (a). ✅ **ADOTADA em 30/08, ratificada pelo operador junto com o corte do
 #   A16.** A margem que o corte liberou (4,58 h) tinha este candidato único, e é a única das
-#   pendências do `docs/dimensionamento.md §6` que muda uma métrica que **vai** ser reportada.
+#   pendências do `docs/anexos/apuracao/dimensionamento.md §6` que muda uma métrica que **vai** ser reportada.
 #   A matriz passa a 150 células (+0,65 h); a pior noite observada vai a 14,87 h contra as 16 h.
 #   O pareamento que o bloco de `sample_seeds` antecipava passa a existir: cada run mutante tem
 #   a run `base` da MESMA seed, e a detecção é lida entre pares e não entre distribuições.
@@ -59,7 +59,7 @@ cenarios:
 modelos:
   # UM modelo, e é o 8B. `METRICAS §9.2` diz "1 modelo" sem nomear qual; a piloto fixou o
   # barato (78,3 s de mediana contra 142,0 s do 14B) e é o que a extrapolação de
-  # `docs/piloto.md` usa. Com o 14B esta linha vai de 2,6 h para 4,7 h — 2,1 h a mais numa
+  # `docs/anexos/apuracao/piloto.md` usa. Com o 14B esta linha vai de 2,6 h para 4,7 h — 2,1 h a mais numa
   # conta que já não fecha, para medir o mesmo instrumento.
   #
   # O custo científico do 8B está declarado: INS.9 mede a detecção **num SUT fraco**. Um
@@ -85,7 +85,7 @@ modelos:
 #
 # Cortar MUT4 deixaria a classe C com um ponto só e a curva custo × recall dela sem apoio — é
 # exatamente por isso que ele foi acrescentado. Se um mutante tiver de cair por tempo, o
-# candidato é MUT3 (ver `docs/dimensionamento.md §3`, corte 3) — e a economia é menor do que a
+# candidato é MUT3 (ver `docs/anexos/apuracao/dimensionamento.md §3`, corte 3) — e a economia é menor do que a
 # aritmética ingênua sugere, porque MUT3 roda com 3 chamadas de tool em vez de 12 e por isso
 # suas runs são as mais curtas da bateria.
 #

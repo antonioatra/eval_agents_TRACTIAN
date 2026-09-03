@@ -1,4 +1,4 @@
-"""Gera `docs/placar_modelos.json` a partir dos três resultados dos notebooks.
+"""Gera `docs/anexos/resultados/placar_modelos.json` a partir dos três resultados dos notebooks.
 
 POR QUE ISTO É GERADO E NÃO DIGITADO
     O placar responde "qual dos dois modelos é melhor?" com um vencedor por critério. Cada
@@ -22,7 +22,7 @@ import json
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
-DOCS = RAIZ / "docs"
+DOCS = RAIZ / "docs" / "anexos" / "resultados"
 
 passk = json.loads((DOCS / "resultados_passk.json").read_text(encoding="utf-8"))
 h0 = json.loads((DOCS / "resultados_h0.json").read_text(encoding="utf-8"))
@@ -52,7 +52,7 @@ criterios = [
             curvas["8B|incluir"]["media_simples"],
             curvas["14B|incluir"]["media_simples"], "8B", "14B", "empate",
         ),
-        "fonte": "docs/resultados_passk.json · curvas · media_simples",
+        "fonte": "docs/anexos/resultados/resultados_passk.json · curvas · media_simples",
         "nota": "a média que o pass^k existe para contradizer",
     },
     {
@@ -63,7 +63,8 @@ criterios = [
             curvas["8B|incluir"]["passk"]["3"],
             curvas["14B|incluir"]["passk"]["3"], "8B", "14B", "empate",
         ),
-        "fonte": "docs/resultados_passk.json · pass^3 · a inversão sobrevive às três leituras",
+        "fonte": "docs/anexos/resultados/resultados_passk.json · pass^3 · a inversão sobrevive\n"
+        "às três leituras",
         "nota": "exigir consistência inverte a ordem que a média dá",
     },
     {
@@ -71,7 +72,7 @@ criterios = [
         "oito": f"{curvas['8B|incluir']['passk']['8']:.3f}".replace(".", ","),
         "quatorze": f"{curvas['14B|incluir']['passk']['8']:.3f}".replace(".", ","),
         "vencedor": "empate em zero",
-        "fonte": "docs/resultados_passk.json · pass^8",
+        "fonte": "docs/anexos/resultados/resultados_passk.json · pass^8",
         "nota": "nenhum cenário é entregue nas 8 tentativas por nenhum dos dois",
     },
     {
@@ -79,7 +80,7 @@ criterios = [
         "oito": f"{sens[('S2', 'qwen3-8b')]['n_aprovadas']}/{n_por_modelo['qwen3-8b']}",
         "quatorze": f"{sens[('S2', 'qwen3-14b')]['n_aprovadas']}/{n_por_modelo['qwen3-14b']}",
         "vencedor": "empate em zero",
-        "fonte": "docs/resultados_taxonomia.json · sensibilidade · corte S2",
+        "fonte": "docs/anexos/resultados/resultados_taxonomia.json · sensibilidade · corte S2",
         "nota": "a régua oficial não separa ninguém — o SUT de fronteira também dá zero nela",
     },
     {
@@ -87,7 +88,8 @@ criterios = [
         "oito": pct(sens[("S1", "qwen3-8b")]["taxa_entre_pontuaveis"]),
         "quatorze": pct(sens[("S1", "qwen3-14b")]["taxa_entre_pontuaveis"]),
         "vencedor": "8B" if ordem["S1"]["lider_entre_pontuaveis"] == "qwen3-8b" else "14B",
-        "fonte": "docs/resultados_taxonomia.json · taxa_entre_pontuaveis · corte S1",
+        "fonte": "docs/anexos/resultados/resultados_taxonomia.json · taxa_entre_pontuaveis "
+        "· corte S1",
         "nota": (
             f"como reportado seria {pct(sens[('S1', 'qwen3-8b')]['taxa'])} × "
             f"{pct(sens[('S1', 'qwen3-14b')]['taxa'])} — a ordem inverte quando as execuções "
@@ -99,7 +101,8 @@ criterios = [
         "oito": pct(sens[("S0", "qwen3-8b")]["taxa_entre_pontuaveis"]),
         "quatorze": pct(sens[("S0", "qwen3-14b")]["taxa_entre_pontuaveis"]),
         "vencedor": "8B" if ordem["S0"]["lider_entre_pontuaveis"] == "qwen3-8b" else "14B",
-        "fonte": "docs/resultados_taxonomia.json · taxa_entre_pontuaveis · corte S0",
+        "fonte": "docs/anexos/resultados/resultados_taxonomia.json · taxa_entre_pontuaveis "
+        "· corte S0",
         "nota": (
             f"{abs(ordem['S0']['delta_entre_pontuaveis']) * 100:.1f} ponto de diferença em "
             "n = 251 — dentro do ruído"
@@ -110,7 +113,7 @@ criterios = [
         "oito": "—",
         "quatorze": f"+{h2['tool_f1_liquido']['delta']:.3f}".replace(".", ","),
         "vencedor": "14B",
-        "fonte": "docs/resultados_h0.json · h2 · tool_f1_liquido",
+        "fonte": "docs/anexos/resultados/resultados_h0.json · h2 · tool_f1_liquido",
         "nota": f"só no líquido; o bruto {h2['tool_f1']['leitura']}",
     },
     {
@@ -118,7 +121,8 @@ criterios = [
         "oito": f"+{abs(h2['args_acc']['delta']):.3f}".replace(".", ","),
         "quatorze": "—",
         "vencedor": "8B (no limiar)",
-        "fonte": f"docs/resultados_h0.json · h2 · args_acc · p = {h2['args_acc']['p_bootstrap']}",
+        "fonte": "docs/anexos/resultados/resultados_h0.json · h2 · args_acc · "
+        f"p = {h2['args_acc']['p_bootstrap']}",
         "nota": h2["args_acc"]["leitura"],
     },
     {
@@ -128,7 +132,7 @@ criterios = [
         "vencedor": vencedor_de(
             -p6["por_modelo"]["qwen3-8b"], -p6["por_modelo"]["qwen3-14b"], "8B", "14B", "empate"
         ),
-        "fonte": "docs/resultados_taxonomia.json · frequencias · P6",
+        "fonte": "docs/anexos/resultados/resultados_taxonomia.json · frequencias · P6",
         "nota": "quanto menor melhor — é o que produz as execuções sem decisão do 14B",
     },
 ]
@@ -136,9 +140,9 @@ criterios = [
 saida = {
     "gerado_por": "scripts/gerar_placar.py",
     "fontes": [
-        "docs/resultados_h0.json",
-        "docs/resultados_passk.json",
-        "docs/resultados_taxonomia.json",
+        "docs/anexos/resultados/resultados_h0.json",
+        "docs/anexos/resultados/resultados_passk.json",
+        "docs/anexos/resultados/resultados_taxonomia.json",
     ],
     "aviso_sut_de_referencia": (
         "O SUT de fronteira faz 100% no corte S1, mas rodou nos 6 cenários de dev contra os 18 "
@@ -155,4 +159,4 @@ for c in criterios:
     v = c["vencedor"]
     chave = "8B" if v.startswith("8B") else "14B" if v.startswith("14B") else "empate"
     contagem[chave] = contagem.get(chave, 0) + 1
-print(f"docs/placar_modelos.json · {len(criterios)} critérios · {contagem}")
+print(f"docs/anexos/resultados/placar_modelos.json · {len(criterios)} critérios · {contagem}")

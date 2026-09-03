@@ -474,7 +474,7 @@ def test_criterios_duros_e_o_sucesso_binario_de_metricas_6_5_divergem():
 # vermelho na suíte.
 # ---------------------------------------------------------------------------
 
-CAMINHO_DE_METRICAS = Path(__file__).resolve().parents[1] / "METRICAS.md"
+CAMINHO_DE_METRICAS = Path(__file__).resolve().parents[1] / "docs" / "anexos" / "METRICAS.md"
 
 _LINHA_DE_TABELA = re.compile(
     r"^\|\s*(?P<codigo>[PCD]\d|N3\.\d)\s*\|\s*(?P<campo>[^|]+?)\s*\|.*\|\s*(?P<ultima>[^|]+?)\s*\|\s*$",

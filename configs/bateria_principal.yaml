@@ -12,7 +12,7 @@
 #   com ela mesma entre duas noites, e o congelamento é o que impede que a rubrica se ajuste
 #   ao resultado depois de vê-lo.
 #
-#   RESOLVIDO NA R4 (a divergência que `docs/dimensionamento.md §6.2` declarou): o carregador
+#   RESOLVIDO NA R4 (a divergência que `docs/anexos/apuracao/dimensionamento.md §6.2` declarou): o carregador
 #   ganhou o campo `judge:`, obrigatório em toda bateria, e ele **valida** — o arquivo tem de
 #   existir e o sha256 declarado tem de conferir com o conteúdo. O parágrafo acima continua
 #   aqui porque o argumento continua valendo; ele é que deixou de ser a única defesa. O caminho
@@ -82,7 +82,7 @@ modelos:
 variantes: [base]
 
 # Oito repetições — o eixo do `pass^8` (INS.8), e o único que não se corta para caber no tempo
-# sem trocar o resultado que se reporta (ver `docs/dimensionamento.md §3`, corte 4).
+# sem trocar o resultado que se reporta (ver `docs/anexos/apuracao/dimensionamento.md §3`, corte 4).
 #
 # As quatro primeiras são as da T0b (`scripts/medir_tool_calling.py::SEEDS_DO_BLOCO_B`), na
 # mesma ordem, o que mantém a bateria comparável com a linha de base de tool calling e com as

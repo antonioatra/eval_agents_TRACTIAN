@@ -14,8 +14,8 @@
 **A decisão que este documento preparava.** Ele não a fechava — preparava a conta e fazia **uma**
 recomendação (§4). A decisão era do operador, e está registrada no `DECISOES` como A16.
 
-**Fonte dos números:** `docs/piloto.json` (4ª passada, `runs/piloto_2026-08-24c`) e
-`docs/piloto.md §§1–7`. **Nada aqui foi executado**: os manifestos foram carregados com
+**Fonte dos números:** `docs/anexos/resultados/piloto.json` (4ª passada, `runs/piloto_2026-08-24c`) e
+`docs/anexos/apuracao/piloto.md §§1–7`. **Nada aqui foi executado**: os manifestos foram carregados com
 `tapieval.runner.matriz.carregar_bateria` e conferidos célula a célula com `--dry-run`; as horas
 são extrapolação de mediana medida.
 
@@ -52,7 +52,7 @@ metade de cada um: a de mutantes roda em 1 modelo só.
 | | **total na GPU** | | **594** | | **17,11** |
 
 `horas = (n_14b × 142,0 + n_8b × 78,3) / 3600`. A linha 3 usa o nominal de `METRICAS §9.2` para
-que a conta continue comparável com a de `docs/piloto.json`; a linha em itálico é a contagem
+que a conta continue comparável com a de `docs/anexos/resultados/piloto.json`; a linha em itálico é a contagem
 real, e as duas aparecem porque **cortar uma bateria com base num número inflado é cortar pelo
 motivo errado**.
 
@@ -239,7 +239,7 @@ reportada, a INS.9; (b) nada. Margem gasta é margem que não existe.
 **Estas extrapolações não separam diferenças de poucas horas de ruído.** As quatro passadas da
 piloto deram **19,8 · 13,5 · 21,3 · 17,3 h** para o mesmo escopo nominal de ~600 execuções.
 Com n=24, `temperature=0,7` e o 8B com `honra_seed: false`, a dispersão basal engole a
-diferença — e `docs/piloto.md §7` é explícito em que **nenhuma dessas variações deve ser
+diferença — e `docs/anexos/apuracao/piloto.md §7` é explícito em que **nenhuma dessas variações deve ser
 atribuída a uma mudança específica do SUT**.
 
 Portanto:
@@ -360,7 +360,7 @@ duas baterias rodarem, roda-se **um** dos dois arquivos — 12 runs (~0,37 h), n
   relógio.
 * **`experiment_id` das baterias 3 e 4 diz `braco_canonico` / `braco_referencia`**, para que
   ninguém leia `runs/ambiente_.../` como se fosse a bateria de ambiente inteira.
-* **A tabela de cortes do `docs/piloto.md §1` não foi reescrita.** O próprio `§6` daquele
+* **A tabela de cortes do `docs/anexos/apuracao/piloto.md §1` não foi reescrita.** O próprio `§6` daquele
   documento declara que ela "continua no documento porque ela é o registro de como a conta era
   feita". A conta atualizada é a deste arquivo; a de lá é história, e reescrevê-la apagaria o
   registro de como a estimativa se moveu entre as quatro passadas.

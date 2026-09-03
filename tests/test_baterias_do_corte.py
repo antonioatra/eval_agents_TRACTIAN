@@ -66,13 +66,14 @@ def test_o_controle_dos_mutantes_roda_nas_mesmas_seeds_que_os_mutantes() -> None
 def test_o_sut_de_referencia_declara_um_id_que_o_catalogo_aceitou() -> None:
     """O `gemini-3.6-pro` carregava, imprimia 24 células e dava 404 na primeira chamada.
 
-    `docs/catalogo_vertex.json` é o registro das sondas: `completacao_status == 200` quer dizer
-    que o serviço ACEITOU o id, não só que o catálogo o declara. Um id fora dessa lista é um id
-    que este projeto nunca mediu — e a bateria não pode ser a primeira a descobrir.
+    `docs/anexos/resultados/catalogo_vertex.json` é o registro das sondas: `completacao_status ==
+    200` quer dizer que o serviço ACEITOU o id, não só que o catálogo o declara. Um id fora dessa
+    lista é um id que este projeto nunca mediu — e a bateria não pode ser a primeira a descobrir.
     """
     declarado = _manifesto("referencia")["modelos"]["gemini-referencia"]["model_id"]
     sondas = json.loads(
-        (RAIZ_DO_REPO / "docs" / "catalogo_vertex.json").read_text(encoding="utf-8")
+        (RAIZ_DO_REPO / "docs" / "anexos" / "resultados" /
+        "catalogo_vertex.json").read_text(encoding="utf-8")
     )
     aceitos = {s["modelo"] for s in sondas if s.get("completacao_status") == 200}
     assert declarado in aceitos, (

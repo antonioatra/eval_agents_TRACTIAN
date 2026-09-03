@@ -20,6 +20,10 @@ dependencies = [
     # bateria da T24 roda a madrugada inteira. Renovar na mão perderia a noite na
     # segunda hora — google-auth faz o refresh.
     "google-auth",
+    # O deck em PowerPoint (`make deck`). Fica nas dependências de runtime, e não em `dev`,
+    # porque a apresentação é entregável: quem clona o repositório para reproduzir a entrega
+    # precisa conseguir regerar o .pptx pelo mesmo caminho que regera as figuras.
+    "python-pptx",
 ]
 
 [project.optional-dependencies]

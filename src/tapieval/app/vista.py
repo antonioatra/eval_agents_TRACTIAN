@@ -262,13 +262,13 @@ def montar(
 
 
 def carregar_placar(raiz: Path) -> list[dict]:
-    """O placar dos modelos, lido de `docs/placar_modelos.json`.
+    """O placar dos modelos, lido de `docs/anexos/resultados/placar_modelos.json`.
 
     Fica em `docs/` e não aqui porque cada número dele tem dono: eles saem dos notebooks, via
     `resultados_h0.json`, `resultados_passk.json` e `resultados_taxonomia.json`. Recalcular aqui
     criaria uma segunda verdade que diverge no dia em que uma bateria for repontuada.
     """
-    caminho = raiz / "docs" / "placar_modelos.json"
+    caminho = raiz / "docs" / "anexos" / "resultados" / "placar_modelos.json"
     if not caminho.exists():
         raise ErroDeVista(
             f"{caminho} não existe — o placar sai dos notebooks, não desta aplicação"

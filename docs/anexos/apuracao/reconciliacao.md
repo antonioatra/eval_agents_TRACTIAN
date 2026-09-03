@@ -39,7 +39,7 @@ arquivo vazio:
 | evidência obrigatória existe e chega preenchida na `env_seed` canônica | 113 evidências | 109 passam, 4 em §2 |
 
 Não há **nenhuma** proposta de "trocar a seed" nesta leva. A varredura completa (contagem e as 8
-primeiras seeds válidas por cenário) está em `docs/catalogo_respostas.md §7`; ela **confirma** o
+primeiras seeds válidas por cenário) está em `docs/anexos/apuracao/catalogo_respostas.md §7`; ela **confirma** o
 que os YAMLs já declaravam em vez de corrigi-lo.
 
 ---

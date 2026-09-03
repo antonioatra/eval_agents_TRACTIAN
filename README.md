@@ -69,22 +69,23 @@ recomputado sem re-executar nada. `tests/test_repro.py` prova isso em dois proce
 vivem no ambiente, não dentro do avaliado: todo `tool_call`, `tool_result` e decisão de gate entra
 no trace por ali. Consequência verificada: o framework mede **qualquer** cliente MCP — um agente de
 terceiro rodando em stdio produz o mesmo trace da bateria. Custo medido: **0,47 ms** por chamada,
-contra 3,0 ms do HTTP (`docs/overhead_mcp.json`).
+contra 3,0 ms do HTTP (`docs/anexos/resultados/overhead_mcp.json`).
 
 **Gate de ação com reserva de `seq`.** As 5 tools de alto impacto passam por uma política antes de
 executar. O gate **reserva** o número de sequência antes de emitir o `tool_call`, porque a ordem
 ingênua daria ao gate um `seq` maior que o da chamada que ele autoriza — e o scorer marcaria
 "ação sem permissão" (S0) em toda ação corretamente aprovada.
 
-Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
+Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md); os documentos de fundo e a
+apuração, em [`docs/anexos/`](docs/anexos/README.md).
 
 ## 4. Instalação e execução
 
 ```bash
 make install                  # venv + dependências
 make api                      # noutro terminal: sobe a API do parceiro em :8000
-make test                     # 1.154 testes
-make repro                    # reprodutibilidade ponta a ponta (~1min15)
+make test                     # 1.322 testes
+make repro                    # reprodutibilidade ponta a ponta (~2min)
 ```
 
 **Rodar uma bateria e pontuá-la:**
@@ -96,7 +97,32 @@ python -m tapieval.scoring --bateria runs/principal_2026_08      # N1+N2, offlin
 
 `make repro` é a demonstração de ponta a ponta: de um clone limpo até uma figura que saiu de trace
 real, sem passo manual no meio. Ele executa os notebooks versionados e **reprova** se alguma figura
-declarada não for regravada no disco. Instruções completas em `docs/REPRODUZIR.md`.
+declarada não for regravada no disco. Instruções completas em `docs/anexos/REPRODUZIR.md`.
+
+**A aplicação de inspeção (TAPI §6), nas duas formas:**
+
+```bash
+make app                      # grava app/copiloto.html — abre por duplo clique
+make copiloto                 # serve a MESMA página em :7000, com consulta ao vivo
+```
+
+`make app` escreve **um** html autocontido de 2,2 MB que navega as 288 execuções medidas: sem
+servidor, sem rede, sem GPU, e continua abrindo daqui a um ano. `make copiloto` serve a mesma
+página com a **consulta ao vivo** ligada — uma pergunta que não está no corpus vira cenário
+executável, roda no runner real contra a API do parceiro, e o trace aparece na tela enquanto
+acontece. Exige a API em `:8000` e o LM Studio em `:1234` com o modelo carregado; o servidor
+confere os dois **antes** de subir e diz qual comando levanta cada um.
+
+Os dois saem do mesmo template e diferem por um campo no payload. Eles falham de formas
+opostas — o html não depende de nada e por isso não mostra nada acontecendo; o servidor mostra
+o agente rodando e por isso depende de GPU e de endpoint no ar.
+
+**Uma pergunta nova não tem gabarito**, e a tela não finge que tem. Dos 19 códigos da taxonomia
+congelada, 4 saem do trace sozinho — `D1`, `P5`, `P6` e `C5` — e os outros 15 aparecem
+nomeados, com o motivo de não terem sido medidos (`src/tapieval/scoring/sem_gabarito.py`). Que
+`D1` esteja entre os quatro é o ponto: a falha mais grave (S0) e mais frequente da bateria
+(181 de 288) é detectável sem gabarito, porque o gate mora na **fronteira MCP** e não no
+gabarito.
 
 ## 5. Modelos e configurações
 
@@ -267,7 +293,7 @@ O que cai é a premissa implícita de que o modelo maior ganharia nos dois eixos
 aprovado antes dela, severidade S0 — aparece em **181 das 288** execuções. Não é falha de borda: é
 o comportamento modal. A métrica olha o **pedido** e não o resultado, então uma escrita que o gate
 bloqueou continua sendo ação indevida do agente
-([`fig12`](figures/fig12_taxonomia_falhas.png), e `docs/taxonomia_erros.md` com a taxonomia
+([`fig12`](figures/fig12_taxonomia_falhas.png), e `docs/anexos/apuracao/taxonomia_erros.md` com a taxonomia
 inteira, definição, exemplo real e frequência).
 
 Execução que estoura o orçamento sem responder **não é dado perdido**: é falha de processo, medida
@@ -325,6 +351,13 @@ Na ordem de quanto afetam a conclusão.
 4. **Agente segregado por modo** (hipótese cortada): dobraria a bateria principal e compraria um
    resultado sobre o agente ao preço do `pass^k`, que é o resultado sobre o instrumento. A flag
    está implementada; a hipótese fica declarada.
+5. **O judge na consulta ao vivo.** Hoje a pergunta nova recebe 4 dos 19 códigos porque não tem
+   gabarito. O judge precisa de `criterio_sucesso` e `regra.exige`, que são gabarito — mas quem
+   pergunta **pode escrevê-los**: "o que uma boa resposta precisaria fazer?" é uma frase, não uma
+   tarde. Com ela, C1 a C4 e C7 entram, e a consulta ao vivo passa de 4 para 9 dos 19. O que
+   continuaria fora são os que exigem gabarito **estrutural** — evidências obrigatórias, tools
+   esperadas, decisão esperada —, e esses são exatamente a parte cara do corpus. É a fronteira
+   deste trabalho, vista do outro lado: **quanto de gabarito compra quanto de detecção.**
 
 ---
 
@@ -335,10 +368,12 @@ Na ordem de quanto afetam a conclusão.
 | `src/tapieval/mcp/` | servidor MCP, tools, gate de ação, instrumentação |
 | `src/tapieval/sut/` | agente ReAct, variantes e mutantes, SUT de referência |
 | `src/tapieval/runner/` | matriz de bateria, manifesto, judge congelado |
-| `src/tapieval/scoring/` | N1, N2, N3, severidade, `pass^k`, κ, **INS** |
+| `src/tapieval/scoring/` | N1, N2, N3, severidade, `pass^k`, κ, **INS**, e a medição sem gabarito |
 | `src/tapieval/labeling/` | CLI de rotulagem cega |
+| `src/tapieval/app/` | o copiloto: template, os dois registros sobre o mesmo dado, gerador |
+| `src/tapieval/vivo/` | a consulta ao vivo — pergunta nova → cenário → runner → trace na tela |
 | `scenarios/` | os 24 cenários e as 19 regras de decisão |
 | `configs/` | as cinco baterias e o congelamento do judge |
 | `runs/` | traces, manifestos e scores — **versionados**, é o dado |
 | `notebooks/` | nb01–nb04 · `figures/INDEX.md` mapeia figura → afirmação |
-| `docs/ARQUITETURA.md` · `METRICAS.md` · `CENARIOS.md` | as decisões de desenho, com o porquê |
+| `docs/` | `ARQUITETURA.md` e a apresentação; tudo o que os sustenta em `anexos/` |

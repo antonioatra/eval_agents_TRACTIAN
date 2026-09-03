@@ -53,7 +53,7 @@
 #
 #   Piso e teto honestos: 4 perturbações × 6 cenários × 2 modelos = 48 células no teto, ~38 com
 #   o filtro de aplicabilidade, mais as 12 de referência → **50 a 60 execuções, 1,5 a 1,8 h**,
-#   contra as 96 / 2,9 h que `docs/piloto.json` extrapolou. A conta de `docs/dimensionamento.md`
+#   contra as 96 / 2,9 h que `docs/anexos/resultados/piloto.json` extrapolou. A conta de `docs/anexos/apuracao/dimensionamento.md`
 #   carrega as duas colunas, porque cortar uma bateria com base num número inflado seria cortar
 #   pelo motivo errado.
 # ═════════════════════════════════════════════════════════════════════════════════════════
@@ -67,7 +67,7 @@
 #   carregar; esta linha fica pelo argumento.
 # ─────────────────────────────────────────────────────────────────────────────────────────
 #
-# RECOMENDAÇÃO DE CORTE: bateria nº 2 da fila (`docs/dimensionamento.md §3`). O motivo
+# RECOMENDAÇÃO DE CORTE: bateria nº 2 da fila (`docs/anexos/apuracao/dimensionamento.md §3`). O motivo
 # decisivo não é o tempo (1,5–2,9 h) — é que ela **não é construível** em duas noites: exige
 # ~24 YAMLs derivados, a regra de derivação executável e, para P3, a mesma extensão de
 # carregador que a bateria de ambiente. Cortada, "robustez e invariâncias" vira trabalho futuro

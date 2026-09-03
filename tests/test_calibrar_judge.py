@@ -2,9 +2,10 @@
 
 Em 25/08 o A23 foi fechado migrando o judge do AI Studio para o Vertex. Os dois servem o mesmo
 `gemini-3.6-flash`, mas **não são a mesma medição**: para o prompt byte a byte idêntico o Vertex
-conta 6–8% mais tokens de entrada (`docs/migracao_vertex.md §5`). A chave de retomada era
-`(trace, configuração, repetição)`, e com ela uma rodada nova daria por feitas as células que o
-AI Studio já tinha julgado — o flip rate (INS.7) compararia então um julgamento de um provedor
+conta 6–8% mais tokens de entrada (`docs/anexos/apuracao/migracao_vertex.md §5`). A chave de
+retomada era `(trace, configuração, repetição)`, e com ela uma rodada nova daria por feitas as
+células que o AI Studio já tinha julgado — o flip rate (INS.7) compararia então um julgamento de um
+provedor
 contra quatro do outro, e atribuiria à ambiguidade da RUBRICA uma variação que é de
 infraestrutura. É o mesmo formato de erro do X9: o número sai na direção que favorece a
 hipótese, e nada quebra.

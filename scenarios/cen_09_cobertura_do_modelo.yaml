@@ -35,7 +35,7 @@ ambiente:
   # relatório como cobertura que o corpus não tem.
   #
   # Entra como seed de RAMO, não como canônica: trocar a `env_seed` mudaria o que este
-  # cenário mede hoje (é o que `docs/lacunas_justificadas.md §L4` desaconselha), e mexeria
+  # cenário mede hoje (é o que `docs/anexos/apuracao/lacunas_justificadas.md §L4` desaconselha), e mexeria
   # no split e nas contagens da bateria. Assim a célula é coberta pela bateria de ambiente
   # (T26b) sem custo nenhum na principal.
   seeds_de_ramo:

@@ -8,7 +8,7 @@
 | 1ª | 23/08/2026 | como a T17 o deixou | `runs/piloto_2026-08-23/` |
 | 2ª | 24/08/2026 | com o A17 — o agente sabe quanto orçamento resta | `runs/piloto_2026-08-24/` |
 
-**Números crus:** `docs/piloto.json` (análise da 2ª) e `docs/overhead_mcp.json` (fronteira MCP).
+**Números crus:** `docs/anexos/resultados/piloto.json` (análise da 2ª) e `docs/anexos/resultados/overhead_mcp.json` (fronteira MCP).
 **As seções 1–5 descrevem a 1ª passada**, que é onde os achados apareceram; o §6 mede o efeito da
 correção e refaz o dimensionamento.
 

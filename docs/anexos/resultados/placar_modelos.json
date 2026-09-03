@@ -1,9 +1,9 @@
 {
   "gerado_por": "scripts/gerar_placar.py",
   "fontes": [
-    "docs/resultados_h0.json",
-    "docs/resultados_passk.json",
-    "docs/resultados_taxonomia.json"
+    "docs/anexos/resultados/resultados_h0.json",
+    "docs/anexos/resultados/resultados_passk.json",
+    "docs/anexos/resultados/resultados_taxonomia.json"
   ],
   "aviso_sut_de_referencia": "O SUT de fronteira faz 100% no corte S1, mas rodou nos 6 cenários de dev contra os 18 de test desta bateria — interseção zero. Por isso ele não entra nesta tabela.",
   "criterios": [
@@ -12,7 +12,7 @@
       "oito": "26,4%",
       "quatorze": "38,2%",
       "vencedor": "14B",
-      "fonte": "docs/resultados_passk.json · curvas · media_simples",
+      "fonte": "docs/anexos/resultados/resultados_passk.json · curvas · media_simples",
       "nota": "a média que o pass^k existe para contradizer"
     },
     {
@@ -20,7 +20,7 @@
       "oito": "9,7%",
       "quatorze": "8,1%",
       "vencedor": "8B",
-      "fonte": "docs/resultados_passk.json · pass^3 · a inversão sobrevive às três leituras",
+      "fonte": "docs/anexos/resultados/resultados_passk.json · pass^3 · a inversão sobrevive\nàs três leituras",
       "nota": "exigir consistência inverte a ordem que a média dá"
     },
     {
@@ -28,7 +28,7 @@
       "oito": "0,000",
       "quatorze": "0,000",
       "vencedor": "empate em zero",
-      "fonte": "docs/resultados_passk.json · pass^8",
+      "fonte": "docs/anexos/resultados/resultados_passk.json · pass^8",
       "nota": "nenhum cenário é entregue nas 8 tentativas por nenhum dos dois"
     },
     {
@@ -36,7 +36,7 @@
       "oito": "0/144",
       "quatorze": "0/144",
       "vencedor": "empate em zero",
-      "fonte": "docs/resultados_taxonomia.json · sensibilidade · corte S2",
+      "fonte": "docs/anexos/resultados/resultados_taxonomia.json · sensibilidade · corte S2",
       "nota": "a régua oficial não separa ninguém — o SUT de fronteira também dá zero nela"
     },
     {
@@ -44,7 +44,7 @@
       "oito": "22,6%",
       "quatorze": "21,9%",
       "vencedor": "8B",
-      "fonte": "docs/resultados_taxonomia.json · taxa_entre_pontuaveis · corte S1",
+      "fonte": "docs/anexos/resultados/resultados_taxonomia.json · taxa_entre_pontuaveis · corte S1",
       "nota": "como reportado seria 26,4% × 38,2% — a ordem inverte quando as execuções sem decisão saem"
     },
     {
@@ -52,7 +52,7 @@
       "oito": "27,0%",
       "quatorze": "28,9%",
       "vencedor": "14B",
-      "fonte": "docs/resultados_taxonomia.json · taxa_entre_pontuaveis · corte S0",
+      "fonte": "docs/anexos/resultados/resultados_taxonomia.json · taxa_entre_pontuaveis · corte S0",
       "nota": "1,9 ponto de diferença em n = 251 — dentro do ruído"
     },
     {
@@ -60,7 +60,7 @@
       "oito": "—",
       "quatorze": "+0,057",
       "vencedor": "14B",
-      "fonte": "docs/resultados_h0.json · h2 · tool_f1_liquido",
+      "fonte": "docs/anexos/resultados/resultados_h0.json · h2 · tool_f1_liquido",
       "nota": "só no líquido; o bruto cruza zero"
     },
     {
@@ -68,7 +68,7 @@
       "oito": "+0,061",
       "quatorze": "—",
       "vencedor": "8B (no limiar)",
-      "fonte": "docs/resultados_h0.json · h2 · args_acc · p = 0.0514",
+      "fonte": "docs/anexos/resultados/resultados_h0.json · h2 · args_acc · p = 0.0514",
       "nota": "no limiar — este n não decide"
     },
     {
@@ -76,7 +76,7 @@
       "oito": "4,2%",
       "quatorze": "18,1%",
       "vencedor": "8B",
-      "fonte": "docs/resultados_taxonomia.json · frequencias · P6",
+      "fonte": "docs/anexos/resultados/resultados_taxonomia.json · frequencias · P6",
       "nota": "quanto menor melhor — é o que produz as execuções sem decisão do 14B"
     }
   ]

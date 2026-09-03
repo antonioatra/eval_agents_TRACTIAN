@@ -15,8 +15,8 @@ DUAS SONDAS, PORQUE ELAS RESPONDEM COISAS DIFERENTES
     1. **Metadados do publisher** (`publishers/google/models/{id}`): diz o que o catálogo
        DECLARA — `versionId`, `launchStage`, se é preview. É o que responde a pergunta da T23.
     2. **Chamada mínima** pelo endpoint OpenAI-compatible: diz o que o serviço ACEITA. O §6 do
-       `docs/limites_free_tier.md` fechou a questão da quota por modelo exatamente assim, e
-       pelo mesmo motivo: o catálogo pode listar um modelo que a conta não pode chamar.
+       `docs/anexos/apuracao/limites_free_tier.md` fechou a questão da quota por modelo exatamente
+       assim, e pelo mesmo motivo: o catálogo pode listar um modelo que a conta não pode chamar.
 
     As duas juntas separam "não existe" de "existe e você não tem acesso" — que pedem ações
     opostas do operador.
@@ -229,7 +229,7 @@ def main() -> int:
         "\nDecisão da T23: o id só serve se `versionId` apontar para snapshot fixo.\n"
         "Se o catálogo devolver alias móvel, o congelamento por sha256 vira decorativo."
     )
-    caminho = "docs/catalogo_vertex.json"
+    caminho = "docs/anexos/resultados/catalogo_vertex.json"
     with open(caminho, "w", encoding="utf-8") as arquivo:
         json.dump([vars(s) for s in sondas], arquivo, ensure_ascii=False, indent=2)
     print(f"\nsondas gravadas em {caminho}")

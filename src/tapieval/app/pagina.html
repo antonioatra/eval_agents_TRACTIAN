@@ -427,12 +427,50 @@ tbody tr:last-child td{border-bottom:none}
   border:1px solid var(--traco);background:var(--trilho);color:var(--tinta2);
 }
 .sug:hover{border-color:var(--azul);color:var(--azul)}
+
+/* ------------------------------------------------------- consulta ao vivo
+   O modo ao vivo não ganha paleta própria. Ele reusa o azul do sistema e a rampa quente da
+   severidade, porque a tela que mostra a pergunta nova e a que mostra a bateria gravada
+   precisam ser lidas como o MESMO instrumento — cor nova aqui sugeriria dado de outra
+   natureza, e o dado é o mesmo: trace do mesmo agente, no mesmo schema. O único elemento
+   exclusivo é o ponto pulsante, e ele existe porque uma run leva minutos e uma tela parada
+   por dois minutos é indistinguível de uma tela travada. */
+.campos-vivo{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;align-items:flex-end}
+.campos-vivo[hidden]{display:none}
+.campos-vivo .campo{flex:1 1 170px;min-width:0}
+.nota-mundo{flex:1 1 100%;font-size:11.5px;color:var(--tinta3);font-family:var(--f-mono);min-width:0}
+.replay.vivo{border-left-color:var(--azul);background:var(--azul-cl)}
+.replay.vivo[hidden]{display:none}
+.replay.vivo code{color:var(--azul-esc)}
+
+.faixa-vivo{
+  display:flex;flex-wrap:wrap;gap:18px;align-items:center;
+  border:1px solid var(--traco);border-left:3px solid var(--azul);
+  padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:var(--tinta2);
+}
+.faixa-vivo b{color:var(--tinta)}
+.faixa-vivo .mono{font-family:var(--f-mono);font-size:12px}
+.pulso{
+  display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--azul);
+  margin-right:7px;vertical-align:middle;animation:pulsa 1.1s ease-in-out infinite;
+}
+@keyframes pulsa{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.32;transform:scale(.78)}}
+@media (prefers-reduced-motion: reduce){.pulso{animation:none}}
+.explica-vivo{font-size:12.5px;color:var(--tinta2);margin:0 0 13px;max-width:92ch;line-height:1.55}
+.explica-vivo b{color:var(--tinta);font-weight:640}
+.motivo-nm{font-size:11.5px;color:var(--tinta3)}
+.motivo-nm code{font-family:var(--f-mono)}
+.sub-tab{
+  font-family:var(--f-cond);text-transform:uppercase;letter-spacing:.08em;
+  font-size:10.5px;color:var(--tinta3);font-weight:700;margin:18px 0 8px;
+}
+.sub-tab:first-of-type{margin-top:0}
 </style>
 </head>
 <body>
 <header>
   <div class="faixa">
-    <h1>Copiloto de suporte <span>inspeção de execuções medidas</span></h1>
+    <h1>Copiloto de suporte <span id="selo-modo">inspeção de execuções medidas</span></h1>
     <p class="sub">
       Quem usa é o <b>engenheiro de suporte</b>: ele recebe a solicitação do cliente e usa o
       raciocínio do modelo — as evidências que ele buscou, o que a plataforma devolveu, o que ele
@@ -450,11 +488,21 @@ tbody tr:last-child td{border-bottom:none}
     <button class="aba" role="tab" aria-selected="false" data-painel="p-placar">Placar dos modelos</button>
   </div>
 </header>
+<!-- A faixa diz o que a página PODE fazer neste momento, e as duas versões são exclusivas. Um
+     aviso que promete menos do que a página entrega custa a demonstração inteira: quem lê
+     "não roda o agente" no topo não acredita no trace que aparece embaixo. Um que promete mais
+     custa mais caro ainda. -->
 <div class="aviso">
-  <div class="faixa" style="max-width:1440px;margin:0 auto">
+  <div class="faixa" id="faixa-gravado" style="max-width:1440px;margin:0 auto">
     <b>Esta página navega execuções já gravadas.</b> Ela não roda o agente, não fala com a API e
     não sobe modelo — o dado é o mesmo que sustenta as figuras do README. Regenere com
     <code>make app</code>.
+  </div>
+  <div class="faixa" id="faixa-ao-vivo" hidden style="max-width:1440px;margin:0 auto">
+    <b>Consulta ao vivo ligada.</b> As 288 execuções abaixo estão gravadas e medidas; uma
+    <b>pergunta nova</b> roda o agente de verdade contra a plataforma, e aparece aqui enquanto
+    acontece. O que ela não tem é gabarito — e a tela diz, código a código, o que isso deixa
+    de fora.
   </div>
 </div>
 
@@ -534,6 +582,7 @@ tbody tr:last-child td{border-bottom:none}
         </div>
       </div>
 
+      <!-- INICIO REGISTRO DA AVALIACAO -->
       <div id="modo-avaliacao" hidden style="margin-top:16px">
       <div class="cortes" id="cortes"></div>
       <details class="porque">
@@ -570,6 +619,80 @@ tbody tr:last-child td{border-bottom:none}
         </div>
       </div>
       </div>
+      <!-- FIM REGISTRO DA AVALIACAO -->
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────────────────────────────
+       A CONSULTA AO VIVO. Uma terceira tela, e não um modo da tela de detalhe.
+
+       A tela de detalhe é sobre uma execução MEDIDA: ela tem oito tentativas para comparar,
+       gabarito para dizer o que era esperado e três cortes de aprovação. A consulta ao vivo
+       não tem nenhuma das três coisas, e reaproveitar aquela tela obrigaria a esconder
+       metade dela — o que produz, exatamente, a interface que finge ter medido o que não
+       mediu. Aqui o que não existe está ausente, e o que foi medido está nomeado.
+       ───────────────────────────────────────────────────────────────────────────────── -->
+  <div id="tela-vivo" hidden>
+    <button class="voltar" id="voltar-vivo">← todas as perguntas</button>
+    <div class="cab-pergunta" id="cab-vivo"></div>
+
+    <div class="faixa-vivo" id="faixa-vivo"></div>
+
+    <div class="grade">
+      <div class="cartao">
+        <h3>Resposta proposta <em>o engenheiro revisa antes de enviar</em></h3>
+        <div class="corpo" id="conversa-vivo"></div>
+      </div>
+      <div class="cartao">
+        <h3>Raciocínio e evidências <em id="rotulo-trace-vivo">o que o agente está consultando, agora</em></h3>
+        <div class="corpo"><div class="trace" id="trace-vivo"></div></div>
+      </div>
+    </div>
+
+    <div class="veredito">
+      <div class="cartao">
+        <h3>O que dá para medir nesta pergunta
+          <button class="btn-modo" id="btn-modo-vivo">ver o que não foi medido ▸</button>
+        </h3>
+        <div class="corpo">
+          <div class="manchete" id="manchete-vivo"></div>
+          <div class="sinais" id="sinais-vivo"></div>
+        </div>
+      </div>
+
+      <!-- INICIO REGISTRO DA AVALIACAO -->
+      <div id="nao-medidos-vivo" hidden style="margin-top:16px">
+        <div class="cartao">
+          <h3>Os códigos que esta pergunta não teve como receber <em>e por quê, um a um</em></h3>
+          <div class="corpo">
+            <p class="explica-vivo">
+              A pergunta é nova, então <b>não existe gabarito</b>: ninguém escreveu, antes de ela
+              ser feita, que evidências eram obrigatórias nem qual decisão era a certa. Isso não
+              cala o instrumento — reduz o alcance dele, e o alcance está aqui em números.
+              <b>É a mesma fronteira que o trabalho inteiro mede</b>: o que sai de graça do
+              trace, o que custa gabarito, e o que custa LLM.
+            </p>
+            <h4 class="sub-tab">Os 4 que o trace sustenta sozinho</h4>
+            <div class="rolagem">
+              <table>
+                <thead><tr><th>Código</th><th>Sev.</th><th>Definição</th><th>Camada</th><th>Nesta execução</th></tr></thead>
+                <tbody id="tab-do-trace"></tbody>
+              </table>
+            </div>
+
+            <h4 class="sub-tab">Os 15 que esta pergunta não teve como receber</h4>
+            <div class="rolagem">
+              <table>
+                <thead><tr><th>Código</th><th>Sev.</th><th>Definição</th><th>Por que não foi medido</th></tr></thead>
+                <tbody id="tab-nao-medidos"></tbody>
+              </table>
+            </div>
+
+            <div class="alvo" id="ressalva-d1"></div>
+          </div>
+        </div>
+      </div>
+      <!-- FIM REGISTRO DA AVALIACAO -->
     </div>
   </div>
 </section>
@@ -600,10 +723,36 @@ tbody tr:last-child td{border-bottom:none}
        raciocínio ao lado.</p>
     <textarea id="txt-pergunta" placeholder="Ex.: o RMS do compressor está subindo há duas semanas e não recebi insight nenhum…"></textarea>
     <div class="sugestoes" id="sugestoes"></div>
-    <div class="replay">
+
+    <!-- Só no modo ao vivo. Quem pergunta e sobre qual ativo não são detalhe de formulário:
+         são o que decide o que a API devolve, o que o gate autoriza e se a run vai ver um 403.
+         No modo gravado esses campos não existem porque a execução já aconteceu com os dela. -->
+    <div class="campos-vivo" id="campos-vivo" hidden>
+      <div class="campo">
+        <label for="sel-usuario">Quem está pedindo</label>
+        <select id="sel-usuario"></select>
+      </div>
+      <div class="campo">
+        <label for="sel-ativo">Sobre qual ativo</label>
+        <select id="sel-ativo"><option value="">— carregando da plataforma —</option></select>
+      </div>
+      <div class="campo">
+        <label for="sel-modelo-vivo">Modelo que responde</label>
+        <select id="sel-modelo-vivo"></select>
+      </div>
+      <div class="nota-mundo" id="nota-mundo"></div>
+    </div>
+
+    <div class="replay" id="aviso-replay">
       <b>Esta página é de inspeção, não de execução.</b> A pergunta digitada é casada com a
       execução gravada mais próxima do corpus — nenhum modelo roda aqui. Para rodar o agente de
       verdade, use o runner (<code>tapieval</code>).
+    </div>
+    <div class="replay vivo" id="aviso-vivo" hidden>
+      <b>Esta pergunta vai rodar de verdade.</b> O agente consulta a plataforma agora, com o
+      mundo na seed <code id="seed-vivo"></code>, e o trace aparece aqui enquanto acontece.
+      Leva <b>um a três minutos</b> — e pode terminar sem resposta, que é o resultado mais
+      comum do 8B e não um defeito da tela.
     </div>
     <div class="modal-rodape">
       <button class="btn" id="cancelar">Cancelar</button>
@@ -776,9 +925,15 @@ function desenharConversa(r) {
     </div>`;
 }
 
-function desenharTrace(r) {
+function desenharTrace(r) { desenharTraceEm('#trace', r.passos); }
+
+/* Uma função para os dois modos. A execução gravada e a execução em voo produzem o MESMO
+   `passos` — `vista.passos_do_trace` é a única coisa que os monta, dos dois lados —, então
+   desenhá-los com código diferente só criaria a chance de o trace ao vivo mostrar algo que o
+   gravado não mostra, ou o contrário, sem que nada acuse. */
+function desenharTraceEm(seletor, passos) {
   const porIt = new Map();
-  for (const p of r.passos) {
+  for (const p of passos) {
     if (!porIt.has(p.it)) porIt.set(p.it, []);
     porIt.get(p.it).push(p);
   }
@@ -822,7 +977,7 @@ function desenharTrace(r) {
     }
     html += `</div>`;
   }
-  $('#trace').innerHTML = html;
+  $(seletor).innerHTML = html;
 }
 
 const CORTES = [
@@ -831,6 +986,13 @@ const CORTES = [
   ['S0', 'Corte S0 — só segurança', 'reprova S0', false],
 ];
 const ICONE = {critico: '///', grave: '//', atencao: '/', vazio: '—', menor: '·', ok: 'OK'};
+
+/* `texto.GRAVIDADE` rotula a escala congelada em português — com acento, porque é o que o
+   engenheiro lê. As chaves de `ICONE` são sem acento, porque são identificadores de estilo.
+   Este mapa é a ponte entre os dois, e existe uma vez só: repetir a tradução em cada chamada
+   é como um rótulo passa a divergir do outro sem ninguém perceber. */
+const TOM_DA_GRAVIDADE = {'crítico': 'critico', 'grave': 'grave', 'atenção': 'atencao', 'menor': 'menor'};
+const ICONE_DO_TOM = (gravidade) => TOM_DA_GRAVIDADE[gravidade] || 'menor';
 
 function desenharPainelDoEngenheiro(r) {
   const v = r.veredito_humano;
@@ -944,6 +1106,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !fundo.h
 $('#enviar').addEventListener('click', () => {
   const texto = txt.value.trim();
   if (!texto) { txt.focus(); return; }
+  if (VIVO) return perguntarAoVivo(texto);
   cenario = cenarioMaisProximo(texto); tentativa = 0;
   fecharModal();
   $('#tela-historico').hidden = true; $('#tela-detalhe').hidden = false;
@@ -951,6 +1114,270 @@ $('#enviar').addEventListener('click', () => {
   desenharDetalhe();
 });
 
+/* ═══════════════════════════════════════════════════════ a consulta ao vivo ══
+   Só existe quando a página é SERVIDA por `tapieval.vivo` — `D.ao_vivo` é o campo que aquele
+   servidor acrescenta ao payload, e o arquivo que o `make app` grava não o tem. Aberta por
+   duplo clique, a página cai no ramo de cima e continua sendo o inspetor gravado, com o
+   caminho ao vivo inteiro morto no arquivo em vez de quebrado na tela.
+
+   O acompanhamento é POLLING, não SSE. Uma run leva minutos e emite algumas dezenas de
+   eventos: um GET por segundo custa menos que manter uma conexão aberta atravessando um
+   servidor de biblioteca padrão, e sobrevive a fechar e reabrir a aba, que numa apresentação
+   é a diferença entre um susto e uma demonstração perdida. */
+const VIVO = D.ao_vivo || null;
+let acompanhando = null;
+
+if (VIVO) {
+  $('#faixa-gravado').hidden = true;
+  $('#faixa-ao-vivo').hidden = false;
+  $('#campos-vivo').hidden = false;
+  $('#aviso-replay').hidden = true;
+  $('#aviso-vivo').hidden = false;
+  document.querySelector('.abas .aba').textContent = 'Copiloto · ao vivo';
+  $('#selo-modo').textContent = 'inspeção de execuções medidas · consulta ao vivo';
+  $('#seed-vivo').textContent = VIVO.env_seed;
+  $('#nova-pergunta').querySelector('.d').textContent =
+    'O agente vai consultar a plataforma de verdade e devolver um rascunho com o raciocínio. Leva de um a três minutos.';
+
+  for (const u of VIVO.usuarios) {
+    $('#sel-usuario').insertAdjacentHTML('beforeend', `<option value="${esc(u)}">${esc(u)}</option>`);
+  }
+  for (const m of VIVO.modelos) {
+    const rot = D.rotulos.modelos[m] || m;
+    $('#sel-modelo-vivo').insertAdjacentHTML('beforeend', `<option value="${esc(m)}">${esc(rot)}</option>`);
+  }
+  $('#sel-usuario').addEventListener('change', carregarMundo);
+  $('#voltar-vivo').addEventListener('click', () => {
+    pararAcompanhamento();
+    $('#tela-vivo').hidden = true; $('#tela-historico').hidden = false;
+  });
+  $('#btn-modo-vivo').addEventListener('click', () => {
+    const alvo = $('#nao-medidos-vivo');
+    alvo.hidden = !alvo.hidden;
+    $('#btn-modo-vivo').textContent = alvo.hidden
+      ? 'ver o que não foi medido ▸' : 'esconder ▾';
+    if (!alvo.hidden) alvo.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  });
+}
+
+/* Os ativos vêm da plataforma AGORA, para o usuário selecionado. Uma lista fixa aqui seria
+   cenário; esta é o mundo, com a criticidade que ele está reportando neste instante — e o
+   envelope (`mode`, `notes`) sobe junto porque a lista pode vir parcial, e esconder isso daria
+   ao operador uma visão melhor do mundo do que a do agente que ele vai avaliar. */
+async function carregarMundo() {
+  const usuario = $('#sel-usuario').value;
+  const sel = $('#sel-ativo');
+  sel.innerHTML = '<option value="">— carregando da plataforma —</option>';
+  $('#nota-mundo').textContent = '';
+  try {
+    const r = await fetch(`/api/mundo?user_id=${encodeURIComponent(usuario)}`);
+    const m = await r.json();
+    if (!r.ok) throw new Error(m.erro || r.statusText);
+    sel.innerHTML = '<option value="">— sem ativo específico —</option>' + m.ativos.map(a =>
+      `<option value="${esc(a.id)}">${esc(a.id)} · ${esc(a.nome)} · ${esc(a.criticidade)}</option>`).join('');
+    $('#nota-mundo').textContent =
+      `${m.usuario.name} · ${m.usuario.role} · ${m.usuario.company_id} · permissões: ` +
+      `${(m.usuario.permissions || []).join(', ')} — plataforma respondeu ${m.modo}` +
+      (m.notas ? ` (${m.notas})` : '');
+  } catch (e) {
+    sel.innerHTML = '<option value="">— a plataforma não respondeu —</option>';
+    $('#nota-mundo').textContent = `falhou ao ler o mundo: ${e.message}`;
+  }
+}
+
+async function perguntarAoVivo(texto) {
+  const corpo = {
+    texto,
+    user_id: $('#sel-usuario').value,
+    asset_id: $('#sel-ativo').value || null,
+    modelo: $('#sel-modelo-vivo').value,
+  };
+  const botao = $('#enviar');
+  botao.disabled = true; botao.textContent = 'disparando…';
+  try {
+    const r = await fetch('/api/perguntar', {
+      method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(corpo),
+    });
+    const dados = await r.json();
+    if (!r.ok) throw new Error(dados.erro || r.statusText);
+    fecharModal();
+    $('#tela-historico').hidden = true; $('#tela-detalhe').hidden = true; $('#tela-vivo').hidden = false;
+    window.scrollTo(0, 0);
+    abrirCabecalhoVivo(dados);
+    acompanhar(dados.run_id);
+  } catch (e) {
+    alertaNoModal(e.message);
+  } finally {
+    botao.disabled = false; botao.textContent = 'Perguntar';
+  }
+}
+
+/* Erro dentro do modal, e não `alert()`: um diálogo nativo do navegador bloqueia a página e,
+   numa demonstração, o que se vê é a tela congelada — sem contar que a mensagem que importa
+   (uma consulta já em voo, o LM Studio fora do ar) é longa demais para caber num alert. */
+function alertaNoModal(mensagem) {
+  let caixa = $('#erro-modal');
+  if (!caixa) {
+    caixa = document.createElement('div');
+    caixa.id = 'erro-modal';
+    caixa.className = 'replay';
+    caixa.style.borderLeftColor = 'var(--crit)';
+    caixa.style.background = 'var(--crit-cl)';
+    $('#aviso-vivo').after(caixa);
+  }
+  caixa.innerHTML = `<b>Não deu para disparar.</b> ${esc(mensagem)}`;
+}
+
+function abrirCabecalhoVivo(d) {
+  $('#cab-vivo').innerHTML = `
+    <h2>${esc(d.texto)}</h2>
+    <div class="linha-meta">
+      <span class="pilula">${esc(d.user_id)}</span>
+      <span class="pilula">${esc(d.asset_id || 'sem ativo específico')}</span>
+      <span class="pilula aut">pergunta nova · sem gabarito</span>
+      <span class="pilula">${esc(D.rotulos.modelos[d.modelo] || d.modelo)}</span>
+    </div>
+    <div class="criterio"><b>Gravado como cenário executável em</b>
+      <code>${esc(d.cenario_yaml)}</code> — o mesmo formato dos 24 do corpus, rodado pelo mesmo
+      runner. O que falta nele é o gabarito, e é só isso que separa esta execução das 288 da
+      bateria.</div>`;
+}
+
+function acompanhar(runId) {
+  pararAcompanhamento();
+  const tique = async () => {
+    try {
+      const r = await fetch(`/api/execucao?run_id=${encodeURIComponent(runId)}`);
+      const e = await r.json();
+      if (!r.ok) throw new Error(e.erro || r.statusText);
+      desenharVivo(e);
+      if (e.status !== 'rodando') pararAcompanhamento();
+    } catch (erro) {
+      $('#faixa-vivo').innerHTML = `<span style="color:var(--crit)">perdi o servidor: ${esc(erro.message)}</span>`;
+      pararAcompanhamento();
+    }
+  };
+  tique();
+  acompanhando = setInterval(tique, 1000);
+}
+
+function pararAcompanhamento() {
+  if (acompanhando !== null) { clearInterval(acompanhando); acompanhando = null; }
+}
+
+const FIM_DA_RUN = {
+  ok: ['ok', 'respondeu'],
+  budget_exceeded: ['aten', 'estourou o orçamento sem responder'],
+  timeout: ['aten', 'estourou o tempo'],
+  error: ['crit', 'terminou em erro'],
+  falha_do_instrumento: ['crit', 'falha do instrumento — não é resultado do modelo'],
+};
+
+function desenharVivo(e) {
+  const rodando = e.status === 'rodando';
+  const [tom, frase] = FIM_DA_RUN[e.status] || ['menor', e.status];
+  const consultas = e.passos.filter(p => p.tipo === 'chamada').length;
+  const pensamentos = e.passos.filter(p => p.tipo === 'pensamento').length;
+
+  $('#faixa-vivo').innerHTML = rodando
+    ? `<span><span class="pulso"></span><b>rodando agora</b></span>
+       <span><b class="mono">${consultas}</b> consultas à plataforma</span>
+       <span><b class="mono">${pensamentos}</b> chamadas ao modelo</span>
+       <span style="color:var(--tinta3)">o agente está investigando — a tela atualiza sozinha</span>`
+    : `<span style="color:var(--${tom})"><b>${esc(frase)}</b></span>
+       <span><b class="mono">${consultas}</b> consultas à plataforma</span>
+       <span><b class="mono">${pensamentos}</b> chamadas ao modelo</span>
+       ${e.duracao_ms != null ? `<span><b class="mono">${(e.duracao_ms/1000).toFixed(1)}s</b></span>` : ''}`;
+
+  const cit = (e.citacoes || []).length
+    ? `<div class="cit">evidências citadas: ${e.citacoes.map(esc).join(', ')}</div>` : '';
+  const resposta = e.resposta
+    ? `<div class="balao agente"><div class="quem">Rascunho do agente</div>${esc(e.resposta)}${cit}</div>`
+    : rodando
+      ? `<div class="balao vazio"><div class="quem">Rascunho do agente</div>
+           <span class="pulso"></span>ainda investigando — a resposta só é escrita no fim.</div>`
+      : `<div class="balao vazio"><div class="quem">Rascunho do agente</div>
+           <b>Não produziu resposta.</b> A execução terminou em <code>${esc(e.status)}</code> sem
+           chegar a uma resposta final — o engenheiro fica só com o raciocínio ao lado. Isso
+           acontece em <b>${D.totais.sem_decisao} das ${D.totais.execucoes}</b> execuções da
+           bateria gravada, e é resultado medido, não defeito desta tela.</div>`;
+  $('#conversa-vivo').innerHTML =
+    `<div class="balao usuario"><div class="quem">Cliente · ${esc(e.user_id)} · ${esc(e.asset_id || '—')}</div>${esc(e.texto)}</div>`
+    + resposta
+    + (e.erro ? `<div class="rodape-run" style="color:var(--crit)">${esc(e.erro)}</div>` : '');
+
+  $('#rotulo-trace-vivo').textContent = rodando
+    ? 'o que o agente está consultando, agora'
+    : 'o que o agente consultou, na ordem em que consultou';
+  desenharTraceEm('#trace-vivo', e.passos);
+  desenharMedicaoVivo(e.medicao, rodando);
+}
+
+function desenharMedicaoVivo(m, rodando) {
+  if (!m) {
+    $('#manchete-vivo').innerHTML = '<span class="pulso"></span>esperando o primeiro evento do trace…';
+    $('#sinais-vivo').innerHTML = '';
+    return;
+  }
+  const n = m.falhas.length;
+  const total = VIVO ? VIVO.codigos_do_trace.length : 4;
+  const naoMedidos = VIVO ? VIVO.n_nao_medidos : 15;
+
+  /* A manchete do modo gravado responde "dá para usar este rascunho?". Aqui ela NÃO pode
+     responder isso: sem gabarito não há aprovação nem reprovação, só falhas que dispararam.
+     Zero falhas com tom `ok` seria a mentira exata que a tela existe para não contar — o tom
+     é `menor` e a frase diz o que a ausência significa. */
+  const tom = n === 0 ? 'menor' : ICONE_DO_TOM(m.falhas[0].gravidade);
+  $('#manchete-vivo').className = `manchete ${tom}`;
+  $('#manchete-vivo').innerHTML = `<span class="icone">${ICONE[tom]}</span><span>` + (n === 0
+    ? `Nenhuma das <b>${total}</b> falhas que o trace detecta sozinho${rodando ? ' — até aqui' : ''}.
+       <b>Isso não é aprovação:</b> os outros ${naoMedidos} códigos da taxonomia não foram
+       medidos nesta pergunta, e não medido nunca é o mesmo que não aconteceu.`
+    : `<b>${n} de ${total}</b> falhas que o trace detecta sozinho já
+       dispararam${rodando ? ', e a run ainda corre' : ''}. Os outros ${naoMedidos} códigos não
+       foram medidos — o veredito completo exigiria gabarito.`) + '</span>';
+
+  /* O registro do engenheiro: a frase em português, a mesma de `app/texto.py` que a tela da
+     bateria usa. Código e camada detectora NÃO aparecem aqui — eles informam quem julga o
+     instrumento, e ficam atrás do botão, exatamente como no modo gravado. */
+  const decisao = m.decisao_observada
+    ? `<div class="sinal" data-g="menor">
+         <span class="grav">decisão</span>
+         <span class="frase">O agente <b>${esc(m.decisao_observada)}</b> — lido do que ele fez,
+         nunca do que ele escreveu. Como a pergunta é nova, não há decisão esperada com que
+         comparar: isto é observação, não acerto.</span></div>`
+    : '';
+
+  $('#sinais-vivo').innerHTML = decisao + m.falhas.map(f => `
+    <div class="sinal" data-g="${esc(f.gravidade)}">
+      <span class="grav">${esc(f.gravidade)}</span>
+      <span class="frase">${esc(f.humano)}</span>
+    </div>`).join('');
+
+  /* O registro da avaliação. */
+  $('#tab-do-trace').innerHTML = m.codigos_do_trace.map(c => `<tr>
+    <td><code>${esc(c.codigo)}</code></td>
+    <td><code>${esc(c.severidade)}</code></td>
+    <td>${esc(c.descricao)}</td>
+    <td class="motivo-nm">${esc(c.camada)}</td>
+    <td>${c.disparou
+      ? '<b style="color:var(--crit)">disparou</b>'
+      : '<span style="color:var(--ok)">não disparou</span>'}</td></tr>`).join('');
+
+  $('#tab-nao-medidos').innerHTML = m.nao_medidos.map(c => `<tr>
+    <td><code>${esc(c.codigo)}</code></td>
+    <td><code>${esc(c.severidade)}</code></td>
+    <td>${esc(c.descricao)}</td>
+    <td class="motivo-nm">${esc(c.motivo)}</td></tr>`).join('');
+
+  $('#ressalva-d1').innerHTML = m.d1_parcial
+    ? `<b>Ressalva sobre o D1 desta execução:</b> ${esc(m.ressalva_do_d1)}.`
+    : `<b>O D1 é o único código medido pela metade aqui:</b> ${esc(m.ressalva_do_d1)}.
+       Nesta execução ele não disparou — o que não é o mesmo que dizer que ele não dispararia
+       com o gabarito na mão.`;
+}
+
+if (VIVO) carregarMundo();
 desenharLista();
 </script>
 </body>

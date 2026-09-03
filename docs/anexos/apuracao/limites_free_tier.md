@@ -1,6 +1,6 @@
 # O A1, medido: os limites da free tier do judge
 
-Pendência aberta desde 15/08 e reafirmada no `docs/judge.md §5`: *"os limites reais de RPM/RPD
+Pendência aberta desde 15/08 e reafirmada no `docs/anexos/apuracao/judge.md §5`: *"os limites reais de RPM/RPD
 da free tier continuam não confirmados na documentação do Google"*. Este documento fecha a
 parte que a carga real conseguiu fechar, em **24/08/2026**.
 
@@ -144,6 +144,6 @@ Isso torna obsoleta a saída barata que o §6 registrou e desaconselhou — dist
 modelos para comprar quota nova. Ela deixa de ser necessária, e continua sendo uma má ideia
 pelo motivo que o §6 já dava.
 
-Ver `docs/migracao_vertex.md`. Ele também corrige, com medição, a afirmação de que o
+Ver `docs/anexos/apuracao/migracao_vertex.md`. Ele também corrige, com medição, a afirmação de que o
 `MODELO_PADRAO` era um snapshot datado: o id datado responde 404 nos **dois** provedores, e o
 que a T23 congela é o prompt e o id, não o peso do outro lado.

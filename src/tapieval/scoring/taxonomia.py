@@ -630,7 +630,7 @@ def teto_da_lente(
 
 
 # ---------------------------------------------------------------------------
-# 5. O documento — `docs/taxonomia_erros.md`
+# 5. O documento — `docs/anexos/apuracao/taxonomia_erros.md`
 # ---------------------------------------------------------------------------
 
 _ROTULO_DO_MOTIVO: Mapping[MotivoDeAusencia, str] = {
@@ -653,10 +653,11 @@ def relatorio_markdown(
     lacunas: Sequence[LacunaDeCobertura],
     tetos: Sequence[TetoDaLente],
 ) -> str:
-    """Gera `docs/taxonomia_erros.md` inteiro a partir dos objetos já calculados.
+    """Gera `docs/anexos/apuracao/taxonomia_erros.md` inteiro a partir dos objetos já calculados.
 
-    O documento é **gerado e não escrito à mão** pelo motivo que o `docs/resultados_passk.json`
-    existe: número digitado num markdown envelhece na primeira vez que a bateria muda, e
+    O documento é **gerado e não escrito à mão** pelo motivo que o
+    `docs/anexos/resultados/resultados_passk.json` existe: número digitado num markdown envelhece na
+    primeira vez que a bateria muda, e
     ninguém percebe. Aqui o texto fixo é o que não sai de conta — a definição de cada código
     vem da tabela congelada, e toda frequência vem dos objetos.
 

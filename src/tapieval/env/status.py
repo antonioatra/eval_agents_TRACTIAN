@@ -10,8 +10,8 @@ DUAS REGRAS, e elas explicam o módulo inteiro:
    justamente nas armadilhas de CEN-11/12/13.
 
 2. **`campos_ausentes` sai da diferença entre o schema do endpoint e as chaves de `data`.**
-   Nunca da `notes`: a nota anuncia "campos ausentes" em oito endpoints onde não falta campo
-   nenhum (`docs/catalogo_respostas.md §4`). A nota mente por construção, e o agente que
+   Nunca da `notes`: a nota anuncia "campos ausentes" em oito endpoints onde não falta campo nenhum
+   (`docs/anexos/apuracao/catalogo_respostas.md §4`). A nota mente por construção, e o agente que
    acredita nela está alucinando uma lacuna — que é o que o corpus existe para pegar.
 
 POR QUE A CHAVE É A TOOL, E NÃO A CATEGORIA
@@ -49,8 +49,8 @@ STATUS_POR_MODO: Mapping[ModoResposta, StatusRetorno] = {
 }
 
 # Campos de primeiro nível de `data` em `mode=complete`, por tool (`operationId` snake_case).
-# Copiado de `docs/catalogo_respostas.md §2`, que foi medido contra a API no ar por `nb01` —
-# não lido do Swagger, que diverge (ver `env/models.py`).
+# Copiado de `docs/anexos/apuracao/catalogo_respostas.md §2`, que foi medido contra a API no ar por
+# `nb01` — não lido do Swagger, que diverge (ver `env/models.py`).
 #
 # Para as listagens o campo é a COLEÇÃO, não os campos dos itens: o corte de `partial` só
 # toca chaves de primeiro nível, então prometer `evidence` aqui seria prometer o que a
@@ -160,7 +160,8 @@ def classificar(tool_name: str, resposta: RawResponse) -> Classificacao:
     if esperados is None:
         raise KeyError(
             f"{tool_name!r}: sem schema em CAMPOS_EM_COMPLETO. Acrescente a entrada a partir "
-            "de `docs/catalogo_respostas.md §2` antes de classificar respostas desta tool."
+            "de `docs/anexos/apuracao/catalogo_respostas.md §2` antes de classificar respostas "
+            "desta tool."
         )
 
     falha = _motivo_de_falha(resposta)
@@ -242,8 +243,8 @@ def _ausentes(esperados: tuple[str, ...], dados: Mapping[str, Any]) -> list[str]
     todo recálculo, e a ordem das chaves de um JSON não é contrato.
 
     Só o primeiro nível é examinado, porque é só nele que a API corta
-    (`docs/catalogo_respostas.md §4`). Campo que sumiu de dentro de um item de coleção não
-    existe como fenômeno — e procurá-lo daria falso positivo em `list_analyses`.
+    (`docs/anexos/apuracao/catalogo_respostas.md §4`). Campo que sumiu de dentro de um item de
+    coleção não existe como fenômeno — e procurá-lo daria falso positivo em `list_analyses`.
     """
     return [campo for campo in esperados if campo not in dados]
 

@@ -9,10 +9,10 @@ POR QUE UM SEGUNDO CLIENTE (A1, 15/08)
     volume, modelo grande). Ele PRECISA sair para a rede, e enfiar essa capacidade no
     cliente do SUT abriria caminho para um SUT sair para a rede sem que nada quebrasse.
 
-    Desde 25/08 o judge fala com o **Vertex** e não com a free tier do AI Studio. O motivo
-    é de cronograma, não de qualidade: a free tier dava 20 chamadas por DIA (§5 do
-    `docs/limites_free_tier.md`), o que punha as ~1.400 do judge a 70 dias. O Vertex serve
-    os flash por dynamic shared quota, sem RPD, e o crédito de trial o paga. Os dois
+    Desde 25/08 o judge fala com o **Vertex** e não com a free tier do AI Studio. O motivo é de
+    cronograma, não de qualidade: a free tier dava 20 chamadas por DIA (§5 do
+    `docs/anexos/apuracao/limites_free_tier.md`), o que punha as ~1.400 do judge a 70 dias. O Vertex
+    serve os flash por dynamic shared quota, sem RPD, e o crédito de trial o paga. Os dois
     provedores continuam implementados: o AI Studio é para onde se volta.
 
     O que este módulo reaproveita é o que é protocolo, não política: `esquema_estrito` e o
@@ -219,11 +219,11 @@ def credencial_do_vertex() -> Callable[[], str]:
     """O portador do Vertex, renovado quando vence.
 
     POR QUE UM CALLABLE E NÃO UMA STRING
-        O token OAuth do Google vale **1 h**. A bateria da T24 roda a madrugada inteira e o
-        judge são ~1.400 chamadas: um token lido uma vez no `__init__` expira no meio, e o
-        que se perde não é a chamada — é a noite, com as runs afetadas ficando sem N3. Esse
-        é o mesmo silêncio do X9 que o §3 do `docs/limites_free_tier.md` já pagou para
-        aprender uma vez, e não vale a pena aprender de novo por outro motivo.
+        O token OAuth do Google vale **1 h**. A bateria da T24 roda a madrugada inteira e o judge
+        são ~1.400 chamadas: um token lido uma vez no `__init__` expira no meio, e o que se perde
+        não é a chamada — é a noite, com as runs afetadas ficando sem N3. Esse é o mesmo silêncio do
+        X9 que o §3 do `docs/anexos/apuracao/limites_free_tier.md` já pagou para aprender uma vez, e
+        não vale a pena aprender de novo por outro motivo.
 
         `google-auth` guarda o vencimento e renova sozinho; o que este módulo faz é chamar
         o portador A CADA request em vez de fixá-lo no cabeçalho do cliente.

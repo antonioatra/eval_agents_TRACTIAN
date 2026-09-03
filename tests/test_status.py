@@ -3,15 +3,15 @@
 DUAS PROPRIEDADES, e elas são o critério de pronto:
 
 1. **`StatusRetorno` sai do campo `mode`, sempre.** Nunca da forma do corpo. Isso importa
-   porque `partial` fora de `_PARTIAL_DROP` devolve o payload inteiro e `unavailable` em
-   categoria estável também — inferir pela forma daria `COMPLETO` nos dois, que é falso
-   negativo justamente nas armadilhas de CEN-11/12/13 (`docs/catalogo_respostas.md §4`).
+   porque `partial` fora de `_PARTIAL_DROP` devolve o payload inteiro e `unavailable` em categoria
+   estável também — inferir pela forma daria `COMPLETO` nos dois, que é falso negativo justamente
+   nas armadilhas de CEN-11/12/13 (`docs/anexos/apuracao/catalogo_respostas.md §4`).
 2. **`campos_ausentes` sai da diferença entre o schema do endpoint e as chaves de `data`.**
    Nunca da `notes`: a nota anuncia "campos ausentes" em oito endpoints onde não falta campo
    nenhum. Ler a nota é acreditar na API contra a evidência dela mesma.
 
 Os payloads abaixo são cópias do que a API devolve — as tabelas de
-`docs/catalogo_respostas.md §2–§5`, geradas por `nb01` contra a API no ar.
+`docs/anexos/apuracao/catalogo_respostas.md §2–§5`, geradas por `nb01` contra a API no ar.
 """
 
 from __future__ import annotations

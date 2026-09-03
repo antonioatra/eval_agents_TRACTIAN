@@ -23,7 +23,7 @@ POR QUE UM TERCEIRO CLIENTE, E NÃO UM CAMPO A MAIS NO DO SUT (R5)
       (URL do Vertex, portador renovável, leitura de chave, `espera_pedida`). Isso não é
       política do judge, é detalhe de fio do provedor; **e a duplicação seria pior que a
       dependência**, porque foi um canário que descobriu que o laço de retentativa precisava
-      cobrir `httpx.TransportError` (`docs/migracao_vertex.md §7`).
+      cobrir `httpx.TransportError` (`docs/anexos/apuracao/migracao_vertex.md §7`).
 
     Que a `sut/` passe a depender de `scoring/` por isso é uma inversão de camada real, e
     está anotada como achado: o lugar certo desse encanamento é um `tapieval/provedores/
@@ -77,13 +77,13 @@ INSTRUMENTAÇÃO DE CUSTO POR CONSTRUÇÃO, NÃO POR DISCIPLINA
 
 O QUE AINDA IMPEDE A BATERIA DE RODAR (achados da R5, fora do território desta task)
     1. `runner/runner.py:_fabrica_padrao` monta SEMPRE um `ClienteDeInferencia` apontado para
-       `bateria.inferencia_base_url` (default `http://127.0.0.1:1234/v1`), e a CLI
-       (`runner/cli.py`) não expõe `fabrica_de_inferencia`. A costura existe e está documentada
-       ("é a mesma costura que a T26c usa para apontar uma célula ao SUT de referência sem
-       tocar no runner") — **mas nenhum caminho de linha de comando a alcança**, e
-       `docs/dimensionamento.md §7` manda rodar esta bateria exatamente pela CLI. O conserto
-       mínimo é `_fabrica_padrao` despachar por `celula.modelo.config.served_by`; ele toca
-       `runner/`, que esta task não pode tocar.
+       `bateria.inferencia_base_url` (default `http://127.0.0.1:1234/v1`), e a CLI (`runner/cli.py`)
+       não expõe `fabrica_de_inferencia`. A costura existe e está documentada ("é a mesma costura
+       que a T26c usa para apontar uma célula ao SUT de referência sem tocar no runner") — **mas
+       nenhum caminho de linha de comando a alcança**, e `docs/anexos/apuracao/dimensionamento.md
+       §7` manda rodar esta bateria exatamente pela CLI. O conserto mínimo é `_fabrica_padrao`
+       despachar por `celula.modelo.config.served_by`; ele toca `runner/`, que esta task não pode
+       tocar.
     2. `configs/judge_frozen.json` não existe. Teto pontuado por outra rubrica não é teto.
 """
 
@@ -135,26 +135,27 @@ H0 andando para o lado que favorece a conclusão que o trabalho quer defender.""
 PROVEDOR_PADRAO = VERTEX
 """Vertex, e não a free tier que `ARQUITETURA §13` e o cabeçalho do YAML ainda nomeiam.
 
-`docs/limites_free_tier.md §5` mediu: a free tier dá **20 chamadas por DIA**. Esta bateria são
-24 runs × ~8 chamadas ≈ 200, ou seja **10 dias** — o mesmo bloqueio de cronograma que tirou o
-judge de lá em 25/08 (`docs/migracao_vertex.md`). O Vertex serve por dynamic shared quota, sem
-RPD, e o crédito de trial o paga.
+`docs/anexos/apuracao/limites_free_tier.md §5` mediu: a free tier dá **20 chamadas por DIA**. Esta
+bateria são 24 runs × ~8 chamadas ≈ 200, ou seja **10 dias** — o mesmo bloqueio de cronograma que
+tirou o judge de lá em 25/08 (`docs/anexos/apuracao/migracao_vertex.md`). O Vertex serve por dynamic
+shared quota, sem RPD, e o crédito de trial o paga.
 
-Consequência que o cabeçalho de `configs/bateria_referencia.yaml` registra: o "bloqueio 3"
-daquele arquivo — 200 + 1.400 não cabem no mesmo dia de RPD — **deixa de existir** no Vertex,
-porque não há RPD. O que sobra é o teto do DSQ, que `docs/migracao_vertex.md §8` declara
+Consequência que o cabeçalho de `configs/bateria_referencia.yaml` registra: o "bloqueio 3" daquele
+arquivo — 200 + 1.400 não cabem no mesmo dia de RPD — **deixa de existir** no Vertex, porque não há
+RPD. O que sobra é o teto do DSQ, que `docs/anexos/apuracao/migracao_vertex.md §8` declara
 desconhecido."""
 
 MODELO_PADRAO = "gemini-3.7-flash"
 """O único id que o projeto MEDIU como chamável e que **não** é o modelo do judge.
 
-`docs/catalogo_vertex.json` (25/08) testou seis ids contra o Vertex em `global`. Responderam
-200 exatamente dois: `gemini-3.6-flash` (o judge — proibido aqui pela barreira) e
+`docs/anexos/resultados/catalogo_vertex.json` (25/08) testou seis ids contra o Vertex em `global`.
+Responderam 200 exatamente dois: `gemini-3.6-flash` (o judge — proibido aqui pela barreira) e
 `gemini-3.7-flash`. Todos os ids datados responderam 404 nos dois provedores.
 
 O QUE ISTO CUSTA — ✅ RATIFICADO EM 30/08, E O PRO NÃO EXISTE
     `configs/bateria_referencia.yaml` declarava `gemini-3.6-pro`, escolhido em
-    `docs/dimensionamento.md §6.6` sob a premissa de free tier (Pro cabia no RPD das ~200
+    `docs/anexos/apuracao/dimensionamento.md §6.6` sob a premissa de free tier (Pro cabia no RPD das
+    ~200
     chamadas; Flash era do judge por causa das ~1.400). Essa premissa morreu com a migração,
     e o Pro nunca tinha sido conferido contra o catálogo.
 
@@ -184,9 +185,9 @@ TIMEOUT_PADRAO_S = 60.0
 
 Os três números medem coisas diferentes. O SUT local espera GPU de notebook (dezenas de
 segundos por passo, `sut/llm.py`). O judge faz UMA chamada por execução e pode esperar. Aqui é
-um laço ReAct de ~8 chamadas dentro do `timeout_s: 300` da run: são ~37 s de orçamento por
-chamada, contra ~6 s de latência normal medida no canário. Uma chamada que não respondeu em
-60 s não está lenta — está perdida (`docs/migracao_vertex.md §7`), e deixar 120 s pendurados
+um laço ReAct de ~8 chamadas dentro do `timeout_s: 300` da run: são ~37 s de orçamento por chamada,
+contra ~6 s de latência normal medida no canário. Uma chamada que não respondeu em 60 s não está
+lenta — está perdida (`docs/anexos/apuracao/migracao_vertex.md §7`), e deixar 120 s pendurados
 consumiria sozinha 40% da run."""
 
 ESPERAS_S = (2.0, 8.0)
@@ -195,14 +196,14 @@ ESPERAS_S = (2.0, 8.0)
 Mesmo motivo do timeout: o backoff do judge cabe porque lá a unidade é a chamada; aqui a
 unidade é a RUN inteira, e 40 s de espera numa chamada de um laço de oito come o orçamento das
 outras sete. Duas tentativas cobrem o modo de falha medido (uma requisição pendurada em ~seis,
-`docs/migracao_vertex.md §8`); a terceira compraria pouco e custaria a run."""
+`docs/anexos/apuracao/migracao_vertex.md §8`); a terceira compraria pouco e custaria a run."""
 
 TETO_DE_ESPERA_S = 30.0
 """Teto para a espera que a própria API pede, também mais curto que os 75 s do judge.
 
 Na free tier o 429 vinha com `Please retry in ...s` e honrá-lo era a coisa certa. No Vertex ele
-quase nunca traz número (`docs/migracao_vertex.md §8`). Quando trouxer, obedecer 75 s dentro de
-uma run de 300 s troca uma chamada perdida por uma run perdida — e run perdida é célula
+quase nunca traz número (`docs/anexos/apuracao/migracao_vertex.md §8`). Quando trouxer, obedecer 75
+s dentro de uma run de 300 s troca uma chamada perdida por uma run perdida — e run perdida é célula
 faltante no manifesto, que é pior."""
 
 
@@ -239,7 +240,8 @@ def recusar_modelo_do_judge(model_id: str, modelo_do_judge: str = MODELO_DO_JUDG
             f"({modelo_do_judge!r}). O judge julgaria a si mesmo na única linha que serve de "
             "teto de leitura, e `ARQUITETURA §13` exige judge ≠ dos SUTs justamente porque "
             "juiz igual ao réu prefere as próprias respostas. Escolha outro modelo de "
-            "fronteira (ver `docs/catalogo_vertex.json`) ou troque o modelo do judge."
+            "fronteira (ver `docs/anexos/resultados/catalogo_vertex.json`) ou troque o modelo "
+            "do judge."
         )
 
 
@@ -388,10 +390,10 @@ class ClienteDeReferencia:
         self.eventos_de_limite: list[dict[str, Any]] = []
         """Todo status transitório recebido, com o instante e a espera que se seguiu.
 
-        Mesma estrutura de `ClienteDoJudge`, e pelo mesmo motivo com um alvo diferente: o teto
-        do dynamic shared quota do Vertex é declarado DESCONHECIDO em
-        `docs/migracao_vertex.md §8`, e esta bateria é a primeira carga do projeto que roda
-        um LAÇO na nuvem (~8 chamadas por run, 2 runs em paralelo) em vez de uma chamada
+        Mesma estrutura de `ClienteDoJudge`, e pelo mesmo motivo com um alvo diferente: o teto do
+        dynamic shared quota do Vertex é declarado DESCONHECIDO em
+        `docs/anexos/apuracao/migracao_vertex.md §8`, e esta bateria é a primeira carga do projeto
+        que roda um LAÇO na nuvem (~8 chamadas por run, 2 runs em paralelo) em vez de uma chamada
         isolada. Se houver parede, é aqui que ela aparece primeiro."""
 
     # -- o contrato `Inferencia` -------------------------------------------
@@ -483,9 +485,10 @@ class ClienteDeReferencia:
         1 h e `credencial_do_vertex` só renova se for chamado. Fixá-lo no `httpx.Client` faria
         o `google-auth` renovar sem que ninguém usasse a renovação.
 
-        `httpx.TransportError` entra no laço junto com os status: foi assim que o canário de
-        25/08 descobriu que uma requisição pendurada matava a rodada inteira
-        (`docs/migracao_vertex.md §7`). Aqui o custo seria a RUN, que vira célula faltante.
+        `httpx.TransportError` entra no laço junto com os status: foi assim que o canário de 25/08
+        descobriu que uma requisição pendurada matava a rodada inteira
+        (`docs/anexos/apuracao/migracao_vertex.md §7`). Aqui o custo seria a RUN, que vira célula
+        faltante.
         """
         ultima: httpx.Response | None = None
         for tentativa in range(len(ESPERAS_S) + 1):
