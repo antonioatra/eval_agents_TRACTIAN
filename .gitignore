@@ -43,6 +43,12 @@ app/copiloto.html
 # macOS
 .DS_Store
 
+# O deck. O `.pptx` é DERIVADO — `make deck` o refaz de `scripts/gera_pptx.py`, e um binário
+# de 2,6 MB que muda inteiro a cada regeração não pertence ao histórico. O `.pdf` é a exportação
+# dele. Quem gera é o script; ele é que sobe.
+docs/apresentacao.pptx
+docs/apresentacao.pdf
+
 # Sessões do Lavish (revisão visual). O `apresentacao-decisoes.html` é uma
 # renderização do DECISOES.md, que é pessoal e não sobe — mesmo motivo do graphify-out/.
 .lavish/
