@@ -1,7 +1,7 @@
 # Anexos
 
-O `docs/` guarda os dois artefatos que se leem primeiro — [`ARQUITETURA.md`](../ARQUITETURA.md)
-e a apresentação. Tudo o que os sustenta está aqui.
+O `docs/` guarda o artefato que se lê primeiro — [`ARQUITETURA.md`](../ARQUITETURA.md).
+Tudo o que o sustenta está aqui.
 
 ## Documentos de fundo
 
@@ -24,17 +24,17 @@ vai buscar número em vez de repeti-lo: `piloto.md`, `dimensionamento.md`, `judg
 
 ## `resultados/`
 
-Os JSON que os notebooks produzem e que o README, a apresentação e a página do copiloto citam.
+Os JSON que os notebooks produzem e que o README e a página do copiloto citam.
 São **derivados**: `make repro` os regrava a partir de `runs/`, e número digitado à mão aqui
 envelhece na primeira vez que a bateria muda.
 
 ## `../capturas/`
 
-As capturas de tela da aplicação que o deck usa (`docs/capturas/`). Ficam **fora de `figures/`**
-de propósito: figura sai de notebook e `make repro` a regrava conferindo o disco; captura de tela
-sai de `make copiloto` com a API e a GPU no ar, e nenhum alvo sabe refazê-la. Misturar as duas
-afrouxaria, para o deck inteiro, o teste que exige que toda figura citada seja regravável.
+As capturas de tela da aplicação (`docs/capturas/`). Ficam **fora de `figures/`** de propósito:
+figura sai de notebook e `make repro` a regrava conferindo o disco; captura de tela sai de
+`make copiloto` com a API e a GPU no ar, e nenhum alvo sabe refazê-la. Misturar as duas
+afrouxaria o teste que exige que toda figura citada seja regravável.
 
-O slide que as usa **degrada para uma moldura vazia** quando o arquivo não está no disco — quem
-clona o repositório para reger o deck não tem por que ter a captura, e um `make deck` que morresse
-por um PNG de tela deixaria a banca sem o arquivo inteiro por causa de um slide.
+Elas são **prova de execução, não ilustração**: mostram a aplicação rodando com os dois serviços
+no ar. Quem clona o repositório não precisa refazê-las para reproduzir número nenhum — nenhum
+resultado depende delas.

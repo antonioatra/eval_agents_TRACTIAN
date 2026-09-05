@@ -376,4 +376,4 @@ Na ordem de quanto afetam a conclusão.
 | `configs/` | as cinco baterias e o congelamento do judge |
 | `runs/` | traces, manifestos e scores — **versionados**, é o dado |
 | `notebooks/` | nb01–nb04 · `figures/INDEX.md` mapeia figura → afirmação |
-| `docs/` | `ARQUITETURA.md` e a apresentação; tudo o que os sustenta em `anexos/` |
+| `docs/` | `ARQUITETURA.md`; tudo o que o sustenta em `anexos/` |

@@ -1,4 +1,4 @@
-.PHONY: venv install test lint corpus api api-stop t0b piloto judge pontuar repro app copiloto deck clean
+.PHONY: venv install test lint corpus api api-stop t0b piloto judge pontuar repro app copiloto clean
 
 VENV    := .venv
 PY      := $(VENV)/bin/python
@@ -19,7 +19,7 @@ FIG_NOMES     := fig01_distribuicao_status fig02_matriz_cobertura fig03_flip_rat
                  fig07_h2_funcao_vs_args fig08_ins9_mutantes fig09_passk_curvas \
                  fig10_decomposicao_variancia fig11_severidade_por_modelo fig12_taxonomia_falhas
 # Desde a T31 toda figura sai em PNG **e** SVG na mesma chamada de `figuras.exportar`. A
-# conferência cobra os dois: um sem o outro é a versão do slide atrasada em relação à do
+# conferência cobra os dois: um sem o outro é a versão vetorial atrasada em relação à do
 # documento, e nada no repositório denunciaria isso.
 FIG_ARQUIVOS  := $(foreach f,$(FIG_NOMES),figures/$(f).png figures/$(f).svg)
 
@@ -181,13 +181,6 @@ app: install
 copiloto: install
 	$(PY) scripts/gerar_placar.py
 	$(PY) -m tapieval.vivo --raiz . --porta 7000
-
-# O deck de 10 minutos em PowerPoint nativo — formas e tabelas editáveis, notas do
-# apresentador no lugar em que o PowerPoint as espera, e as figuras lidas de `figures/`.
-# Roda DEPOIS de `make repro`: o alvo desenha a figura que estiver no disco, e figura velha no
-# slide é a única forma de o deck citar um número que a bateria já não sustenta.
-deck: install
-	$(PY) scripts/gera_pptx.py
 
 # Sobe a API industrial do parceiro em localhost:8000 (necessária para `make corpus`).
 api:

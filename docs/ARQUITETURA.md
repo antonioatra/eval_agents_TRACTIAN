@@ -142,7 +142,7 @@ Mapeamento com a arquitetura de referência do TAPI §8: solicitação → agent
 | 33 | Modelos | 2 SUTs locais + 1 judge distinto, tudo local | condicional — S1 |
 | 34 | Hipóteses | **H0 principal** (curva custo × recall); H1 virou dois pontos dela; H2 apoio, H4 secundária | revista 14/08 |
 | 35 | Interface | CLI de trace + notebooks + **um html autocontido**, e um servidor local que roda a **pergunta nova** | revista 14/08, reaberta 02/09 |
-| 36 | Apresentação | notebooks versionados → figuras → README | fechada |
+| 36 | Apresentação de dados | notebooks versionados → figuras → README | fechada |
 
 As linhas marcadas **revista** mudaram na fusão dos dois documentos de arquitetura —
 o porquê de cada uma está em §17.
@@ -412,7 +412,7 @@ razão de escolhê-lo é que ele resolve os dois entregáveis de uma vez:
   exposição de catálogo ficam num lugar só, fora do alcance do agente.
 - **O framework deixa de ser específico do meu agente.** Qualquer cliente MCP vira SUT
   instrumentado — inclusive um agente de terceiro, apontado para o mesmo servidor por stdio.
-  Essa é a frase que sustenta a palavra *framework* na apresentação; sem ela é alegação.
+  Essa é a frase que sustenta a palavra *framework*; sem ela é alegação.
 
 Custos, declarados: latência extra por chamada (desprezível em memória, milissegundos por
 stdio — medida no piloto e reportada); mais superfície de erro, porque o schema existe no
@@ -689,7 +689,7 @@ Notebooks são artefato de primeira classe, não rascunho:
 - **Notebook nunca executa o agente.** Lê de `runs/*/scores/` e `traces/`. Análise reprodutível
   em segundos, independente de GPU.
 - Cada notebook exporta figuras nomeadas para `figures/`, em PNG (300 dpi) e SVG.
-- Toda figura do README e da apresentação vem de um notebook versionado. Nenhum print de tela.
+- Toda figura do README vem de um notebook versionado. Nenhum print de tela.
 - Seeds fixas e `%watermark` de versões no topo.
 
 | Notebook | Produz |
@@ -700,7 +700,7 @@ Notebooks são artefato de primeira classe, não rascunho:
 | `nb04_resultados_principais` | H1 e H2, comparação entre modelos |
 | `nb05_passk_estabilidade` | curvas de pass^k, decomposição de variância (H4) |
 | `nb06_severidade_erros` | taxonomia de falhas por severidade e por modelo |
-| `nb07_figuras_finais` | exporta as figuras da apresentação |
+| `nb07_figuras_finais` | exporta as figuras finais |
 
 ---
 

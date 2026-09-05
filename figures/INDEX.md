@@ -8,8 +8,8 @@ notebooks e **reprova** se alguma figura declarada não for regravada no disco.
 
 **Cada figura existe em dois formatos, gravados na mesma chamada** (`tapieval.figuras.exportar`):
 o `.png` a 3540 px (1180 lógicos × 3 ≈ 300 dpi), que é o que entra no README, e o `.svg`, que é
-o que sobrevive ao projetor — vetor não borra quando o slide é esticado. Os dois saem juntos
-para não existir a versão regravada e a que ficou para trás.
+o que sobrevive a qualquer ampliação — vetor não borra quando a figura é esticada. Os dois saem
+juntos para não existir a versão regravada e a que ficou para trás.
 
 **A identidade é uma só, e mora em `src/tapieval/figuras.py`.** Paleta, família tipográfica,
 escala de corpo, largura canônica e a exportação. Até 01/09 cada notebook declarava a própria:
